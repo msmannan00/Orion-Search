@@ -46,7 +46,7 @@ class mongo_request_generator(request_handler):
     return {MONGODB_KEYS.S_DOCUMENT: MONGODB_COLLECTIONS.S_UNIQUE_URL, MONGODB_KEYS.S_FILTER: {}, MONGODB_KEYS.S_VALUE: {}}
 
   @staticmethod
-  def __on_update_url_status(url, url_status=None, leak_status=None, content_type=None):
+  def __on_update_url_status(url, url_status=None, leak_status=None, content_type=None, network_type=None):
     update_values = {"url": url}
     utc_now = datetime.now(timezone.utc)
     current_date = utc_now
@@ -59,6 +59,9 @@ class mongo_request_generator(request_handler):
 
     if content_type is not None:
       update_values["content_type"] = content_type
+
+    if network_type is not None:
+      update_values["network_type"] = network_type
 
     return {MONGODB_KEYS.S_DOCUMENT: MONGODB_COLLECTIONS.S_URL_STATUS, MONGODB_KEYS.S_FILTER: {"url": url}, MONGODB_KEYS.S_VALUE: {"$set": update_values}}
 
@@ -88,6 +91,6 @@ class mongo_request_generator(request_handler):
     if p_commands == MONGO_COMMANDS.M_CRONHEARTBEAT:
       return self.__on_update_status(p_data[0])
     if p_commands == MONGO_COMMANDS.M_UPDATE_URL_STATUS:
-      return self.__on_update_url_status(p_data[0], p_data[1], p_data[2], p_data[3])
+      return self.__on_update_url_status(p_data[0], p_data[1], p_data[2], p_data[3], p_data[4])
     if p_commands == MONGO_COMMANDS.M_GET_URL_STATUS:
       return self.__on_fetch_url_status(p_data[0])

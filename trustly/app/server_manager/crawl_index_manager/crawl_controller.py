@@ -50,9 +50,9 @@ class crawl_controller(request_handler):
       m_response_generic, m_data_generic = elastic_controller.get_instance().invoke_trigger(m_crawl_model.m_command, [ELASTIC_REQUEST_COMMANDS.S_INDEX_GENERAL, [m_generic_index, ELASTIC_INDEX.S_GENERIC_INDEX]])
       if len(m_leak_index["cards_data"]):
         m_response_leak, m_data_leak = elastic_controller.get_instance().invoke_trigger(m_crawl_model.m_command, [ELASTIC_REQUEST_COMMANDS.S_INDEX_LEAK, [m_leak_index, ELASTIC_INDEX.S_LEAK_INDEX]])
-        mongo_controller.getInstance().invoke_trigger(MONGODB_CRUD.S_UPDATE, [MONGO_COMMANDS.M_UPDATE_URL_STATUS, [m_leak_index["base_url"], True, len(m_leak_index["cards_data"]) > 0, m_leak_index["content_type"]], [None]])
+        mongo_controller.getInstance().invoke_trigger(MONGODB_CRUD.S_UPDATE, [MONGO_COMMANDS.M_UPDATE_URL_STATUS, [m_leak_index["base_url"], True, len(m_leak_index["cards_data"]) > 0, m_leak_index["content_type"], m_leak_index["m_network"]], [None]])
       else:
-        mongo_controller.getInstance().invoke_trigger(MONGODB_CRUD.S_UPDATE, [MONGO_COMMANDS.M_UPDATE_URL_STATUS, [m_generic_index["m_base_url"], True, None, m_generic_index["m_content_type"]], [None]])
+        mongo_controller.getInstance().invoke_trigger(MONGODB_CRUD.S_UPDATE, [MONGO_COMMANDS.M_UPDATE_URL_STATUS, [m_generic_index["m_base_url"], True, None, m_generic_index["m_content_type"], m_generic_index["m_network"]], [None]])
 
       m_context = [m_response_generic, m_data_generic, m_response_leak, m_data_leak]
       return HttpResponse(json.dumps(m_context))
