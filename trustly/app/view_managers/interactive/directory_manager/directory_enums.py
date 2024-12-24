@@ -15,6 +15,7 @@ class DIRECTORY_PARAMS:
   M_PAGE_NUMBER = "page"
   M_CONTENT_TYPE = "content_type"
   M_INDEX = "index"
+  M_NETWORK = "network"
   M_SECURE_SERVICE = "pSite"
 
 
@@ -27,6 +28,8 @@ class DIRECTORY_CALLBACK:
   M_START_PAGE = "mStartPage"
   M_ENDPAGE = "mEndPage"
   M_PAGINATION = "mPagination"
+  M_CONTENT_TYPE = "mContentType"
+  M_INDEX = "mIndex"
 
 
 class DIRECTORY_MODEL_CALLBACK:
@@ -34,3 +37,4 @@ class DIRECTORY_MODEL_CALLBACK:
   M_URL = "mURL"
   M_CONTENT_TYPE = "mContentType"
   M_INDEX = "mIndex"
+  M_NETWORK = "mNetwork"

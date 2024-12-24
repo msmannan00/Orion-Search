@@ -69,8 +69,10 @@ class search_model(request_handler):
     m_query_model = self.__m_session.invoke_trigger(SEARCH_SESSION_COMMANDS.INIT_SEARCH_PARAMETER, [p_data])
     if m_query_model.m_search_query == GENERAL_STRINGS.S_GENERAL_EMPTY:
       return False, None
+    m_network = p_data.GET.get('mNetwork', None)
 
-    m_status, m_documents = elastic_controller.get_instance().invoke_trigger(ELASTIC_CRUD_COMMANDS.S_READ, [ELASTIC_REQUEST_COMMANDS.S_SEARCH, [m_query_model], [None]])
+    m_status, m_documents = elastic_controller.get_instance().invoke_trigger(ELASTIC_CRUD_COMMANDS.S_READ, [ELASTIC_REQUEST_COMMANDS.S_SEARCH, [m_query_model], [None, m_network]])
+
     m_parsed_documents, m_suggestions_content, total_pages = self.__parse_filtered_documents(m_documents)
 
     m_query_model.set_total_documents(len(m_parsed_documents))

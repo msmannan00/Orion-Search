@@ -21,16 +21,22 @@ class directory_session_controller(request_handler):
       m_type = p_data.GET[DIRECTORY_PARAMS.M_CONTENT_TYPE]
     else:
       m_type = ""
-
     if DIRECTORY_PARAMS.M_INDEX in p_data.GET:
       m_index = p_data.GET[DIRECTORY_PARAMS.M_INDEX]
     else:
       m_index = ""
 
+    if DIRECTORY_PARAMS.M_NETWORK in p_data.GET:
+      m_network = p_data.GET[DIRECTORY_PARAMS.M_NETWORK]
+    else:
+      m_network = ""
+
     if m_num < 1:
       m_num = 1
 
-    m_directory_model = directory_class_model(m_num, None, m_type, m_index)
+    print(m_network)
+
+    m_directory_model = directory_class_model(m_num, None, m_type, m_index, m_network)
 
     if DIRECTORY_PARAMS.M_SECURE_SERVICE in p_data.GET:
       m_directory_model.m_site = p_data.GET[DIRECTORY_PARAMS.M_SECURE_SERVICE]
@@ -58,8 +64,9 @@ class directory_session_controller(request_handler):
       start_page = current_page - half_range
       end_page = min(current_page + half_range, total_pages)
 
-    m_context = {DIRECTORY_CALLBACK.M_PAGE_NUMBER: current_page, DIRECTORY_CALLBACK.M_TOTAL_PAGES: total_pages, DIRECTORY_CALLBACK.M_START_PAGE: start_page, DIRECTORY_CALLBACK.M_ENDPAGE: end_page, DIRECTORY_CALLBACK.M_PAGINATION: range(start_page, end_page + 1), DIRECTORY_CALLBACK.M_SECURE_SERVICE_NOTICE: p_links.m_site, DIRECTORY_CALLBACK.M_ONION_LINKS: p_links.m_row_model_list[0:len(p_links.m_row_model_list)], DIRECTORY_CALLBACK.M_MAX_PAGE_REACHED: len(p_links.m_row_model_list) <= CONSTANTS.S_SETTINGS_DIRECTORY_LIST_MAX_SIZE - 2}
-
+    m_context = {DIRECTORY_CALLBACK.M_PAGE_NUMBER: current_page, DIRECTORY_CALLBACK.M_TOTAL_PAGES: total_pages, DIRECTORY_CALLBACK.M_START_PAGE: start_page, DIRECTORY_CALLBACK.M_ENDPAGE: end_page, DIRECTORY_CALLBACK.M_PAGINATION: range(start_page, end_page + 1), DIRECTORY_CALLBACK.M_SECURE_SERVICE_NOTICE: p_links.m_site, DIRECTORY_CALLBACK.M_ONION_LINKS: p_links.m_row_model_list[0:len(p_links.m_row_model_list)], DIRECTORY_CALLBACK.M_MAX_PAGE_REACHED: len(p_links.m_row_model_list) <= CONSTANTS.S_SETTINGS_DIRECTORY_LIST_MAX_SIZE - 2, DIRECTORY_CALLBACK.M_CONTENT_TYPE: p_links.m_content_type,  # Added content type
+      DIRECTORY_CALLBACK.M_INDEX: p_links.m_index,  # Added index
+    }
     if p_links.m_page_number > 1 and len(p_links.m_row_model_list) == 0:
       return m_context, False
     else:

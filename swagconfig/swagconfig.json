@@ -21,100 +21,122 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "Page number to retrieve (default is 1) item per page is 1000",
-            "type": "integer",
-            "default": 1
+            "description": "Page number to retrieve (default is 1). Items per page are 1000.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
           },
           {
             "name": "content_type",
             "in": "query",
             "required": false,
             "description": "Filter directories by specific content type (e.g., leaks, marketplaces).",
-            "type": "string",
-            "example": "leaks"
+            "schema": {
+              "type": "string",
+              "example": "leaks"
+            }
           },
           {
             "name": "index",
             "in": "query",
             "required": false,
             "description": "Filter directories by a specific index string.",
-            "type": "string",
-            "example": "onion123"
+            "schema": {
+              "type": "string",
+              "example": "onion123"
+            }
+          },
+          {
+            "name": "network",
+            "in": "query",
+            "required": false,
+            "description": "Filter directories by a specific network.",
+            "schema": {
+              "type": "string",
+              "example": "Tor"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "Successful response",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "directories": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "_id": {
-                        "type": "string",
-                        "description": "Unique identifier for the directory entry",
-                        "example": "6755985e8890c1efb5853055"
-                      },
-                      "url": {
-                        "type": "string",
-                        "description": "Onion URL being monitored",
-                        "example": "http://22mwrxptlt7l3nv6bcl5cp3xly3chzno3qdehjanord6qdsrrsr7tqid.onion"
-                      },
-                      "content_type": {
-                        "type": "array",
-                        "description": "Content types associated with the URL",
-                        "items": {
-                          "type": "string",
-                          "example": "leaks"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "directories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Unique identifier for the directory entry",
+                            "example": "6755985e8890c1efb5853055"
+                          },
+                          "url": {
+                            "type": "string",
+                            "description": "Onion URL being monitored",
+                            "example": "http://22mwrxptlt7l3nv6bcl5cp3xly3chzno3qdehjanord6qdsrrsr7tqid.onion"
+                          },
+                          "content_type": {
+                            "type": "array",
+                            "description": "Content types associated with the URL",
+                            "items": {
+                              "type": "string",
+                              "example": "leaks"
+                            }
+                          },
+                          "url_status_date": {
+                            "type": "integer",
+                            "description": "Timestamp of the URL status update",
+                            "example": 0
+                          },
+                          "leak_status_date": {
+                            "type": "integer",
+                            "description": "Timestamp of the leak status update",
+                            "example": 0
+                          }
                         }
-                      },
-                      "url_status_date": {
-                        "type": "integer",
-                        "description": "Timestamp of the URL status update",
-                        "example": 0
-                      },
-                      "leak_status_date": {
-                        "type": "integer",
-                        "description": "Timestamp of the leak status update",
-                        "example": 0
                       }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page number"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Number of items per page"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of directories available"
                     }
                   }
                 },
-                "page": {
-                  "type": "integer",
-                  "description": "Current page number"
-                },
-                "size": {
-                  "type": "integer",
-                  "description": "Number of items per page"
-                },
-                "total": {
-                  "type": "integer",
-                  "description": "Total number of directories available"
-                }
-              }
-            },
-            "examples": {
-              "application/json": {
-                "directories": [
-                  {
-                    "_id": "6755985e8890c1efb5853055",
-                    "url": "http://22mwrxptlt7l3nv6bcl5cp3xly3chzno3qdehjanord6qdsrrsr7tqid.onion",
-                    "content_type": [
-                      "leaks",
-                      "marketplaces"
-                    ],
-                    "url_status_date": 0,
-                    "leak_status_date": 0
+                "examples": {
+                  "application/json": {
+                    "value": {
+                      "directories": [
+                        {
+                          "_id": "6755985e8890c1efb5853055",
+                          "url": "http://22mwrxptlt7l3nv6bcl5cp3xly3chzno3qdehjanord6qdsrrsr7tqid.onion",
+                          "content_type": [
+                            "leaks",
+                            "marketplaces"
+                          ],
+                          "url_status_date": 0,
+                          "leak_status_date": 0
+                        }
+                      ],
+                      "page": 1,
+                      "size": 1000,
+                      "total": 2000
+                    }
                   }
-                ],
-                "page": 1,
-                "size": 1000,
-                "total": 2000
+                }
               }
             }
           }

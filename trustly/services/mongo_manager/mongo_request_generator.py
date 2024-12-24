@@ -65,7 +65,7 @@ class mongo_request_generator(request_handler):
     return {MONGODB_KEYS.S_DOCUMENT: MONGODB_COLLECTIONS.S_URL_STATUS, MONGODB_KEYS.S_FILTER: {"url": url}, MONGODB_KEYS.S_VALUE: {"$set": update_values}}
 
   @staticmethod
-  def __on_fetch_url_status(p_content_type, p_index):
+  def __on_fetch_url_status(p_content_type, p_index, p_network):
     content_type_list = [ctype.strip() for ctype in p_content_type.split(',') if p_content_type]
 
     if content_type_list:
@@ -99,4 +99,4 @@ class mongo_request_generator(request_handler):
     if p_commands == MONGO_COMMANDS.M_UPDATE_URL_STATUS:
       return self.__on_update_url_status(p_data[0], p_data[1], p_data[2], p_data[3])
     if p_commands == MONGO_COMMANDS.M_GET_URL_STATUS:
-      return self.__on_fetch_url_status(p_data[0], p_data[1])
+      return self.__on_fetch_url_status(p_data[0], p_data[1], p_data[2])

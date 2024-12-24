@@ -26,12 +26,15 @@ class search_session_controller(request_handler):
       m_query_model.m_search_type = p_data.GET[SEARCH_PARAM.M_TYPE]
     if SEARCH_PARAM.M_PAGE in p_data.GET:
       m_query_model.set_page_number(p_data.GET[SEARCH_PARAM.M_PAGE])
+    if SEARCH_PARAM.M_NETWORK in p_data.GET:
+      m_query_model.set_network(p_data.GET[SEARCH_PARAM.M_NETWORK])
     if SEARCH_PARAM.M_SAFE_SEARCH in p_data.GET:
       if p_data.GET[SEARCH_PARAM.M_SAFE_SEARCH] == "True":
         m_query_model.m_safe_search = "True"
       else:
         m_query_model.m_safe_search = "False"
 
+    print(m_query_model)
     return m_query_model
 
   @staticmethod

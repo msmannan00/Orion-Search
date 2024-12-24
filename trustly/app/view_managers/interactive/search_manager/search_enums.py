@@ -21,6 +21,7 @@ class SEARCH_PARAM:
   M_TYPE = "pSearchParamType"
   M_PAGE = "mSearchParamPage"
   M_SAFE_SEARCH = "mSearchParamSafeSearch"
+  M_NETWORK = "mNetwork"
 
 
 class SEARCH_CALLBACK:

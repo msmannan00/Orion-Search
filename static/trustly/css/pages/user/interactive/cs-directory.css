@@ -59,33 +59,34 @@ html {
   }
 }
 
-.directory__main-contentType-filter {
+.directory__main-filter {
   position: relative;
   display: inline-block;
-  margin-right: 75px;
+  margin-right: 20px;
 }
 
 .directory__main-contentType-filter-checkbox {
   display: none;
 }
 
-.directory__main-contentType-filter-header {
+.directory__main-filter-header {
   background-color: #12335450;
   min-width: 180px;
   border: 1px solid #102A4685;
-  color: #fff;
+  color: #808080;
   padding: 10px;
   cursor: pointer;
   border-radius: 10px;
   user-select: none;
+  font-size: 16px;
 }
 
-.directory__main-contentType-filter-menu {
+.directory__main-filter-menu {
   display: none;
   position: absolute;
   background-image: linear-gradient(90deg, rgba(21, 52, 84, 1) 0%, rgba(22, 56, 88, 1) 100%) !important;
   min-width: 180px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   color: #fff;
   z-index: 1;
@@ -93,114 +94,92 @@ html {
   margin: 0;
   list-style: none;
 }
-
-.directory__main-contentType-filter-checkbox:checked ~ .directory__main-contentType-filter-menu {
+.directory__main-arrow-image{
+  float: right;
+  margin-top: 3px;
+}
+.directory__main-arrow-image-network{
+  margin-left: 10px;
+}
+.directory__main-arrow-image-contentType{
+  margin-left: 10px;
+}
+.directory__main-filter-menu-contentType {
+  min-width: 200px !important;
+}
+.directory__main-filter-menu-network {
+  min-width: 200px !important;
+}
+.directory__main-contentType-filter-checkbox:checked ~ .directory__main-filter-menu {
   display: block;
 }
 
-.directory__main-contentType-filter-menu a {
+.directory__main-filter-input {
   display: block;
   color: #fff;
   text-decoration: none;
   padding: 10px 15px;
+  background: none;
+  border: none;
 }
 
-.directory__main-contentType-filter-menu li {
+.directory__main-filter-menu li {
   border-bottom: 1px solid #FCFCFC12;
 }
 
-.directory__main-contentType-filter-menu a:hover {
+.directory__main-filter-input:hover {
   background-color: #12335450;
+  color: #fff;
+  text-decoration: none;
 }
 
-.directory__main-contentType-filter-menu li:last-child {
-  border-bottom: none;
+.directory__main-filter:last-child {
+  margin-right: 75px;
+
 }
 
-.directory__main-contentType-filter-header img {
+
+.directory__main-filter-image {
   height: 18px;
   width: 18px;
-  margin-right: 5px;
-}
-
-.directory__main-index-filter {
-  position: relative;
-  display: inline-block;
   margin-right: 10px;
+  margin-top: -3px;
+  opacity: 0.5;
 }
 
-/* Reuse existing styles for consistency */
-.directory__main-index-filter .directory__main-filter-checkbox {
+
+.directory__main-filter-checkbox {
   display: none;
 }
 
-.directory__main-index-filter .directory__main-filter-header {
-  background-color: #12335450;
-  min-width: 180px;
-  border: 1px solid #102A4685;
-  color: #fff;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 10px;
-  user-select: none;
+
+.directory__main-filter-checkbox:checked ~ .directory__main-filter-menu {
+  display: block;
 }
 
-.directory__main-index-filter .directory__main-filter-menu {
+.directory__main-network-filter-checkbox:checked ~ .directory__main-filter-menu {
+  display: block;
+}
+
+.directory__main-network-filter-checkbox {
   display: none;
-  position: absolute;
-  background-image: linear-gradient(90deg, rgba(21, 52, 84, 1) 0%, rgba(22, 56, 88, 1) 100%) !important;
-  min-width: 180px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  color: #fff;
-  z-index: 1;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.directory__main-index-filter .directory__main-filter-checkbox:checked ~ .directory__main-filter-menu {
-  display: block;
-}
-
-.directory__main-index-filter .directory__main-filter-menu a {
-  display: block;
-  color: #fff;
-  text-decoration: none;
-  padding: 10px 15px;
-}
-
-.directory__main-index-filter .directory__main-filter-menu li {
-  border-bottom: 1px solid #FCFCFC12;
-}
-
-.directory__main-index-filter .directory__main-filter-menu a:hover {
-  background-color: #12335450;
-}
-
-.directory__main-index-filter .directory__main-filter-menu li:last-child {
-  border-bottom: none;
-}
-
-.directory__main-index-filter .directory__main-filter-header img {
-  height: 18px;
-  width: 18px;
-  margin-right: 5px;
 }
 
 @media only screen and (max-width: 600px) {
-  .directory__upper-heading {
-    /*height: 170px !important;*/
-  }
+
 
   .directory__pagination-heading {
     width: 100%;
   }
-  .directory__main-index-filter{
-    display: none;
-  }
-  .directory__main-contentType-filter{
+
+  .directory__main-filter {
     display: none;
   }
 
+}
+
+.directory__header-pagination-form {
+  display: flex;
+  justify-content: end;
+  align-items: center;
 }

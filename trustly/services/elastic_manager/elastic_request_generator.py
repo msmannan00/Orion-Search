@@ -19,11 +19,15 @@ class elastic_request_generator(request_handler):
 
   @staticmethod
   def __on_search(p_query_model):
+    print('jgjgc;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;')
+    print(p_query_model.m_network)
     m_user_query, m_search_type, m_safe_search, m_page_number = (p_query_model.m_search_query, p_query_model.m_search_type, p_query_model.m_safe_search, p_query_model.m_page_number,)
     must_clauses = []
     m_user_query = m_user_query.lower()
     if p_query_model.m_search_type != "all":
       must_clauses.append({"terms": {"m_content_type": [p_query_model.m_search_type]}})
+    if p_query_model.m_network != "":
+      must_clauses.append({"terms": {"m_network": [p_query_model.m_network]}})
     must_not_clause = []
     if m_safe_search == "True":
       must_not_clause.append({"term": {"m_content_type": "adult"}})

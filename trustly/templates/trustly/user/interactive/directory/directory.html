@@ -22,40 +22,14 @@
         </div>
 
         <div class="directory-pagination">
-          <div class="directory__main-index-filter">
-            <input type="checkbox" id="index-dropdown-toggle" class="directory__main-filter-checkbox">
-            <label for="index-dropdown-toggle" class="directory__main-filter-header">
-              <img src="{% static 'trustly/images/filter_by.svg' %}">
-              {% if request.GET.index %}
-                {{ request.GET.index|capfirst }}
-              {% else %}
-                Filter by Index
-              {% endif %}
-            </label>
-            <ul class="directory__main-filter-menu">
-              <li><a href="{% url 'directory' %}?page=1&index=genral">General</a></li>
-              <li><a href="{% url 'directory' %}?page=1&index=monitor">Monitor</a></li>
-            </ul>
-          </div>
-          <div class="directory__main-contentType-filter">
-            <input type="checkbox" id="dropdown-toggle" class="directory__main-contentType-filter-checkbox">
-            <label for="dropdown-toggle" class="directory__main-contentType-filter-header">
-              <img src="{% static 'trustly/images/filter_by.svg' %}">
-              {% if request.GET.content_type %}
-                {{ request.GET.content_type|capfirst }}
-              {% else %}
-                Filter by
-              {% endif %}
-            </label>
-            <ul class="directory__main-contentType-filter-menu">
-              <li><a href="{% url 'directory' %}?page=1&content_type=leaks">Leaks</a></li>
-              <li><a href="{% url 'directory' %}?page=1&content_type=marketplaces">Marketplaces</a></li>
-              <li><a href="{% url 'directory' %}?page=1&content_type=forums">Forums</a></li>
-              <li><a href="{% url 'directory' %}?page=1&content_type=Cryptocurrency">Cryptocurrency</a></li>
-            </ul>
-          </div>
 
-          {% include 'trustly/user/blades/directory_template/blade_directory_pagination.html' %}
+
+
+          <form class="disable-highlight clear-paddings directory__header-pagination-form" action="" method="GET">
+
+            {% include 'trustly/user/blades/directory_template/blade_directory_filters.html' %}
+            {% include 'trustly/user/blades/directory_template/blade_directory_pagination.html' %}
+          </form>
         </div>
       </div>
       {% include 'trustly/user/blades/directory_template/blade_directory_list.html' %}

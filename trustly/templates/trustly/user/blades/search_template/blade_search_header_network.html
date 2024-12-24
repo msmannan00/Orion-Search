@@ -1,0 +1,25 @@
+{% load static %}
+
+<div class="search__header-network-dropdown">
+  <input type="checkbox" id="search__header-network-toggle" class="search__header-network-toggle">
+  <label for="search__header-network-toggle">
+    <img src="{% static 'trustly/images/tools_icon.svg' %}" alt="Tools" class="search__header-network-image">
+  </label>
+  <div class="search__header-network-content">
+    <form method="GET" action="">
+      <div class="search__header-network-toggle-group">
+        <div class="search__header-network-toggle-container">
+          <input type="checkbox" id="onion-toggle" name="mNetwork" value="Onion" class="search__header-network-toggle-input">
+          <label for="onion-toggle" class="search__header-network-toggle-label"></label><p class="search__header-network-toggle-p">Onion</p>
+        </div>
+        <div class="search__header-network-toggle-container">
+          <input type="checkbox" id="ip2-toggle" name="mNetwork" value="ip2" class="search__header-network-toggle-input">
+          <label for="ip2-toggle" class="search__header-network-toggle-label"></label><p class="search__header-network-toggle-p">ip2</p>
+        </div>
+      </div>
+      <button type="submit" class="search__header-network-submit-button">
+        <img src="{% static 'trustly/images/search_filter.svg' %}" alt="Search"> Search
+      </button>
+    </form>
+  </div>
+</div>

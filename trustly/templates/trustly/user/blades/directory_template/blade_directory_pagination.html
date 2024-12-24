@@ -1,39 +1,38 @@
 {% load static %}
 
-<form class="disable-highlight clear-paddings" action="" method="GET">
-    <div>
-        <ul class="directory-pagination">
-            <li class="{% if page == 1 %}disabled{% endif %}">
-                <button type="submit" name="page" value="1" {% if page == 1 %}disabled{% endif %}>
-                    <img src="{% static 'trustly/images/nav-first.svg' %}" alt="Start">
-                </button>
-            </li>
+<input type="hidden" name="page" value="{{ page }}">
+<div>
+  <ul class="directory-pagination">
+    <li class="{% if page == 1 %}disabled{% endif %}">
+      <button type="submit" name="page" value="1" {% if page == 1 %}disabled{% endif %}>
+        <img src="{% static 'trustly/images/nav-first.svg' %}" alt="Start">
+      </button>
+    </li>
 
-            <li class="{% if page == 1 %}disabled{% endif %}">
-                <button type="submit" name="page" value="{{ page|add:"-1" }}" {% if page == 1 %}disabled{% endif %}>
-                    <img src="{% static 'trustly/images/nav-prev.svg' %}" alt="Prev">
-                </button>
-            </li>
+    <li class="{% if page == 1 %}disabled{% endif %}">
+      <button type="submit" name="page" value="{{ page|add:"-1" }}" {% if page == 1 %}disabled{% endif %}>
+        <img src="{% static 'trustly/images/nav-prev.svg' %}" alt="Prev">
+      </button>
+    </li>
 
-            {% for i in mPagination %}
-                <li class="{% if i == page %}active{% endif %}">
-                    <button type="submit" name="page" value="{{ i }}" {% if i == page %}disabled{% endif %}>
-                        {{ i }}
-                    </button>
-                </li>
-            {% endfor %}
+    {% for i in mPagination %}
+      <li class="{% if i == page %}active{% endif %}">
+        <button type="submit" name="page" value="{{ i }}" {% if i == page %}disabled{% endif %}>
+          {{ i }}
+        </button>
+      </li>
+    {% endfor %}
 
-            <li class="{% if page == mTotalPage %}disabled{% endif %}">
-                <button type="submit" name="page" value="{{ page|add:"1" }}" {% if page == mTotalPage %}disabled{% endif %}>
-                    <img src="{% static 'trustly/images/nav-next.svg' %}" alt="Next">
-                </button>
-            </li>
+    <li class="{% if page == mTotalPage %}disabled{% endif %}">
+      <button type="submit" name="page" value="{{ page|add:"1" }}" {% if page == mTotalPage %}disabled{% endif %}>
+        <img src="{% static 'trustly/images/nav-next.svg' %}" alt="Next">
+      </button>
+    </li>
 
-            <li class="{% if page == mTotalPage %}disabled{% endif %}">
-                <button type="submit" name="page" value="{{ mTotalPage }}" {% if page == mTotalPage %}disabled{% endif %}>
-                    <img src="{% static 'trustly/images/nav-last.svg' %}" alt="End">
-                </button>
-            </li>
-        </ul>
-    </div>
-</form>
+    <li class="{% if page == mTotalPage %}disabled{% endif %}">
+      <button type="submit" name="page" value="{{ mTotalPage }}" {% if page == mTotalPage %}disabled{% endif %}>
+        <img src="{% static 'trustly/images/nav-last.svg' %}" alt="End">
+      </button>
+    </li>
+  </ul>
+</div>
