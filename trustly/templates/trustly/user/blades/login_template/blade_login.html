@@ -1,0 +1,18 @@
+{% load static %}
+{% if error %}
+  <p style="color: red;">{{ error }}</p>
+{% endif %}
+{% if message %}
+  <p style="color: green;">{{ message }}</p>
+{% endif %}
+<form method="post" class="home__search-form">
+  {% csrf_token %}
+  <div>
+    <img src="{% static 'trustly/images/home-logo.svg' %}" alt="" width="300" height="70">
+  </div>
+  <div>
+    <input autocomplete="off" type="password" maxlength="150" class="form-control home__searchbox" name="password" placeholder="passcode"/>
+
+  </div>
+</form>
+

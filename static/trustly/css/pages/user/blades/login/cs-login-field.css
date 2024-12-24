@@ -1,0 +1,36 @@
+.home__searchbox {
+  border-radius: 10px;
+  height: 46px;
+  outline: none;
+  border-color: #ffffff;
+  width: 600px;
+  max-width: 600px;
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  color: #3C3C43;
+  letter-spacing: -0.41px;
+  font-size: 17px;
+  background-size: 20px 20px;
+  padding: 15px 12px !important;
+  -moz-transition: .0s;
+  padding-top: 2px;
+  transition: .0s;
+  margin-bottom: 23vh;
+  margin-top: 20px;
+  background: #fff url('/static/trustly/images/lock.svg') no-repeat;
+  background-position-x: 10px;
+  background-position-y: 8px;
+  padding-left: 50px !important;
+  background-size: 25px;
+}
+
+.home__searchbox::placeholder {
+  font-family: 'Roboto', sans-serif;
+  color: #ccc;
+  opacity: 1;
+}
+
+.home__searchbox::placeholder {
+  font-size: 17px;
+  color: #ccc;
+}

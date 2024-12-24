@@ -46,6 +46,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'trustly.middleware.login_middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'trustly.middleware.content_security_policy_middleware.content_security_policy_middleware',
     'trustly.middleware.maintenance_mode_middleware.maintenance_mode_middleware',
@@ -53,7 +54,9 @@ MIDDLEWARE = [
     'trustly.middleware.cms_session_security.cms_session_security',
     'trustly.middleware.encrypted_access_filter.EncryptedAccessFilter',
     'trustly.middleware.service_ready_middleware.service_ready_middleware',
+
 ]
+LOGIN_URL = '/login'
 
 ROOT_URLCONF = 'trustly.urls'
 WSGI_APPLICATION = 'trustly.wsgi.application'

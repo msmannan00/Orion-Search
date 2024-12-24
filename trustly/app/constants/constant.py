@@ -27,6 +27,7 @@ class CONSTANTS:
   S_TEMPLATE_ERROR_WEBSITE_PATH = "trustly/user/server/error/error.html"
   S_TEMPLATE_SITEMAP_WEBSITE_PATH = "trustly/user/interactive/sitemap/sitemap.html"
   S_TEMPLATE_SEARCH_WEBSITE_PATH = "trustly/user/interactive/search/search.html"
+  S_TEMPLATE_LOGIN_PATH = "trustly/user/interactive/login/index.html"
 
   # Direct Links
   S_TEMPLATE_LOGIN_SHORT = "/cms/login"

@@ -1,9 +1,9 @@
 from django.urls import path
 from trustly import views, api
-
+from django.contrib import admin
 
 urlpatterns = [
-
+  path('admin/', admin.site.urls),
   # redirections
   path('', views.index, name='home'),
   path('privacy/', views.privacy, name='privacy'),
@@ -22,6 +22,7 @@ urlpatterns = [
   path('api/insight/', api.get_insight, name='api/insight'),
 
   path('api/search/', api.get_search_result, name='api/search'),
+  path('login', views.custom_login, name='custom_login'),
 
 ]
 
