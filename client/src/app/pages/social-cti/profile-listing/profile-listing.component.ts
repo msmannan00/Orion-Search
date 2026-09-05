@@ -669,7 +669,7 @@ export class SocialProfileListingComponent {
         return results;
       }
       updatedProfiles = currentProfiles.map(platform => isSamePlatform(platform, platformResult)
-        ? { ...platform, ...this.buildFetchedPlatformData(stateKey, data, hasData), section_status: { ...platform.section_status, [this.sectionOf(stateKey)]: 'completed' } }
+        ? { ...platform, ...this.buildFetchedPlatformData(stateKey, data, hasData, platform.profile_details), section_status: { ...platform.section_status, [this.sectionOf(stateKey)]: 'completed' } }
         : platform);
       return new Map(results).set(getProfileGroupKey(this.storageService.state.scanResults(), platformResult), updatedProfiles);
     });
@@ -681,7 +681,7 @@ export class SocialProfileListingComponent {
     }
   }
 
-  private buildFetchedPlatformData(stateKey: FetchStateKey, data: unknown, hasData: boolean): Partial<social_profile> {
+  private buildFetchedPlatformData(stateKey: FetchStateKey, data: unknown, hasData: boolean, previous?: social_profile['profile_details']): Partial<social_profile> {
     const propertyMap: Partial<Record<FetchStateKey, keyof social_profile>> = {
       profile: 'profile_details',
       onlinePresence: 'online_presence',
@@ -692,7 +692,7 @@ export class SocialProfileListingComponent {
       return {};
     }
 
-    const value = stateKey === 'profile' && hasData && data && typeof data === 'object' ? { ...(data as Record<string, unknown>), is_parsed: true } : data;
+    const value = stateKey === 'profile' && hasData && data && typeof data === 'object' ? { ...previous, ...(data as Record<string, unknown>), is_parsed: true } : data;
     return { [propertyName]: hasData ? value : null };
   }
 
