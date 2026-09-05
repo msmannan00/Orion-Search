@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Body, Depends, File, Form, Request, UploadFile
 
-from configs.app_dependency import get_current_user, license_required, role_required, status_required
+from configs.app_dependency import default_tenant_required, get_current_user, license_required, role_required, status_required
 from configs.limiter_dependency import limiter_dependency
 from orion.api.interactive.feeder_manager.feeder_manager import FeederManager
 from orion.api.interactive.feeder_manager.models.feeder_models import FeederOwnerTransferRequest, FeederScriptStatusUpdateRequest, FeederValueDeleteRequest
@@ -47,7 +47,7 @@ async def parser():
 @crawl_routes.get(
     "/api/profile/feeder/catalog",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def get_feeder_catalog(current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().get_catalog(current_user)
 
@@ -55,7 +55,7 @@ async def get_feeder_catalog(current_user=Depends(get_current_user)):
 @crawl_routes.get(
     "/api/profile/feeder/scripts",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def get_feeder_scripts(rule_key: str | None = None, entry_type: str | None = None, page: int = 1, limit: int = 1000, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().list_scripts(current_user, rule_key=rule_key, page=page, limit=limit, entry_type=entry_type)
 
@@ -63,7 +63,7 @@ async def get_feeder_scripts(rule_key: str | None = None, entry_type: str | None
 @crawl_routes.get(
     "/api/profile/feeder/users",
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def get_feeder_owner_users(_current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().list_owner_users()
 
@@ -71,7 +71,7 @@ async def get_feeder_owner_users(_current_user=Depends(get_current_user)):
 @crawl_routes.post(
     "/api/profile/feeder/scripts/clear-all",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def clear_feeder_scripts(rule_key: str, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().clear_scripts(rule_key, current_user)
 
@@ -79,7 +79,7 @@ async def clear_feeder_scripts(rule_key: str, current_user=Depends(get_current_u
 @crawl_routes.post(
     "/api/profile/feeder/scripts/enable-all",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def enable_feeder_scripts(rule_key: str, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().set_rule_enabled(rule_key, True, current_user)
 
@@ -87,7 +87,7 @@ async def enable_feeder_scripts(rule_key: str, current_user=Depends(get_current_
 @crawl_routes.post(
     "/api/profile/feeder/scripts/disable-all",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def disable_feeder_scripts(rule_key: str, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().set_rule_enabled(rule_key, False, current_user)
 
@@ -95,7 +95,7 @@ async def disable_feeder_scripts(rule_key: str, current_user=Depends(get_current
 @crawl_routes.post(
     "/api/profile/feeder/scripts/{script_id}/delete",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def delete_feeder_script(script_id: str, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().delete_script(script_id, current_user)
 
@@ -103,7 +103,7 @@ async def delete_feeder_script(script_id: str, current_user=Depends(get_current_
 @crawl_routes.post(
     "/api/profile/feeder/scripts/{script_id}/delete-value",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def delete_feeder_value(script_id: str, data: FeederValueDeleteRequest, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().delete_value(script_id, data, current_user)
 
@@ -111,7 +111,7 @@ async def delete_feeder_value(script_id: str, data: FeederValueDeleteRequest, cu
 @crawl_routes.post(
     "/api/profile/feeder/scripts/{script_id}/toggle",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def toggle_feeder_script(script_id: str, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().toggle_script_enabled(script_id, current_user)
 
@@ -119,7 +119,7 @@ async def toggle_feeder_script(script_id: str, current_user=Depends(get_current_
 @crawl_routes.post(
     "/api/profile/feeder/scripts/{script_id}/owner",
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def transfer_feeder_script_owner(script_id: str, data: FeederOwnerTransferRequest, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().transfer_script_owner(script_id, data, current_user)
 
@@ -127,7 +127,7 @@ async def transfer_feeder_script_owner(script_id: str, data: FeederOwnerTransfer
 @crawl_routes.post(
     "/api/profile/feeder/upload",
     include_in_schema=False,
-    dependencies=[Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def upload_feeder_script(rule_key: str = Form(...), mode: str = Form(...), values_text: str | None = Form(None), file: UploadFile | None = File(None), session_file: UploadFile | None = File(None), current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().upload_script(rule_key, mode, file, values_text, session_file, current_user)
 

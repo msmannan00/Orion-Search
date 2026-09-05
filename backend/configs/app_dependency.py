@@ -78,6 +78,12 @@ def role_required(required_roles: list[user_role]):
     return verify_role
 
 
+async def default_tenant_required(request: Request):
+    if not getattr(getattr(request.state, "tenant", None), "is_default", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
+    return True
+
+
 async def _authenticate_request(request: Request, token: str | None):
     user = await session_manager.get_instance().get_current_user(token)
     enforce_request_tenant_access(user, request)
@@ -130,7 +136,7 @@ async def case_management_required(current_user=Depends(get_current_user)):
         return True
 
     permissions = [_enum_value(permission) for permission in (current_user.permissions or [])]
-    if role == user_role.ANALYST.value and UserPermission.CASE_MANAGEMENT.value in permissions:
+    if role in (user_role.ANALYST.value, user_role.MEMBER.value) and UserPermission.CASE_MANAGEMENT.value in permissions:
         return True
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Case management permission required")
