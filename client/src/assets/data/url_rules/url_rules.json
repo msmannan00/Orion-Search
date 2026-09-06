@@ -56,20 +56,10 @@
     "path": "social/platform",
     "value_regex": "^https?://(?:[^/]+\\.)?dev\\.to(?:/.*)?$"
   },
-  "facebook": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?(?:facebook\\.com|fb\\.com|fb\\.me)(?:/.*)?$"
-  },
   "habr": {
     "rule_type": "shared",
     "path": "social/platform",
     "value_regex": "^https?://(?:[^/]+\\.)?habr\\.com(?:/.*)?$"
-  },
-  "hackernoon": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?hackernoon\\.com(?:/.*)?$"
   },
   "hashnode": {
     "rule_type": "shared",
@@ -101,11 +91,6 @@
     "path": "social/platform",
     "value_regex": "^https?://(?:[^/]+\\.)?snort\\.social(?:/.*)?$"
   },
-  "pleroma": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?pleroma\\.envs\\.net(?:/.*)?$"
-  },
   "primal": {
     "rule_type": "shared",
     "path": "social/platform",
@@ -115,11 +100,6 @@
     "rule_type": "shared",
     "path": "social/platform",
     "value_regex": "^https?://(?:old\\.reddit\\.com/(?:r/[A-Za-z0-9_]+/?|search/\\?q=[^&#]+&type=communities(?:&.*)?)|(?:[^/]+\\.)?reddittorjg6rue252oqsxryoxengawnmo46qy4kyii5wtqnwfj4ooad\\.onion(?:/.*)?)$"
-  },
-  "stackoverflow": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?stackoverflow\\.com(?:/.*)?$"
   },
   "substack": {
     "rule_type": "shared",
