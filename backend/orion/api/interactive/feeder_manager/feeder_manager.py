@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -426,6 +427,7 @@ class FeederManager:
         now = datetime.now(timezone.utc)
         status = data.status.strip().lower()
         message = (data.message or "").strip()
+        message = self._strip_embedding_from_message(message)
         if len(message) > 5826:
             message = message[:5826]
         message = message or None
@@ -489,3 +491,19 @@ class FeederManager:
             await self._engine.save(record)
             seen_ids.add(str(record.id))
         return {"message": f"Feeder script marked as {status} successfully"}
+
+    def _strip_embedding_from_message(self, message):
+        if not message:
+            return message
+        try:
+            parsed = json.loads(message)
+        except (ValueError, TypeError):
+            return message
+        return json.dumps(self._strip_embedding_field(parsed), ensure_ascii=False)
+
+    def _strip_embedding_field(self, value):
+        if isinstance(value, list):
+            return [self._strip_embedding_field(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self._strip_embedding_field(item) for key, item in value.items() if key != "m_embedding"}
+        return value
