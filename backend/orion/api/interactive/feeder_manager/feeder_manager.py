@@ -371,7 +371,7 @@ class FeederManager:
                 if not candidate_record:
                     continue
                 rule = constant.url_rules.get(candidate_record.rule_key or "") or {}
-                if str(rule.get("rule_type") or "") in {"unique", "generic"}:
+                if str(rule.get("rule_type") or "") in {"unique", "generic", "shared"}:
                     record = candidate_record
                     break
         if not record and lookup_url:
