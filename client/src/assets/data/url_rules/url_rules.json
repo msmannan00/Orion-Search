@@ -121,11 +121,6 @@
     "path": "social/platform",
     "value_regex": "^https?://(?:[^/]+\\.)?(?:youtube\\.com|youtu\\.be)(?:/.*)?$"
   },
-  "douban": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?douban\\.com(?:/.*)?$"
-  },
   "gettr": {
     "rule_type": "shared",
     "path": "social/platform",

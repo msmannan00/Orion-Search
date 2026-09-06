@@ -336,7 +336,6 @@ const SOCIAL_PLATFORM_FILTER = {
     { key: "reddit", label: "Reddit" },
     { key: "stackoverflow", label: "Stack Overflow" },
     { key: "substack", label: "Substack" },
-    { key: "douban", label: "Douban" },
     { key: "gettr", label: "Gettr" },
     { key: "imgur", label: "Imgur" },
     { key: "pinterest", label: "Pinterest" },

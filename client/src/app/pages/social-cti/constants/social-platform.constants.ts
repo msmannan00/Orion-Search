@@ -2,7 +2,6 @@ export const VERIFIED_SOCIAL_PLATFORM_KEYS = [
   'blogger',
   'bluesky',
   'devto',
-  'douban',
   'facebook',
   'gettr',
   'habr',
