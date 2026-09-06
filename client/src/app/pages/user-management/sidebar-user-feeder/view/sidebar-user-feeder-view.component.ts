@@ -753,12 +753,70 @@ export class SidebarUserFeederViewComponent implements OnChanges {
       return '-';
     }
 
+    const cleaned = this.stripRawEmbedding(message);
+    const parsed = this.parseLenientJson(cleaned);
+    if (parsed !== undefined) {
+      return JSON.stringify(this.stripEmbeddingField(parsed), null, 2);
+    }
+    return cleaned;
+  }
+
+  private stripRawEmbedding(message: string): string {
+    return message.replace(/,?\s*"m_embedding"\s*:\s*\[[^\]]*(?:\]|$)/g, '');
+  }
+
+  private parseLenientJson(text: string): unknown {
     try {
-      return JSON.stringify(this.stripEmbeddingField(JSON.parse(message)), null, 2);
+      return JSON.parse(text);
     }
     catch {
-      return message;
+      try {
+        return JSON.parse(this.balanceJson(text));
+      }
+      catch {
+        return undefined;
+      }
     }
+  }
+
+  private balanceJson(text: string): string {
+    const closers: string[] = [];
+    let inString = false;
+    let escaped = false;
+    for (const char of text) {
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        }
+        else if (char === '\\') {
+          escaped = true;
+        }
+        else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (char === '"') {
+        inString = true;
+      }
+      else if (char === '{') {
+        closers.push('}');
+      }
+      else if (char === '[') {
+        closers.push(']');
+      }
+      else if (char === '}' || char === ']') {
+        closers.pop();
+      }
+    }
+    let result = text.replace(/,\s*$/, '');
+    if (inString) {
+      result += '"';
+    }
+    while (closers.length) {
+      result += closers.pop();
+    }
+    return result;
   }
 
   private stripEmbeddingField(value: unknown): unknown {
