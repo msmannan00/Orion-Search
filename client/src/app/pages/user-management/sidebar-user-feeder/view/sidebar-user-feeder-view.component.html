@@ -127,9 +127,11 @@
                 </td>
                 <td class="px-4 py-3">
                   <div class="flex justify-end gap-2">
+                    @if (getValueStatus(value) !== 'pending') {
                       <button [attr.data-testid]="'feeder-value-view-button-' + rowIndex" type="button" class="inline-flex h-[32px] items-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-3 text-[11px] font-semibold text-[var(--color-text1)] transition hover:bg-[var(--color-blue-710)] [body.light-theme_&]:bg-[#edf4fb] [body.light-theme_&]:text-[#23415a] [body.light-theme_&]:hover:bg-[#dfeefb]" (click)="toggleValuePreview(value)">
-                      {{ (selectedValueUrl === value.url ? 'Hide' : 'View') | translate }}
-                    </button>
+                        {{ (selectedValueUrl === value.url ? 'Hide' : 'View') | translate }}
+                      </button>
+                    }
                     <button [attr.data-testid]="'feeder-value-delete-button-' + rowIndex" type="button" class="inline-flex h-[32px] w-[32px] items-center justify-center rounded-[8px] border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text1)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [title]="'Delete Value' | translate" (click)="openConfirmation('deleteValue', valuesRecord, value.url)">
                       <svg viewBox="0 0 24 24" class="h-[15px] w-[15px] fill-none stroke-current" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M3 6h18"></path>
@@ -184,9 +186,11 @@
             </div>
             <div class="px-3 py-2">
               <div class="flex justify-end gap-2">
-                <button type="button" class="inline-flex h-[32px] items-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-3 text-[11px] font-semibold text-[var(--color-text1)] transition hover:bg-[var(--color-blue-710)] [body.light-theme_&]:bg-[#edf4fb] [body.light-theme_&]:text-[#23415a] [body.light-theme_&]:hover:bg-[#dfeefb]" (click)="toggleValuePreview(value)">
-                  {{ (selectedValueUrl === value.url ? 'Hide' : 'View') | translate }}
-                </button>
+                @if (getValueStatus(value) !== 'pending') {
+                  <button type="button" class="inline-flex h-[32px] items-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-3 text-[11px] font-semibold text-[var(--color-text1)] transition hover:bg-[var(--color-blue-710)] [body.light-theme_&]:bg-[#edf4fb] [body.light-theme_&]:text-[#23415a] [body.light-theme_&]:hover:bg-[#dfeefb]" (click)="toggleValuePreview(value)">
+                    {{ (selectedValueUrl === value.url ? 'Hide' : 'View') | translate }}
+                  </button>
+                }
                 <button [attr.data-testid]="'feeder-value-delete-button-' + rowIndex" type="button" class="inline-flex h-[32px] w-[32px] items-center justify-center rounded-[8px] border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text1)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [title]="'Delete Value' | translate" (click)="openConfirmation('deleteValue', valuesRecord, value.url)">
                   <svg viewBox="0 0 24 24" class="h-[15px] w-[15px] fill-none stroke-current" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 6h18"></path>
@@ -271,7 +275,7 @@
           </thead>
           <tbody>
             @for (script of displayedScripts; track script.id; let rowIndex = $index) {
-              <tr [attr.data-testid]="'feeder-script-row-' + script.file_name" data-feeder-script-row="true" data-table-row-hover="custom" class="cursor-pointer select-none border-t border-[var(--color-border)] text-sm text-[var(--color-text1)] hover:bg-[rgba(125,211,252,0.14)] [body.light-theme_&]:hover:bg-sky-50" [ngClass]="{ 'bg-[rgba(125,211,252,0.10)] border-t-[color:rgba(125,211,252,0.22)] [body.light-theme_&]:border-t-sky-600/30 [body.light-theme_&]:bg-sky-100': selectedScript?.id === script.id || isScriptSelected(script) }" (mousedown)="beginScriptSelection($event, script)" (mouseover)="extendScriptSelection(script)" (mouseleave)="leaveScriptSelection(script)" (dragstart)="$event.preventDefault()">
+              <tr [attr.data-testid]="'feeder-script-row-' + script.file_name" data-feeder-script-row="true" class="cursor-pointer select-none border-t border-[var(--color-border)] text-sm text-[var(--color-text1)] hover:bg-[rgba(125,211,252,0.14)] [body.light-theme_&]:hover:bg-sky-50" [ngClass]="{ 'bg-[rgba(125,211,252,0.10)] border-t-[color:rgba(125,211,252,0.22)] [body.light-theme_&]:border-t-sky-600/30 [body.light-theme_&]:bg-sky-100': selectedScript?.id === script.id || isScriptSelected(script) }" (mousedown)="beginScriptSelection($event, script)" (mouseover)="extendScriptSelection(script)" (mouseleave)="leaveScriptSelection(script)" (dragstart)="$event.preventDefault()">
                 <td class="px-4 py-2.5" [ngClass]="script.enabled ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-slate-700'">
                   <div class="flex items-center gap-2 font-mono text-[12px] text-[var(--color-text4)]">
                     <span data-feeder-text-selectable="true" class="select-text">{{ ((currentPage - 1) * 1000) + rowIndex + 1 }}</span>

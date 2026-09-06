@@ -31,7 +31,7 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
   private allCategoryReports: Record<string, CountryInsightReport[]> = {};
   private rotationTimer: number | null = null;
   private worldJsonPollTimer: number | null = null;
-  private pendingFrame: number | null = null;
+  private resizeObserver: ResizeObserver | null = null;
   private themeObserver: MutationObserver | null = null;
   private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private mapG!: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -103,18 +103,14 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.observeThemeChanges();
-    this.pendingFrame = window.requestAnimationFrame(() => {
-      this.pendingFrame = null;
-      this.appService.loadWorldJson();
-      this.waitForWorldJsonAndRender();
-    });
+    this.appService.loadWorldJson();
+    this.setupResizeObserver();
+    this.waitForWorldJson();
   }
 
   ngOnDestroy(): void {
-    if (this.pendingFrame !== null) {
-      window.cancelAnimationFrame(this.pendingFrame);
-      this.pendingFrame = null;
-    }
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.stopWorldJsonPoll();
     this.themeObserver?.disconnect();
     this.themeObserver = null;
@@ -124,23 +120,47 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
 
   @HostListener('window:resize')
   onResize(): void {
+    if (this.resizeObserver) {
+      return;
+    }
+    this.renderIfReady();
+  }
+
+  private setupResizeObserver(): void {
+    if (typeof ResizeObserver === 'undefined' || !this.chartContainer) {
+      return;
+    }
+    this.resizeObserver = new ResizeObserver(() => {
+      this.renderIfReady();
+    });
+    this.resizeObserver.observe(this.chartContainer.nativeElement);
+  }
+
+  private renderIfReady(): void {
     if (!this.appService.worldJson()) {
       return;
     }
+    const element = this.chartContainer?.nativeElement;
+    if (!element || !element.offsetWidth || !element.offsetHeight) {
+      return;
+    }
+    const firstRender = !this.svg;
     this.createChart();
-  }
-
-  private waitForWorldJsonAndRender(): void {
-    if (this.appService.worldJson()) {
-      this.stopWorldJsonPoll();
-      this.createChart();
+    if (firstRender) {
       this.startCategoryRotation();
       this.isMapLoading.set(false);
+    }
+  }
+
+  private waitForWorldJson(): void {
+    if (this.appService.worldJson()) {
+      this.stopWorldJsonPoll();
+      this.renderIfReady();
       return;
     }
     this.worldJsonPollTimer = window.setTimeout(() => {
       this.worldJsonPollTimer = null;
-      this.waitForWorldJsonAndRender();
+      this.waitForWorldJson();
     }, 50);
   }
 
