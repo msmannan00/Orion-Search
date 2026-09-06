@@ -84,15 +84,19 @@ export const httpInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
   }), catchError((error) => {
     if (error instanceof HttpErrorResponse && error.status === 503 && !authReq.url.includes('admin/backups/status')) {
       const errorBody = error.error && typeof error.error === 'object' ? error.error as Record<string, unknown> : null;
-      if (WARMING_UP_DETAILS.has(String(errorBody?.detail ?? ''))) {
+      const detail = String(errorBody?.detail ?? '');
+      if (WARMING_UP_DETAILS.has(detail)) {
         setWarmingUp(true);
         return throwError(() => error);
       }
-      if (!maintenancePageLoading) {
-        maintenancePageLoading = true;
-        window.location.replace('/static/maintenance.html');
+      const isGatewayMaintenance = !detail || (error.headers?.get('content-type') ?? '').includes('text/html');
+      if (isGatewayMaintenance) {
+        if (!maintenancePageLoading) {
+          maintenancePageLoading = true;
+          window.location.replace('/static/maintenance.html');
+        }
+        return throwError(() => error);
       }
-      return throwError(() => error);
     }
     const authService = injector.get(AuthService, null);
     const isSessionProbe = authReq.url.includes('api/get/tenant/node');
