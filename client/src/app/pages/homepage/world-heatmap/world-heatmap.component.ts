@@ -1,4 +1,5 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, NgZone, OnInit, OnDestroy, input, signal, ChangeDetectionStrategy } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -25,6 +26,12 @@ type WorldTopology = Topology<{ countries: GeometryCollection }>;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './world-heatmap.component.html',
+  animations: [
+    trigger('mapLoaderFade', [
+      transition(':enter', [style({ opacity: 0 }), animate('90ms ease-out', style({ opacity: 1 }))]),
+      transition(':leave', [animate('300ms ease-in', style({ opacity: 0 }))]),
+    ]),
+  ],
 })
 export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
   @ViewChild('mapContainer') private chartContainer!: ElementRef<HTMLElement>;
@@ -32,6 +39,8 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
   private rotationTimer: number | null = null;
   private worldJsonPollTimer: number | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private firstRenderScheduled = false;
+  private firstRenderFrame: number | null = null;
   private themeObserver: MutationObserver | null = null;
   private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private mapG!: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -111,6 +120,10 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    if (this.firstRenderFrame !== null) {
+      window.cancelAnimationFrame(this.firstRenderFrame);
+      this.firstRenderFrame = null;
+    }
     this.stopWorldJsonPoll();
     this.themeObserver?.disconnect();
     this.themeObserver = null;
@@ -144,12 +157,27 @@ export class WorldHeatmapComponent implements AfterViewInit, OnInit, OnDestroy {
     if (!element || !element.offsetWidth || !element.offsetHeight) {
       return;
     }
-    const firstRender = !this.svg;
-    this.createChart();
-    if (firstRender) {
-      this.startCategoryRotation();
-      this.isMapLoading.set(false);
+    if (this.svg) {
+      this.createChart();
+      return;
     }
+    if (this.firstRenderScheduled) {
+      return;
+    }
+    this.firstRenderScheduled = true;
+    this.firstRenderFrame = window.requestAnimationFrame(() => {
+      this.firstRenderFrame = window.requestAnimationFrame(() => {
+        this.firstRenderFrame = null;
+        const target = this.chartContainer?.nativeElement;
+        if (!target || !target.offsetWidth || !target.offsetHeight || !this.appService.worldJson()) {
+          this.firstRenderScheduled = false;
+          return;
+        }
+        this.createChart();
+        this.startCategoryRotation();
+        this.isMapLoading.set(false);
+      });
+    });
   }
 
   private waitForWorldJson(): void {
