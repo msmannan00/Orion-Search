@@ -297,15 +297,14 @@ export class SidebarUserFeederViewComponent implements OnChanges {
 
   deleteAllValues(): void {
     const record = this.valuesRecord;
-    const urls = this.rawValues.map((value) => value.url.trim()).filter(Boolean);
-    if (!record || !urls.length) {
+    if (!record || !this.rawValues.length) {
       return;
     }
 
-    forkJoin(urls.map((url) => this.feederService.deleteValue(record.id, url)))
+    this.feederService.deleteAllValues(record.id)
       .subscribe({
-        next: () => {
-          this.messageNotificationService.show(this.translationService.translate('Values deleted successfully'), 'success');
+        next: (response) => {
+          this.messageNotificationService.show(response?.message ?? this.translationService.translate('Values deleted successfully'), 'success');
           this.selectedValueUrl = null;
           this.currentPage = 1;
           this.loadScripts();

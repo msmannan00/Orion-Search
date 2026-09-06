@@ -109,6 +109,14 @@ async def delete_feeder_value(script_id: str, data: FeederValueDeleteRequest, cu
 
 
 @crawl_routes.post(
+    "/api/profile/feeder/scripts/{script_id}/delete-all-values",
+    include_in_schema=False,
+    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
+async def delete_all_feeder_values(script_id: str, current_user=Depends(get_current_user)):
+    return await FeederManager.get_instance().delete_all_values(script_id, current_user)
+
+
+@crawl_routes.post(
     "/api/profile/feeder/scripts/{script_id}/toggle",
     include_in_schema=False,
     dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )

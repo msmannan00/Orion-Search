@@ -217,6 +217,24 @@ class FeederManager:
         )
         return {"message": "Value deleted successfully"}
 
+    async def delete_all_values(self, script_id: str, current_user):
+        record = await self._helper.get_script_record(script_id, current_user)
+        if not (record.values or []):
+            raise HTTPException(status_code=400, detail="Only value entries support value deletion")
+
+        if record.entry_kind == "values":
+            await self._engine.delete(record)
+        else:
+            record.values = []
+            await self._engine.save(record)
+
+        await AuditLogManager.get_instance().register(
+            str(current_user.tenant_uuid),
+            str(current_user.id),
+            "feeder_rule_value_deleted",
+        )
+        return {"message": "All values deleted successfully"}
+
     async def clear_scripts(self, rule_key: str, current_user):
         if not rule_key:
             raise HTTPException(status_code=400, detail="Rule is required")
