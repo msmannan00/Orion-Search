@@ -18,6 +18,7 @@ from orion.api.interactive.feeder_manager.models.feeder_models import (
     FeederUploadResponse,
 )
 from orion.constants import constant
+from orion.services.log_manager.log_controller import log
 from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_auth_models import LicenseName, UserStatus, db_user_account, user_role
 from orion.services.mongo_manager.shared_model.db_feeder_script_model import osint_feeder
@@ -401,6 +402,7 @@ class FeederManager:
                 seen_ids.add(str(candidate_record.id))
 
         if not records:
+            log.g().w(f"FEEDER STATUS 404 unregistered script: name='{lookup_name}' url='{lookup_url}'")
             raise HTTPException(status_code=404, detail="Script not found")
 
         now = datetime.now(timezone.utc)
