@@ -24,6 +24,17 @@
           <path d="M21 3v6h-6"></path>
         </svg>
       </button>
+      @if (entryType === 'values') {
+        <button data-testid="feeder-clear-all-values-button" type="button" class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-none border-0 border-l border-[rgba(125,211,252,0.18)] bg-transparent text-[#fca5a5] transition hover:bg-[rgba(125,211,252,0.10)] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:flex-1 [body.light-theme_&]:text-[#b42318] [body.light-theme_&]:hover:bg-[#dfeefb]" [title]="'Delete All' | translate" [disabled]="!rawValues.length" (click)="openConfirmation('deleteAllValues')">
+          <svg viewBox="0 0 24 24" class="h-[15px] w-[15px] fill-none stroke-current" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14H6L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+        </button>
+      }
       @if (entryType !== 'values') {
         <button data-testid="feeder-enable-all-button" data-feeder-selection-action="true" type="button" class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-none border-0 border-l border-[rgba(125,211,252,0.18)] bg-transparent text-[#8ee6ab] transition hover:bg-[rgba(125,211,252,0.10)] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:flex-1 [body.light-theme_&]:text-[#166534] [body.light-theme_&]:hover:bg-[#dfeefb]" [title]="'Enable All' | translate" [disabled]="!selectedRuleKey || !scripts.length || !canBulkToggle()" (click)="openConfirmation('enableAll')">
           <svg viewBox="0 0 24 24" class="h-[16px] w-[16px] fill-none stroke-current" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -47,7 +47,7 @@ export class SidebarUserFeederViewComponent implements OnChanges {
   ownerDialogScript: FeederScriptItem | null = null;
   isConfirmationOpen = false;
   confirmationMessage = '';
-  pendingAction: { type: 'clear' | 'delete' | 'toggle' | 'enableAll' | 'disableAll' | 'deleteValue'; script?: FeederScriptItem | null; value?: string | null; selectedIds?: string[]; } | null = null;
+  pendingAction: { type: 'clear' | 'delete' | 'toggle' | 'enableAll' | 'disableAll' | 'deleteValue' | 'deleteAllValues'; script?: FeederScriptItem | null; value?: string | null; selectedIds?: string[]; } | null = null;
   hasLoadedScripts = false;
   currentPage = 1;
   totalPages = 1;
@@ -295,6 +295,27 @@ export class SidebarUserFeederViewComponent implements OnChanges {
       });
   }
 
+  deleteAllValues(): void {
+    const record = this.valuesRecord;
+    const urls = this.rawValues.map((value) => value.url.trim()).filter(Boolean);
+    if (!record || !urls.length) {
+      return;
+    }
+
+    forkJoin(urls.map((url) => this.feederService.deleteValue(record.id, url)))
+      .subscribe({
+        next: () => {
+          this.messageNotificationService.show(this.translationService.translate('Values deleted successfully'), 'success');
+          this.selectedValueUrl = null;
+          this.currentPage = 1;
+          this.loadScripts();
+        },
+        error: (error) => {
+          this.messageNotificationService.show(error?.error?.detail ?? this.translationService.translate('Failed to delete value'));
+        }
+      });
+  }
+
   toggleScriptEnabled(script: FeederScriptItem): void {
     if (!this.canToggleScript(script)) {
       return;
@@ -518,22 +539,24 @@ export class SidebarUserFeederViewComponent implements OnChanges {
     this.applyLocalSearch();
   }
 
-  openConfirmation(action: 'clear' | 'delete' | 'toggle' | 'enableAll' | 'disableAll' | 'deleteValue', script?: FeederScriptItem | null, value?: string): void {
+  openConfirmation(action: 'clear' | 'delete' | 'toggle' | 'enableAll' | 'disableAll' | 'deleteValue' | 'deleteAllValues', script?: FeederScriptItem | null, value?: string): void {
     const selectedIds = action === 'clear' || action === 'enableAll' || action === 'disableAll'
       ? this.getSelectedScripts().map((selectedScript) => selectedScript.id)
       : [];
     this.pendingAction = { type: action, script: script ?? null, value: value ?? null, selectedIds };
     this.confirmationMessage = action === 'clear'
       ? 'Are you sure you want to delete all feeder entries for the selected rule?'
-      : action === 'enableAll'
-        ? 'Are you sure you want to enable all feeder entries for the selected rule?'
-        : action === 'disableAll'
-          ? 'Are you sure you want to disable all feeder entries for the selected rule?'
-          : action === 'deleteValue'
-            ? `Are you sure you want to delete this value${value ? `: ${value}` : ''}?`
-            : action === 'delete'
-              ? `Are you sure you want to delete ${this.formatDisplayName(script)}?`
-              : `Are you sure you want to ${script?.enabled ? 'disable' : 'enable'} ${this.formatDisplayName(script)}?`;
+      : action === 'deleteAllValues'
+        ? 'Are you sure you want to delete all values for the selected rule?'
+        : action === 'enableAll'
+          ? 'Are you sure you want to enable all feeder entries for the selected rule?'
+          : action === 'disableAll'
+            ? 'Are you sure you want to disable all feeder entries for the selected rule?'
+            : action === 'deleteValue'
+              ? `Are you sure you want to delete this value${value ? `: ${value}` : ''}?`
+              : action === 'delete'
+                ? `Are you sure you want to delete ${this.formatDisplayName(script)}?`
+                : `Are you sure you want to ${script?.enabled ? 'disable' : 'enable'} ${this.formatDisplayName(script)}?`;
     this.isConfirmationOpen = true;
   }
 
@@ -564,6 +587,10 @@ export class SidebarUserFeederViewComponent implements OnChanges {
     }
     if (action.type === 'deleteValue' && action.script && action.value) {
       this.deleteValue(action.script, action.value);
+      return;
+    }
+    if (action.type === 'deleteAllValues') {
+      this.deleteAllValues();
       return;
     }
     if (action.type === 'toggle' && action.script) {
