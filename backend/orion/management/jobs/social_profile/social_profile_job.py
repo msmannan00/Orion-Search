@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import tempfile
+import time
 from orion.helper_manager.env_handler import env_handler
 import urllib.request
 from datetime import datetime
@@ -9,6 +10,8 @@ from typing import Any
 from orion.api.interactive.profile_manager.profile_manager import ProfileManager
 from orion.api.interactive.social_manager.social_model import social_model
 from orion.services.log_manager.log_controller import log
+from orion.services.redis_manager.redis_controller import redis_controller
+from orion.services.redis_manager.redis_enums import REDIS_COMMANDS, REDIS_KEYS
 from orion.services.mongo_manager.shared_model.db_social_profile_management_model import (
     ManagedSocialProfile,
     SocialPersona,
@@ -18,6 +21,8 @@ from orion.services.mongo_manager.shared_model.db_social_profile_management_mode
 
 class social_profile_job:
     __instance = None
+    POST_TASK_TIMEOUT_SECONDS = 300
+    AD_DETECTION_TASK_TIMEOUT_SECONDS = 900
 
     @staticmethod
     def get_instance():
@@ -69,7 +74,7 @@ class social_profile_job:
                         skipped_profile_count += 1
                         continue
 
-                    asyncio.create_task(self._run_profile_purposes(profile, persona, session_state, record.user_id))
+                    await self._run_profile_purposes(profile, persona, session_state, record.user_id)
                     processed_profile_count += 1
                 except Exception as exc:
                     error_count += 1
@@ -86,18 +91,19 @@ class social_profile_job:
         }
 
     async def _wait_for_task(self, task_id: str, timeout_seconds: int = 300):
-        if not hasattr(self, 'task_events'):
-            self.task_events = {}
-        event = asyncio.Event()
-        self.task_events[task_id] = event
-        
-        try:
-            await asyncio.wait_for(event.wait(), timeout=timeout_seconds)
-            log.g().i(f"Task {task_id} completed successfully.")
-        except asyncio.TimeoutError:
-            log.g().w(f"Task {task_id} timed out after {timeout_seconds}s. Starting next purpose.")
-        finally:
-            self.task_events.pop(task_id, None)
+        redis_key = f"{REDIS_KEYS.SOCIAL_AUTOMATION_TASK}:{task_id}"
+        redis_instance = redis_controller.getInstance()
+        deadline = time.monotonic() + timeout_seconds
+
+        while time.monotonic() < deadline:
+            if await redis_instance.invoke_trigger(REDIS_COMMANDS.S_GET_BOOL, [redis_key, None]):
+                await redis_instance.invoke_trigger(REDIS_COMMANDS.S_DELETE_KEY, [redis_key])
+                log.g().i(f"Task {task_id} completed successfully.")
+                return
+            await asyncio.sleep(1)
+
+        await redis_instance.invoke_trigger(REDIS_COMMANDS.S_DELETE_KEY, [redis_key])
+        log.g().w(f"Task {task_id} timed out after {timeout_seconds}s. Starting next purpose.")
 
     async def _run_profile_purposes(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], user_id: str):
         import uuid
@@ -109,13 +115,18 @@ class social_profile_job:
             else:
                 base_url = "http://trusted-web-main:8070"
             cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
-            
+
             if purpose == SocialProfilePurpose.POSTING:
                 await self.run_posting(profile, persona, session_state, cb_url, user_id)
+                timeout_seconds = self.POST_TASK_TIMEOUT_SECONDS
             elif purpose == SocialProfilePurpose.AD_MONITORING:
                 await self.run_ad_monitoring(profile, persona, session_state, cb_url, user_id)
-                
-            await self._wait_for_task(task_id, timeout_seconds=300)
+                timeout_seconds = self.AD_DETECTION_TASK_TIMEOUT_SECONDS
+            else:
+                # Nothing was dispatched, so there is no callback to wait for.
+                continue
+
+            await self._wait_for_task(task_id, timeout_seconds=timeout_seconds)
 
     async def run_posting(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], callback_url: str, user_id: str = "" ):
         log.g().i(f"Running posting for profile {profile.profile_id} on {profile.platform}")

@@ -11,12 +11,13 @@ from configs.auth_cookie import token_from_request
 from orion.helper_manager.env_handler import env_handler
 from orion.services.mongo_manager.shared_model.db_auth_models import UserStatus, user_role
 from orion.services.redis_manager.redis_controller import redis_controller
-from orion.services.redis_manager.redis_enums import REDIS_COMMANDS
+from orion.services.redis_manager.redis_enums import REDIS_COMMANDS, REDIS_KEYS
 from orion.services.session_manager.session_manager import session_manager
 
 public_routes = APIRouter()
 STEALERLOG_SEARCH_LIMIT = 5
 STEALERLOG_SEARCH_TTL_SECONDS = 86400
+AUTOMATION_TASK_SIGNAL_TTL_SECONDS = 900
 
 
 def cookie_required(request: Request):
@@ -114,10 +115,7 @@ async def automation_callback(task_id: str = None, payload: dict = Body(...)):
             log.g().e(f"Failed to store automation result for task {task_id}: {exc}")
 
     if task_id:
-        from orion.management.jobs.social_profile.social_profile_job import social_profile_job
-        job = social_profile_job.get_instance()
-        if hasattr(job, 'task_events') and task_id in job.task_events:
-            job.task_events[task_id].set()
+        await redis_controller.getInstance().invoke_trigger(REDIS_COMMANDS.S_SET_INT, [f"{REDIS_KEYS.SOCIAL_AUTOMATION_TASK}:{task_id}", 1, AUTOMATION_TASK_SIGNAL_TTL_SECONDS])
 
     return {"status": "success"}
 
