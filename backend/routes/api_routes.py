@@ -10,6 +10,7 @@ from configs.app_dependency import (
     _scan_domain_with_type,
     _validate_public_scan_target,
     admin_or_enterprise_required,
+    dismiss_result_required,
     license_required,
     role_required,
     status_required,
@@ -41,6 +42,8 @@ from orion.api.server.crawl_manager.class_model.ip_scan_request_model import IPS
 from orion.api.server.crawl_manager.class_model.log_model import SiemSearchRequestModel, SiemSearchResponseModel
 from orion.api.server.crawl_manager.class_model.social_scrape_request_model import SocialScrapeRequest
 from orion.services.mongo_manager.shared_model.db_scan_job_model import ScanJobCreateRequest, ScanJobDetailResponse, ScanJobListResponse, ScanJobSeenRequest
+from orion.services.mongo_manager.shared_model.db_tenant_model import ResultDismissRequest, DismissedIocType
+from orion.api.interactive.tenant_manager.tenant_manager import TenantManager
 from orion.services.mongo_manager.shared_model.db_takedown_request_model import TakedownCreateRequest, TakedownDecisionRequest, TakedownListResponse
 from orion.api.server.crawl_manager.crawl_model import crawl_model
 from orion.api.server.entity_manager.entity_manager import entity_manager
@@ -384,7 +387,19 @@ async def get_insight():
     dependencies=STEALER_LOG_DEPS)
 async def search_stealer_iocs(param: search_credential_param_model = Body(...), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().register(str(current_user.tenant_uuid), str(current_user.id), param.model_dump_json())
-    return await search_model.getInstance().search_stealer_iocs(param)
+    return await search_model.getInstance().search_stealer_iocs(param, current_user)
+
+
+@api_routes.post(
+    "/api/search/result/dismiss",
+    include_in_schema=False,
+    dependencies=[Depends(role_required(SCAN_ROLE_DEPS)), Depends(dismiss_result_required)])
+async def dismiss_result(payload: ResultDismissRequest = Body(...), current_user=Depends(get_current_user)):
+    try:
+        dismissed_ioc_type = DismissedIocType(payload.type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid dismiss type")
+    return await TenantManager.get_instance().dismiss_stealer_log(str(current_user.tenant_uuid), payload.hash, str(current_user.id), dismissed_ioc_type)
 
 
 @api_routes.post(

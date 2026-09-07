@@ -19,6 +19,9 @@ from orion.services.elastic_manager.elastic_controller import elastic_controller
 from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
 from orion.api.interactive.search_manager.search_query_generator import search_query_generator
 from orion.api.interactive.search_manager.search_enums import SEARCH_CONFIG
+from bson import ObjectId
+from orion.services.mongo_manager.mongo_controller import mongo_controller
+from orion.services.mongo_manager.shared_model.db_tenant_model import db_tenant_model, DismissedIocType
 
 
 class search_model:
@@ -420,7 +423,7 @@ class search_model:
 
         return grouped_consolidated_search_callback_model(**results)
 
-    async def search_stealer_iocs(self, param: search_credential_param_model):
+    async def search_stealer_iocs(self, param: search_credential_param_model, current_user=None):
 
         document, data_filter  = search_query_generator().on_search_stealer_iocs(param)
 
@@ -442,11 +445,45 @@ class search_model:
             ]
             response.Result = filtered_results
 
+        if current_user is not None and response and getattr(response, "Result", None):
+            dismissed_hashes = await self._mark_dismissed_stealer_logs(response.Result, str(current_user.tenant_uuid), DismissedIocType.STEALER_LOG)
+            if getattr(param, "hide_dismissed", True) and dismissed_hashes:
+                response.Result = [item for item in response.Result if not getattr(item, "dismissed", False)]
+
         page = getattr(param, "page", 1) or 1
         size = getattr(param, "size", None) or (100 if not param.ioc else 500)
         response.Page_Count = page + 1 if raw_result_count >= size else (page if raw_result_count > 0 else max(1, page - 1))
 
         return self._enrich_bin_results(response)
+
+    async def _mark_dismissed_stealer_logs(self, results: list, tenant_id: str, dismissed_ioc_type: DismissedIocType) -> set:
+        page_hashes = list({str(getattr(item, "hash", "") or "") for item in results if getattr(item, "hash", None)})
+        if not page_hashes or not ObjectId.is_valid(tenant_id):
+            return set()
+
+        engine = mongo_controller.get_instance().get_engine()
+        collection = engine.get_collection(db_tenant_model)
+        cursor = collection.aggregate([
+            {"$match": {"_id": ObjectId(tenant_id)}},
+            {"$project": {"_id": 0, "dismissed_iocs": {
+                "$filter": {
+                    "input": {"$ifNull": ["$dismissed_iocs", []]},
+                    "cond": {
+                        "$and": [
+                            {"$in": ["$$this.hash", page_hashes]},
+                            {"$eq": ["$$this.type", dismissed_ioc_type.value]},
+                        ]
+                    },
+                }
+            }}},
+        ])
+        tenant_doc = await cursor.to_list(length=1)
+        dismissed_hashes = {entry["hash"] for entry in tenant_doc[0]["dismissed_iocs"]} if tenant_doc else set()
+
+        for item in results:
+            item.dismissed = str(getattr(item, "hash", "") or "") in dismissed_hashes
+
+        return dismissed_hashes
 
     async def extract_ioc_from_file(self, file_content: bytes, filename: str, user_id: str = "system"):
 

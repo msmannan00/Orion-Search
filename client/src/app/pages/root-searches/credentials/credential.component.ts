@@ -26,6 +26,10 @@ import { DomainIndexSidebarComponent } from './domain-index-sidebar/domain-index
 import { ScrollTopComponent } from '../../../shared/partials/scroll-top/scroll-top.component';
 import { AiToolRoutingService } from '../../../shared/services/ai-tool-routing.service';
 import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
+import { ApiService } from '../../../shared/services/api.service';
+import { LicenseService } from '../../../services/licenses/licenses.service';
+import { MessageNotificationService } from '../../../services/message_notification/message-notification.service';
+import { TranslationService } from '../../../shared/services/translation.service';
 
 
 type IocResultTab = 'stealers' | 'threats';
@@ -89,8 +93,37 @@ export class CredentialComponent implements OnInit {
     this.isLoading = this.pendingRequests > 0;
   }
 
-  constructor(protected helperService: HelperService, private router: Router, private route: ActivatedRoute, private cdr: ChangeDetectorRef, protected dashboardService: DashboardService, private reportExportService: ReportExportService, private aiToolRoutingService: AiToolRoutingService) {
+  constructor(protected helperService: HelperService, private router: Router, private route: ActivatedRoute, private cdr: ChangeDetectorRef, protected dashboardService: DashboardService, private reportExportService: ReportExportService, private aiToolRoutingService: AiToolRoutingService, private apiService: ApiService, protected licensesService: LicenseService, private messageNotificationService: MessageNotificationService, private translationService: TranslationService) {
     this.type = this.route.snapshot.data.type;
+  }
+
+  get canDismissResults(): boolean {
+    return this.licensesService.canDismissResults();
+  }
+
+  onHideDismissedToggle(): void {
+    this.fetchSearchResults();
+  }
+
+  onDismissStealerLog(item: StealerLogResultItem): void {
+    if (item.dismissed) {
+      return;
+    }
+    const stealerLogHash = String(item?.hash ?? '');
+    if (!stealerLogHash) {
+      return;
+    }
+    this.apiService.post('search/result/dismiss', { hash: stealerLogHash, type: 'stealer_log' }).subscribe({
+      next: () => {
+        const hideDismissed = this.dashboardService.consolidatedParamModel.hide_dismissed;
+        const updatedResult = (this.stealerlogCallbackModel.Result ?? [])
+          .filter(result => !(hideDismissed && result === item))
+          .map(result => result === item ? new StealerLogResultItem({ ...result, dismissed: true }) : result);
+        this.stealerlogCallbackModel = new StealerLogCallbackModel({ ...this.stealerlogCallbackModel, Result: updatedResult });
+        this.dashboardService.stealerlogCallbackModel = this.stealerlogCallbackModel;
+        this.messageNotificationService.show(this.translationService.translate('Result dismissed'), 'success');
+      },
+    });
   }
 
   get aiToolType(): string {

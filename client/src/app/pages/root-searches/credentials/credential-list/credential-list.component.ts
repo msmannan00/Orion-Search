@@ -1,4 +1,4 @@
-import { Component, effect, input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, effect, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { StealerLogCallbackModel, StealerLogResultItem } from '../../../../shared/model/results/credentials/credential.callback.model';
@@ -28,6 +28,8 @@ export class CredentialListComponent {
   rankedResult: RankedCallbackModel = new RankedCallbackModel();
   readonly searchQuery = input<string>('');
   readonly activeTab = input<IocResultTab>('stealers');
+  readonly canDismiss = input<boolean>(false);
+  readonly dismissRequested = output<StealerLogResultItem>();
 
   constructor(private router: Router) {
     effect(() => {
@@ -65,6 +67,15 @@ export class CredentialListComponent {
       event.preventDefault();
       this.toggleRow(index, expandedSet);
     }
+  }
+
+  onDismissClick(item: StealerLogResultItem, event: MouseEvent): void {
+    event.stopPropagation();
+    if (item.dismissed) {
+      return;
+    }
+    this.stealersExpandedRows.clear();
+    this.dismissRequested.emit(item);
   }
 
   getStealerDomainValues(item: StealerLogResultItem): string[] {
