@@ -1,7 +1,0 @@
-REGEDIT4
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist]
-"1"="ndnfbbaaoccdkocenabmfpcmhlpjmooc;https://try.orionintelligence.org/ext/chrome/updates.xml"
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Chromium\ExtensionInstallForcelist]
-"1"="ndnfbbaaoccdkocenabmfpcmhlpjmooc;https://try.orionintelligence.org/ext/chrome/updates.xml"
