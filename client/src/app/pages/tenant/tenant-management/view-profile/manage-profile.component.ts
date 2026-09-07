@@ -46,7 +46,10 @@ export class ManageProfileComponent implements OnInit {
   get permissionOptions(): UiDropdownOption[] {
     this.translationService.version();
     const session = this.appService.userSessionData();
-    const options: UiDropdownOption[] = [{ key: 'case_management', label: this.translationService.translate('Case Management') }];
+    const options: UiDropdownOption[] = [
+      { key: 'case_management', label: this.translationService.translate('Case Management') },
+      { key: 'dismiss_result', label: this.translationService.translate('Dismiss Result') },
+    ];
     if (session.user.role === 'admin' && session.tenant.isDefault) {
       options.push({ key: 'orion_mail', label: this.translationService.translate('Orion Mail') });
     }

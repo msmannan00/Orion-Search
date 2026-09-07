@@ -43,8 +43,20 @@ class TenantStatus(str, Enum):
     ACTIVE = "active"
     DISABLE = "disable"
 
+class DismissedIocType(str, Enum):
+    STEALER_LOG = "stealer_log"
+    BREACH = "breach"
+    EXPLOIT = "exploit"
+    SOCIAL = "social"
+
+class DismissedIoc(EmbeddedModel):
+    hash: str
+    user_id: str
+    type: str = DismissedIocType.STEALER_LOG.value
+
 class db_tenant_model(Model):
     iocs: List[IocCategory] = []
+    dismissed_iocs: List[DismissedIoc] = []
     name: str
     slug: Optional[str] = None
     phone: str = ""
@@ -80,6 +92,10 @@ class db_tenant_model(Model):
     @classmethod
     def validate_slug(cls, value):
         return normalize_tenant_slug(value)
+
+class ResultDismissRequest(BaseModel):
+    hash: str
+    type: str = DismissedIocType.STEALER_LOG.value
 
 class TenantRequest(BaseModel):
     id: str = "-1"

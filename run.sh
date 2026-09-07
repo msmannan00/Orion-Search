@@ -373,8 +373,10 @@ if [ "$COMMAND" = "build" ]; then
             docker exec trusted-web-nginx nginx -t
             docker exec trusted-web-nginx nginx -s reload
         fi
-        enable_maintenance_mode
-        trap disable_maintenance_mode EXIT
+        if [ "$FLAG" != "-d" ]; then
+            enable_maintenance_mode
+            trap disable_maintenance_mode EXIT
+        fi
     fi
 
     pull_image_if_missing python:3.11-slim

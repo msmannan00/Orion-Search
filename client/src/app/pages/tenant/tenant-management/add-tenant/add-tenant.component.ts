@@ -44,7 +44,10 @@ export class AddTenantComponent implements OnInit {
 
   get permissionOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [{ key: 'case_management', label: this.translationService.translate('Case Management') }];
+    return [
+      { key: 'case_management', label: this.translationService.translate('Case Management') },
+      { key: 'dismiss_result', label: this.translationService.translate('Dismiss Result') },
+    ];
   }
 
   get statusOptions(): UiDropdownOption[] {

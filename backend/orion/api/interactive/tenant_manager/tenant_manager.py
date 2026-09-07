@@ -18,7 +18,7 @@ from orion.helper_manager.helper_controller import helper_controller
 from orion.services.mongo_manager.shared_model.db_alert_model import db_alert_model, visible_alerts
 from orion.services.mongo_manager.shared_model.db_keys import db_keys
 from orion.services.mongo_manager.shared_model.db_system_settings import AllowedKeys, db_system_model
-from orion.services.mongo_manager.shared_model.db_tenant_model import (IocCategory, TenantRequest, TenantStatus, db_tenant_model, normalize_tenant_slug)
+from orion.services.mongo_manager.shared_model.db_tenant_model import (IocCategory, TenantRequest, TenantStatus, DismissedIocType, db_tenant_model, normalize_tenant_slug)
 from orion.services.mongo_manager.shared_model.db_auth_models import UserStatus, db_user_account, LicenseName, user_role
 from orion.services.permission_manager.permission_models import UserPermission
 from orion.services.encryption_manager.key_manager import KeyManager
@@ -649,6 +649,24 @@ class TenantManager:
         await self._engine.remove(db_keys, db_keys.auth_id == tenant_id)
         await self._engine.delete(tenant)
         return {"message": "Tenant deleted successfully"}
+
+    async def dismiss_stealer_log(self, tenant_id: str, stealer_log_hash: str, user_id: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG) -> dict:
+        if not ObjectId.is_valid(tenant_id):
+            return {"status": "invalid_tenant"}
+
+        collection = self._engine.get_collection(db_tenant_model)
+        result = await collection.update_one(
+            {
+                "_id": ObjectId(tenant_id),
+                "dismissed_iocs": {
+                    "$not": {"$elemMatch": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}
+                },
+            },
+            {"$push": {"dismissed_iocs": {"hash": stealer_log_hash, "user_id": user_id, "type": dismissed_ioc_type.value}}},
+        )
+        if result.modified_count == 0:
+            return {"status": "already_dismissed"}
+        return {"status": "dismissed"}
 
     async def get_visible_tenant_alerts_summary(self, current_user) -> List[dict]:
         tenant_ids = await self.resolve_visible_alert_tenant_ids_for_user(current_user)

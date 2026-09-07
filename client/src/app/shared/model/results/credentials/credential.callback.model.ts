@@ -78,6 +78,7 @@ export class StealerLogResultItem implements CredentialResultItem {
   ip?: string[];
   domain?: string | string[];
   source_domain?: string | string[];
+  dismissed?: boolean;
 
   [key: string]: unknown;
 
