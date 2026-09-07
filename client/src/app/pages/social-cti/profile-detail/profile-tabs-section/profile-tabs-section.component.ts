@@ -26,12 +26,16 @@ import { SocialResourceFeedSectionComponent } from '../resource-feed-section/res
 import { SocialResourceMediaSectionComponent } from '../resource-media-section/resource-media-section.component';
 import { asUnknownRecord, getOwnProperty } from '../../../../shared/utils/type-guards.util';
 import { getInputValue } from '../../../../shared/utils/event-input.util';
+import { ExpandedRowComponent } from '../../../root-searches/credentials/expanded-row/expanded-row.component';
+import { CredentialResultItem } from '../../../../shared/model/results/credentials/credential.callback.model';
+import { expandFadeRow } from '../../../../shared/animations/row.animations';
 
 @Component({
   selector: 'app-social-profile-tabs-section',
   templateUrl: './profile-tabs-section.component.html',
   standalone: true,
-  imports: [TooltipDirective, ExportChoiceModalComponent, SectionStateComponent, SocialResourceWorkSectionComponent, SocialResourcePeopleSectionComponent, SocialResourceFeedSectionComponent, SocialResourceMediaSectionComponent, DatePipe, TranslatePipe, NgTemplateOutlet],
+  imports: [TooltipDirective, ExportChoiceModalComponent, SectionStateComponent, SocialResourceWorkSectionComponent, SocialResourcePeopleSectionComponent, SocialResourceFeedSectionComponent, SocialResourceMediaSectionComponent, DatePipe, TranslatePipe, NgTemplateOutlet, ExpandedRowComponent],
+  animations: [expandFadeRow],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SocialProfileTabsSectionComponent {
@@ -42,6 +46,8 @@ export class SocialProfileTabsSectionComponent {
   private failedProfileImages = signal<Set<string>>(new Set<string>());
   private readonly expandedCrawlDescriptions = signal<Set<string>>(new Set<string>());
   private readonly expandedCrawlProperties = signal<Set<string>>(new Set<string>());
+  private readonly expandedStealerRows = signal<Set<number>>(new Set<number>());
+  private readonly stealerItemCache = new WeakMap<social_stealer_log, CredentialResultItem>();
   private readonly contentTabKeys: FetchTabKey[] = ['details', 'onlinePresence', 'stealerLogs'];
   private readonly displayLimit = signal(50);
   private readonly resetDisplayLimit = effect(() => {
@@ -101,6 +107,7 @@ export class SocialProfileTabsSectionComponent {
   readonly darkwebLoaded = signal(false);
   readonly detailEntries = computed<{ key: string; value: unknown }[]>(() =>
     getProfileDetailEntries(this.platformData()).filter(item => !['img_src', 'm_img_src'].includes(item.key.toLowerCase())));
+  readonly hasProfileData = computed(() => this.platformData()?.profile_details?.is_parsed === true || this.detailEntries().length > 0);
   readonly darkwebSections = computed<{ title: string; date: string; entries: { key: string; value: unknown }[] }[]>(() =>
     this.darkwebReport().map((doc, index) => {
       const entries = Object.entries(doc ?? {})
@@ -414,6 +421,67 @@ export class SocialProfileTabsSectionComponent {
 
   getStealerRecordTrackKey(index: number, record: social_stealer_log): string {
     return `${this.getStealerRecordHost(record)}|${this.getStealerRecordIdentity(record)}|${this.getStealerRecordDate(record)}|${index}`;
+  }
+
+  getStealerSearchQuery(platformData: social_profile): string {
+    return `${platformData.meta.username} ${this.getPlatformStealerDomain(platformData)}`.trim();
+  }
+
+  isStealerRowExpanded(index: number): boolean {
+    return this.expandedStealerRows().has(index);
+  }
+
+  toggleStealerRow(index: number): void {
+    this.expandedStealerRows.update(current => {
+      const next = new Set<number>();
+      if (!current.has(index)) {
+        next.add(index);
+      }
+      return next;
+    });
+  }
+
+  onStealerRowKeydown(event: KeyboardEvent, index: number): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleStealerRow(index);
+    }
+  }
+
+  toStealerItem(record: social_stealer_log): CredentialResultItem {
+    const cached = this.stealerItemCache.get(record);
+    if (cached) {
+      return cached;
+    }
+    const toArray = (value: unknown): string[] => {
+      if (Array.isArray(value)) {
+        return value.map(entry => String(entry)).filter(entry => entry && entry.toLowerCase() !== 'null');
+      }
+      return value === undefined || value === null || value === '' ? [] : [String(value)];
+    };
+    const pick = (...keys: string[]): unknown => {
+      for (const key of keys) {
+        const value = getOwnProperty(record, key);
+        if (value !== undefined && value !== null && value !== '') {
+          return value;
+        }
+      }
+      return undefined;
+    };
+    const converted = {
+      ...record,
+      email: toArray(pick('email', 'm_email')),
+      username: toArray(pick('username', 'm_username', 'user', 'm_user', 'login', 'm_login')),
+      ip: toArray(pick('ip', 'm_ip')),
+      domain: pick('domain', 'm_domain'),
+      source_domain: pick('source_domain', 'm_source_domain'),
+      password: pick('password', 'm_password'),
+      channel: pick('channel', 'm_channel', 'source_channel', 'm_source_channel', 'file', 'filename'),
+      date: pick('date', 'm_date', 'timestamp', 'created_at', 'updated_at'),
+      raw: pick('raw'),
+    } as unknown as CredentialResultItem;
+    this.stealerItemCache.set(record, converted);
+    return converted;
   }
 
   openStealerLogExportChoice(event: Event, platformData: social_profile): void {
