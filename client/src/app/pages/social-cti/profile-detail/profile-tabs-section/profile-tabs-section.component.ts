@@ -105,8 +105,32 @@ export class SocialProfileTabsSectionComponent {
   });
   readonly darkwebReport = signal<Record<string, unknown>[]>([]);
   readonly darkwebLoaded = signal(false);
-  readonly detailEntries = computed<{ key: string; value: unknown }[]>(() =>
-    getProfileDetailEntries(this.platformData()).filter(item => !['img_src', 'm_img_src'].includes(item.key.toLowerCase())));
+  private readonly metaDetailKeys = ['platform', 'username', 'url', 'status', 'entity_type', 'target_type', 'description'];
+  readonly detailEntries = computed<{ key: string; value: unknown }[]>(() => {
+    const platform = this.platformData();
+    const meta = (platform?.meta ?? {}) as Record<string, unknown>;
+    const normalize = (value: unknown): string => String(value).trim().toLowerCase();
+    const seenValues = new Set<string>();
+    const entries: { key: string; value: unknown }[] = [];
+    for (const key of this.metaDetailKeys) {
+      const value = meta[key];
+      if (value === null || value === undefined || String(value).trim() === '') {
+        continue;
+      }
+      entries.push({ key, value });
+      seenValues.add(normalize(value));
+    }
+    for (const item of getProfileDetailEntries(platform)) {
+      if (['img_src', 'm_img_src'].includes(item.key.toLowerCase())) {
+        continue;
+      }
+      if (typeof item.value === 'string' && seenValues.has(normalize(item.value))) {
+        continue;
+      }
+      entries.push(item);
+    }
+    return entries;
+  });
   readonly hasProfileData = computed(() => this.platformData()?.profile_details?.is_parsed === true || this.detailEntries().length > 0);
   readonly darkwebSections = computed<{ title: string; date: string; entries: { key: string; value: unknown }[] }[]>(() =>
     this.darkwebReport().map((doc, index) => {
