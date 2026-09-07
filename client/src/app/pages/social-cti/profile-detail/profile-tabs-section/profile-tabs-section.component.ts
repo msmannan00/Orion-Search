@@ -72,6 +72,7 @@ export class SocialProfileTabsSectionComponent {
     });
   });
   private readonly darkwebEntryBlocked = new Set(['m_embedding', '_id', '_score', '_rank', '_index', 'rank_index', 'm_hash', 'm_hash_id', 'm_scrap_file', 'm_cluster_id', 'm_document_id']);
+  private readonly metaDetailKeys = ['platform', 'username', 'url', 'status', 'entity_type', 'target_type', 'description'];
 
   user = input.required<FeedUser>();
   platformData = input.required<social_profile>();
@@ -105,7 +106,6 @@ export class SocialProfileTabsSectionComponent {
   });
   readonly darkwebReport = signal<Record<string, unknown>[]>([]);
   readonly darkwebLoaded = signal(false);
-  private readonly metaDetailKeys = ['platform', 'username', 'url', 'status', 'entity_type', 'target_type', 'description'];
   readonly detailEntries = computed<{ key: string; value: unknown }[]>(() => {
     const platform = this.platformData();
     const meta = (platform?.meta ?? {}) as Record<string, unknown>;
@@ -113,7 +113,7 @@ export class SocialProfileTabsSectionComponent {
     const seenValues = new Set<string>();
     const entries: { key: string; value: unknown }[] = [];
     for (const key of this.metaDetailKeys) {
-      const value = meta[key];
+      const value = getOwnProperty(meta, key);
       if (value === null || value === undefined || String(value).trim() === '') {
         continue;
       }
