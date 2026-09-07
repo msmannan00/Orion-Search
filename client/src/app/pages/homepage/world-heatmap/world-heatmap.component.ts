@@ -28,7 +28,6 @@ type WorldTopology = Topology<{ countries: GeometryCollection }>;
   templateUrl: './world-heatmap.component.html',
   animations: [
     trigger('mapLoaderFade', [
-      transition(':enter', [style({ opacity: 0 }), animate('90ms ease-out', style({ opacity: 1 }))]),
       transition(':leave', [animate('300ms ease-in', style({ opacity: 0 }))]),
     ]),
   ],
