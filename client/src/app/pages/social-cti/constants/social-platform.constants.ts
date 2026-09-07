@@ -7,7 +7,6 @@ export const VERIFIED_SOCIAL_PLATFORM_KEYS = [
   'habr',
   'hackernoon',
   'hashnode',
-  'imgur',
   'mastodon',
   'medium',
   'microblog',

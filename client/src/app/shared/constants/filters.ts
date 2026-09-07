@@ -337,7 +337,6 @@ const SOCIAL_PLATFORM_FILTER = {
     { key: "stackoverflow", label: "Stack Overflow" },
     { key: "substack", label: "Substack" },
     { key: "gettr", label: "Gettr" },
-    { key: "imgur", label: "Imgur" },
     { key: "pinterest", label: "Pinterest" },
     { key: "plurk", label: "Plurk" },
     { key: "threads", label: "Threads" },
