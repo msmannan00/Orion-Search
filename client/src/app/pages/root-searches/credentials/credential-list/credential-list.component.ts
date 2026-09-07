@@ -1,5 +1,5 @@
 import { Component, effect, input, output, ChangeDetectionStrategy } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { Router } from '@angular/router';
 import { StealerLogCallbackModel, StealerLogResultItem } from '../../../../shared/model/results/credentials/credential.callback.model';
 import { expandFadeRow } from '../../../../shared/animations/row.animations';
@@ -7,6 +7,7 @@ import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.ite
 import { RankedCallbackModel, RankedResultItem } from '../../../../shared/model/results/consolidated/ranked.callback.model';
 import { ExpandedRowComponent } from '../expanded-row/expanded-row.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { ConfirmationPopupComponent } from '../../../../shared/partials/confirmation-popup/confirmation-popup.component';
 
 type IocResultTab = 'stealers' | 'threats';
 
@@ -16,12 +17,13 @@ type IocResultTab = 'stealers' | 'threats';
   templateUrl: './credential-list.component.html',
   animations: [fadeInDashboardItem, expandFadeRow],
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [ExpandedRowComponent, DatePipe, TranslatePipe]
+  imports: [ExpandedRowComponent, DatePipe, TranslatePipe, NgClass, ConfirmationPopupComponent]
 })
 export class CredentialListComponent {
   readonly rankedResultInput = input(new RankedCallbackModel(), { alias: 'rankedResult' });
   thretsExpandedRows = new Set<number>();
   stealersExpandedRows = new Set<number>();
+  pendingDismissItem: StealerLogResultItem | null = null;
   readonly stealerData$ = input.required<StealerLogCallbackModel>();
   readonly type = input<string>('credential');
   readonly isLoading = input.required<boolean>();
@@ -72,10 +74,18 @@ export class CredentialListComponent {
   onDismissClick(item: StealerLogResultItem, event: MouseEvent): void {
     event.stopPropagation();
     if (item.dismissed) {
+      this.dismissRequested.emit(item);
       return;
     }
-    this.stealersExpandedRows.clear();
-    this.dismissRequested.emit(item);
+    this.pendingDismissItem = item;
+  }
+
+  confirmDismiss(confirmed: boolean): void {
+    const item = this.pendingDismissItem;
+    this.pendingDismissItem = null;
+    if (confirmed && item) {
+      this.dismissRequested.emit(item);
+    }
   }
 
   getStealerDomainValues(item: StealerLogResultItem): string[] {

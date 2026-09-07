@@ -399,7 +399,19 @@ async def dismiss_result(payload: ResultDismissRequest = Body(...), current_user
         dismissed_ioc_type = DismissedIocType(payload.type)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid dismiss type")
-    return await TenantManager.get_instance().dismiss_stealer_log(str(current_user.tenant_uuid), payload.hash, str(current_user.id), dismissed_ioc_type)
+    return await TenantManager.get_instance().dismiss_stealer_log(str(current_user.tenant_uuid), payload.hash, str(current_user.id), dismissed_ioc_type, all_tenants=current_user.role == user_role.ADMIN)
+
+
+@api_routes.post(
+    "/api/search/result/restore",
+    include_in_schema=False,
+    dependencies=[Depends(role_required(SCAN_ROLE_DEPS)), Depends(dismiss_result_required)])
+async def restore_result(payload: ResultDismissRequest = Body(...), current_user=Depends(get_current_user)):
+    try:
+        dismissed_ioc_type = DismissedIocType(payload.type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid dismiss type")
+    return await TenantManager.get_instance().restore_stealer_log(str(current_user.tenant_uuid), payload.hash, dismissed_ioc_type, all_tenants=current_user.role == user_role.ADMIN)
 
 
 @api_routes.post(

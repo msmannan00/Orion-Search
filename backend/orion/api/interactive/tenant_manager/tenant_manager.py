@@ -650,23 +650,36 @@ class TenantManager:
         await self._engine.delete(tenant)
         return {"message": "Tenant deleted successfully"}
 
-    async def dismiss_stealer_log(self, tenant_id: str, stealer_log_hash: str, user_id: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG) -> dict:
+    async def dismiss_stealer_log(self, tenant_id: str, stealer_log_hash: str, user_id: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG, all_tenants: bool = False) -> dict:
+        collection = self._engine.get_collection(db_tenant_model)
+        not_dismissed = {"dismissed_iocs": {"$not": {"$elemMatch": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}}}
+        push = {"$push": {"dismissed_iocs": {"hash": stealer_log_hash, "user_id": user_id, "type": dismissed_ioc_type.value}}}
+
+        if all_tenants:
+            result = await collection.update_many(not_dismissed, push)
+            return {"status": "dismissed" if result.modified_count else "already_dismissed"}
+
         if not ObjectId.is_valid(tenant_id):
             return {"status": "invalid_tenant"}
-
-        collection = self._engine.get_collection(db_tenant_model)
-        result = await collection.update_one(
-            {
-                "_id": ObjectId(tenant_id),
-                "dismissed_iocs": {
-                    "$not": {"$elemMatch": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}
-                },
-            },
-            {"$push": {"dismissed_iocs": {"hash": stealer_log_hash, "user_id": user_id, "type": dismissed_ioc_type.value}}},
-        )
+        result = await collection.update_one({"_id": ObjectId(tenant_id), **not_dismissed}, push)
         if result.modified_count == 0:
             return {"status": "already_dismissed"}
         return {"status": "dismissed"}
+
+    async def restore_stealer_log(self, tenant_id: str, stealer_log_hash: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG, all_tenants: bool = False) -> dict:
+        collection = self._engine.get_collection(db_tenant_model)
+        pull = {"$pull": {"dismissed_iocs": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}}
+
+        if all_tenants:
+            result = await collection.update_many({}, pull)
+            return {"status": "restored" if result.modified_count else "not_dismissed"}
+
+        if not ObjectId.is_valid(tenant_id):
+            return {"status": "invalid_tenant"}
+        result = await collection.update_one({"_id": ObjectId(tenant_id)}, pull)
+        if result.modified_count == 0:
+            return {"status": "not_dismissed"}
+        return {"status": "restored"}
 
     async def get_visible_tenant_alerts_summary(self, current_user) -> List[dict]:
         tenant_ids = await self.resolve_visible_alert_tenant_ids_for_user(current_user)

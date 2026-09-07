@@ -105,23 +105,27 @@ export class CredentialComponent implements OnInit {
     this.fetchSearchResults();
   }
 
+  toggleHideDismissed(): void {
+    this.dashboardService.consolidatedParamModel.hide_dismissed = !this.dashboardService.consolidatedParamModel.hide_dismissed;
+    this.onHideDismissedToggle();
+  }
+
   onDismissStealerLog(item: StealerLogResultItem): void {
-    if (item.dismissed) {
-      return;
-    }
     const stealerLogHash = String(item?.hash ?? '');
     if (!stealerLogHash) {
       return;
     }
-    this.apiService.post('search/result/dismiss', { hash: stealerLogHash, type: 'stealer_log' }).subscribe({
+    const restoring = !!item.dismissed;
+    const endpoint = restoring ? 'search/result/restore' : 'search/result/dismiss';
+    this.apiService.post(endpoint, { hash: stealerLogHash, type: 'stealer_log' }).subscribe({
       next: () => {
         const hideDismissed = this.dashboardService.consolidatedParamModel.hide_dismissed;
         const updatedResult = (this.stealerlogCallbackModel.Result ?? [])
-          .filter(result => !(hideDismissed && result === item))
-          .map(result => result === item ? new StealerLogResultItem({ ...result, dismissed: true }) : result);
+          .filter(result => !(hideDismissed && !restoring && result === item))
+          .map(result => result === item ? new StealerLogResultItem({ ...result, dismissed: !restoring }) : result);
         this.stealerlogCallbackModel = new StealerLogCallbackModel({ ...this.stealerlogCallbackModel, Result: updatedResult });
         this.dashboardService.stealerlogCallbackModel = this.stealerlogCallbackModel;
-        this.messageNotificationService.show(this.translationService.translate('Result dismissed'), 'success');
+        this.messageNotificationService.show(this.translationService.translate(restoring ? 'Result restored' : 'Result dismissed'), 'success');
       },
     });
   }
