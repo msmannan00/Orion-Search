@@ -126,11 +126,6 @@
     "path": "social/platform",
     "value_regex": "^https?://(?:[^/]+\\.)?gettr\\.com(?:/.*)?$"
   },
-  "imgur": {
-    "rule_type": "shared",
-    "path": "social/platform",
-    "value_regex": "^https?://(?:[^/]+\\.)?imgur\\.com(?:/.*)?$"
-  },
   "pinterest": {
     "rule_type": "shared",
     "path": "social/platform",
