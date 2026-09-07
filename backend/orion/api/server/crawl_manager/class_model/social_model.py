@@ -10,7 +10,7 @@ DATE_ONLY_FORMAT = "%Y-%m-%d"
 class social_model(BaseModel):
     m_title: Optional[str] = None
     m_sender_name: Optional[str] = None
-    m_message_sharable_link: str
+    m_message_sharable_link: Optional[str] = None
     m_weblink: List[str] = Field(default_factory=list)
     m_content: str
     m_content_type: List[str] = Field(default_factory=list)
