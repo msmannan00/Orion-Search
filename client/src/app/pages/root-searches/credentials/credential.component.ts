@@ -117,15 +117,19 @@ export class CredentialComponent implements OnInit {
     }
     const restoring = !!item.dismissed;
     const endpoint = restoring ? 'search/result/restore' : 'search/result/dismiss';
+    const matches = (result: StealerLogResultItem): boolean => String(result?.hash ?? '') === stealerLogHash;
     this.apiService.post(endpoint, { hash: stealerLogHash, type: 'stealer_log' }).subscribe({
       next: () => {
         const hideDismissed = this.dashboardService.consolidatedParamModel.hide_dismissed;
         const updatedResult = (this.stealerlogCallbackModel.Result ?? [])
-          .filter(result => !(hideDismissed && !restoring && result === item))
-          .map(result => result === item ? new StealerLogResultItem({ ...result, dismissed: !restoring }) : result);
+          .filter(result => !(hideDismissed && !restoring && matches(result)))
+          .map(result => matches(result) ? new StealerLogResultItem({ ...result, dismissed: !restoring }) : result);
         this.stealerlogCallbackModel = new StealerLogCallbackModel({ ...this.stealerlogCallbackModel, Result: updatedResult });
         this.dashboardService.stealerlogCallbackModel = this.stealerlogCallbackModel;
         this.messageNotificationService.show(this.translationService.translate(restoring ? 'Result restored' : 'Result dismissed'), 'success');
+      },
+      error: () => {
+        this.messageNotificationService.show(this.translationService.translate(restoring ? 'Failed to restore result' : 'Failed to dismiss result'), 'fail');
       },
     });
   }
