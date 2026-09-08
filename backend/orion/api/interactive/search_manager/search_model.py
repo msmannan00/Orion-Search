@@ -457,7 +457,10 @@ class search_model:
         return self._enrich_bin_results(response)
 
     async def _mark_dismissed_stealer_logs(self, results: list, tenant_id: str, dismissed_ioc_type: DismissedIocType) -> set:
-        page_hashes = list({str(getattr(item, "hash", "") or "") for item in results if getattr(item, "hash", None)})
+        def _key(item):
+            return str(getattr(item, "dismiss_id", "") or getattr(item, "hash", "") or "")
+
+        page_hashes = list({_key(item) for item in results if _key(item)})
         if not page_hashes or not ObjectId.is_valid(tenant_id):
             return set()
 
@@ -481,7 +484,7 @@ class search_model:
         dismissed_hashes = {entry["hash"] for entry in tenant_doc[0]["dismissed_iocs"]} if tenant_doc else set()
 
         for item in results:
-            item.dismissed = str(getattr(item, "hash", "") or "") in dismissed_hashes
+            item.dismissed = _key(item) in dismissed_hashes
 
         return dismissed_hashes
 

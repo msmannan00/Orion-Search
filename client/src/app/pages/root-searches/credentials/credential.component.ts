@@ -112,7 +112,7 @@ export class CredentialComponent implements OnInit {
 
   onDismissStealerLog(item: StealerLogResultItem): void {
     const hashOf = (result: StealerLogResultItem | null | undefined): string =>
-      String(result?.hash ?? result?.m_hash ?? result?._id ?? result?.id ?? '');
+      String(result?.dismiss_id ?? result?.hash ?? result?.m_hash ?? result?._id ?? result?.id ?? '');
     const stealerLogHash = hashOf(item);
     if (!stealerLogHash) {
       this.messageNotificationService.show(this.translationService.translate('Cannot dismiss: result has no identifier'), 'fail');

@@ -37,6 +37,9 @@ class search_callback:
 
                 m_service["m_index"] = m_index
 
+                if m_index and str(m_index).startswith("stealer_model"):
+                    m_service["dismiss_id"] = m_service.get("hash") or m_service.get("m_hash") or m_document.get("_id") or ""
+
                 highlight_text = ""
                 if "highlight" in m_document:
                     m_highlight = m_document["highlight"]
