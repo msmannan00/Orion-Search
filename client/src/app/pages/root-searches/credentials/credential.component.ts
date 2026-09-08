@@ -111,13 +111,16 @@ export class CredentialComponent implements OnInit {
   }
 
   onDismissStealerLog(item: StealerLogResultItem): void {
-    const stealerLogHash = String(item?.hash ?? '');
+    const hashOf = (result: StealerLogResultItem | null | undefined): string =>
+      String(result?.hash ?? result?.m_hash ?? result?._id ?? result?.id ?? '');
+    const stealerLogHash = hashOf(item);
     if (!stealerLogHash) {
+      this.messageNotificationService.show(this.translationService.translate('Cannot dismiss: result has no identifier'), 'fail');
       return;
     }
     const restoring = !!item.dismissed;
     const endpoint = restoring ? 'search/result/restore' : 'search/result/dismiss';
-    const matches = (result: StealerLogResultItem): boolean => String(result?.hash ?? '') === stealerLogHash;
+    const matches = (result: StealerLogResultItem): boolean => hashOf(result) === stealerLogHash;
     this.apiService.post(endpoint, { hash: stealerLogHash, type: 'stealer_log' }).subscribe({
       next: () => {
         const hideDismissed = this.dashboardService.consolidatedParamModel.hide_dismissed;
