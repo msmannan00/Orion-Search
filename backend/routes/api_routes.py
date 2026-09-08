@@ -1121,6 +1121,32 @@ async def delete_scan_job(scan_id: str, current_user=Depends(get_current_user)):
 
 
 @api_routes.post(
+    "/api/phone/dkim_check",
+    summary="DKIM Record Checker",
+    tags=["Entity Scans"],
+    dependencies=SCANNING_DEPS,
+)
+async def dkim_check_proxy(payload: dict = Body(...), current_user=Depends(get_current_user)):
+    base_url = str(env_handler.get_instance().env("TRUSTED_MICROS_API_BASE", "") or "").strip().rstrip("/")
+    if not base_url:
+        raise HTTPException(status_code=500, detail="Microservice API Base is not configured")
+
+    user_id = str(current_user.id)
+
+    def forward_to_micros():
+        url = f"{base_url}/dkim/check/{user_id}"
+        response = requests.post(url, json=payload, timeout=30)
+        if response.status_code != 200:
+            raise Exception(f"Failed with status {response.status_code}: {response.text}")
+        return response.json()
+
+    try:
+        return await asyncio.to_thread(forward_to_micros)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Microservice Connection Failed: {str(e)}")
+
+
+@api_routes.post(
     "/api/phone/universal_search",
     summary="Phone and Domain OSINT Lookup",
     tags=["Entity Scans"],
@@ -1148,3 +1174,6 @@ async def phone_universal_search_proxy(payload: dict = Body(...), current_user=D
         return await asyncio.to_thread(forward_to_micros)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Microservice Connection Failed: {str(e)}")
+
+
+

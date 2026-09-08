@@ -1,0 +1,47 @@
+<div class="flex flex-col gap-4 p-6 text-white h-full overflow-y-auto">
+  <div class="text-2xl font-bold mb-2">DKIM Record Checker</div>
+  <p class="text-gray-400 mb-4">Verify DKIM public keys by entering the domain and selector.</p>
+
+  <form (submit)="analyzeText($event)" class="flex flex-col gap-4 max-w-md">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">Domain</label>
+      <input type="text" [(ngModel)]="domain" name="domain" placeholder="e.g. google.com" class="p-2 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium">Selector</label>
+      <input type="text" [(ngModel)]="selector" name="selector" placeholder="e.g. 20230601" class="p-2 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500" />
+    </div>
+
+    <button type="submit" [disabled]="loading" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium disabled:opacity-50">
+      {{ loading ? 'Checking...' : 'Check DKIM' }}
+    </button>
+  </form>
+
+
+  <div *ngIf="errorMessage" class="mt-4 p-4 bg-red-900 border border-red-700 rounded text-red-200">
+    {{ errorMessage }}
+  </div>
+
+
+  <div *ngIf="result" class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded">
+    <div class="text-lg font-bold mb-2 text-green-400">Valid DKIM Record Found!</div>
+
+    <div class="mt-4">
+      <div class="text-sm text-gray-400">DNS Query</div>
+      <div class="font-mono text-sm bg-gray-900 p-2 rounded mt-1 break-all">{{ result.dns_query }}</div>
+    </div>
+
+    <div class="mt-4">
+      <div class="text-sm text-gray-400">Raw Record</div>
+      <div class="font-mono text-sm bg-gray-900 p-2 rounded mt-1 break-all">{{ result.raw_record }}</div>
+    </div>
+
+    <div class="mt-4">
+      <div class="text-sm text-gray-400">Public Key (p)</div>
+      <div class="font-mono text-sm bg-gray-900 p-2 rounded mt-1 break-all text-blue-300">
+        {{ result.parsed_data?.['public_key (p)'] }}
+      </div>
+    </div>
+  </div>
+</div>

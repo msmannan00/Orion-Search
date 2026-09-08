@@ -11,6 +11,7 @@ import { ConfigResolver } from './shared/resolvers/config.resolver';
 import { OnboardingGuard } from './shared/guards/onboarding-guard';
 import { NotificationGuard } from './shared/guards/notification.guard';
 const loadPhoneLookupComponent = () => import('./sections/api/phone-lookup/phone-lookup.component').then(m => m.PhoneLookupComponent);
+const loadDkimLookupComponent = () => import('./sections/api/dkim-lookup/dkim-lookup.component').then(m => m.DkimLookupComponent);
 const loadLoginComponent = () => import('./pages/login/login.component').then(m => m.LoginComponent);
 const loadExtensionPrivacyComponent = () => import('./pages/legal/extension-privacy/extension-privacy.component').then(m => m.ExtensionPrivacyComponent);
 const loadProjectPrivacyComponent = () => import('./pages/legal/project-privacy/project-privacy.component').then(m => m.ProjectPrivacyComponent);
@@ -332,6 +333,16 @@ export const routes: Routes = [
               description: 'Analyze phone numbers and domains for OSINT intelligence'
             }
           },
+          {
+            path: 'dkim-lookup',
+            loadComponent: loadDkimLookupComponent,
+            data: {
+              animation: 'TextAnalysisAPI',
+              title: 'DKIM Checker',
+              description: 'Analyze domains and selectors to verify DKIM public keys'
+            }
+          },
+
           {
             path: 'crypto-scanner',
             loadComponent: loadDashboardApiComponent,
