@@ -10,21 +10,32 @@
 
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium">Selector</label>
-      <input type="text" [(ngModel)]="selector" name="selector" placeholder="e.g. 20230601" class="p-2 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500" />
+      <div class="flex gap-2">
+        <input type="text" [(ngModel)]="selector" name="selector" placeholder="e.g. 20230601" class="flex-1 p-2 rounded bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500" />
+        <button type="button" (click)="discoverSelectors()" [disabled]="discovering || !domain" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded font-medium disabled:opacity-50 transition border border-gray-600 whitespace-nowrap">{{ discovering ? 'Finding...' : 'Find Selectors' }}</button>
+      </div>
     </div>
 
-    <button type="submit" [disabled]="loading" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium disabled:opacity-50">
-      {{ loading ? 'Checking...' : 'Check DKIM' }}
-    </button>
+    <button type="submit" [disabled]="loading || !domain || !selector" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium disabled:opacity-50 transition">{{ loading ? 'Checking...' : 'Check DKIM' }}</button>
   </form>
-
 
   <div *ngIf="errorMessage" class="mt-4 p-4 bg-red-900 border border-red-700 rounded text-red-200">
     {{ errorMessage }}
   </div>
 
+  <div *ngIf="discoveredSelectors.length > 0" class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-lg font-bold text-blue-400">Discovered Selectors</span>
+      <span class="text-xs bg-blue-900 text-blue-200 px-2 py-0.5 rounded border border-blue-700">via ZK Email</span>
+    </div>
+    <p class="text-sm text-gray-400 mb-4">Found {{ discoveredSelectors.length }} historical/active selectors for {{ domain }}. Click any selector to use it.</p>
 
-  <div *ngIf="result" class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded">
+    <div class="flex flex-wrap gap-2">
+      <button *ngFor="let sel of discoveredSelectors" (click)="selectSelector(sel)" type="button" [class.bg-blue-900]="selector === sel" [class.border-blue-500]="selector === sel" class="px-3 py-1 bg-gray-900 border border-gray-600 rounded text-sm text-green-400 cursor-pointer hover:bg-gray-700 hover:text-green-300 transition">{{ sel }}</button>
+    </div>
+  </div>
+
+  <div *ngIf="result && result.status === 'success' && !result.selectors" class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded">
     <div class="text-lg font-bold mb-2 text-green-400">Valid DKIM Record Found!</div>
 
     <div class="mt-4">

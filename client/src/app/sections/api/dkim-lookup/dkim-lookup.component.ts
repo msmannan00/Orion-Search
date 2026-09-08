@@ -13,13 +13,59 @@ export class DkimLookupComponent implements OnInit {
   domain: string = '';
   selector: string = '';
   loading: boolean = false;
+  discovering: boolean = false;
   queryTriggered: boolean = false;
   result: any = null;
   errorMessage: string = '';
+  discoveredSelectors: string[] = [];
 
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {}
+
+  discoverSelectors(): void {
+    if (!this.domain.trim()) {
+      this.errorMessage = "Please enter a Domain to find selectors.";
+      return;
+    }
+
+    this.discovering = true;
+    this.errorMessage = '';
+    this.discoveredSelectors = [];
+    this.result = null;
+
+    const payload = {
+      text: {
+        domain: this.domain.trim(),
+        selector: ''
+      }
+    };
+
+    this.api.post('/api/phone/dkim_check', payload).subscribe({
+      next: (res: any) => {
+        this.discovering = false;
+        const data = res?.result ?? res;
+
+        if (data && data.status === 'success' && data.selectors) {
+          this.discoveredSelectors = data.selectors;
+          if (this.discoveredSelectors.length === 0) {
+            this.errorMessage = "No historical selectors found for this domain.";
+          }
+        }
+        else {
+          this.errorMessage = data?.error_message ?? 'Failed to discover selectors.';
+        }
+      },
+      error: (err: any) => {
+        this.discovering = false;
+        this.errorMessage = err.error?.detail ?? 'An error occurred while finding selectors.';
+      }
+    });
+  }
+
+  selectSelector(sel: string) {
+    this.selector = sel;
+  }
 
   analyzeText(event?: Event): void {
     if (event) {
