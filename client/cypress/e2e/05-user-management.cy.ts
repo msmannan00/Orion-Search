@@ -1,4 +1,5 @@
 import {addUser, completeSubscriptionPopupFlow, deleteUsersByUsername, loginAndClickSidebar, loginAsUser, ManagedUser, ManagedUsers, openFirstStrategicReportFromSearch, openSidebarGroup, openSidebarSubItem, openUserEditor, setPasswordResetRequired, UserManagementTestData} from './controllers/05-user-management.controller';
+import {typeInputSlow, waitForSearchReady} from './controllers/04-searching.controller';
 
 let testUsers = {} as ManagedUsers;
 let testData = {} as UserManagementTestData;
@@ -502,6 +503,90 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
       expect(request.body.username).to.eq(enterpriseUser.username);
     });
     cy.get('[data-testid="demo-tour-tooltip"]').should('not.exist');
+  });
+});
+
+describe('Orion Intelligence - Dismiss Result Flow', () => {
+  const stealerLogTestEmail = 'superman0011@twitter.example';
+  let dismissResultUser = {} as ManagedUser;
+
+  before(() => {
+    cy.env(['DISMISS_RESULT_USER']).then(({DISMISS_RESULT_USER}) => {
+      dismissResultUser = (DISMISS_RESULT_USER || {}) as ManagedUser;
+      if (!dismissResultUser.username) {
+        throw new Error('Missing DISMISS_RESULT_USER in cypress.config.ts');
+      }
+    });
+  });
+
+  const searchStealerLogsFor = (email: string) => {
+    openSidebarGroup('Stealer logs');
+    waitForSearchReady();
+    cy.get('input[name="searchQuery"][placeholder="Search..."]').first().as('q');
+    cy.get('@q').should('be.visible').and('not.be.disabled');
+    typeInputSlow('@q', email);
+    cy.get('[data-testid="ioc-stealer-table"]').scrollIntoView().should('be.visible');
+  };
+
+  const dismissFirstVisibleResult = () => {
+    cy.get('[data-testid="ioc-stealer-row"]').first().scrollIntoView().click();
+    cy.get('[data-testid="ioc-stealer-dismiss"]').first().should('be.visible').click();
+    cy.get('[data-testid="confirmation-popup"]').should('be.visible');
+    cy.get('[data-testid="confirmation-yes-button"]').click();
+    cy.get('[data-testid="confirmation-popup"]').should('not.exist');
+  };
+
+  after(() => {
+    cy.logout();
+  });
+
+  it('dismisses a stealer log result as admin and reveals it via the hide-dismissed toggle', () => {
+    cy.loginAsAdmin();
+    searchStealerLogsFor(stealerLogTestEmail);
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-testid="ioc-stealer-row"]').should('have.length.greaterThan', 0);
+
+    cy.get('[data-testid="ioc-stealer-row"]').then(($rows) => {
+      const initialCount = $rows.length;
+
+      dismissFirstVisibleResult();
+      cy.get('[data-testid="ioc-stealer-row"]').should('have.length', initialCount - 1);
+
+      cy.get('[data-testid="ioc-hide-dismissed-toggle"]').click();
+      cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'true');
+      cy.get('[data-testid="ioc-stealer-row"]').should('have.length', initialCount);
+      cy.get('[data-testid="ioc-stealer-dismissed"]').should('have.length.greaterThan', 0);
+    });
+
+    cy.logout();
+  });
+
+  it('creates an Enterprise user with the Dismiss Result permission', () => {
+    cy.loginAsAdmin();
+    cy.visit('/dashboard/profile/users');
+    cy.get('[data-testid="tenant-add-user-button"]').should('be.visible');
+    addUser(dismissResultUser);
+    setPasswordResetRequired(dismissResultUser.username, false);
+    cy.logout();
+  });
+
+  it('lets the Dismiss Result user reveal and undismiss the result', () => {
+    loginAsUser(dismissResultUser.username, dismissResultUser.password);
+    searchStealerLogsFor(stealerLogTestEmail);
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-testid="ioc-stealer-row"]').should('not.exist');
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').click();
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-testid="ioc-stealer-row"]').should('have.length.greaterThan', 0);
+    cy.get('[data-testid="ioc-stealer-dismissed"]').should('have.length.greaterThan', 0);
+
+    cy.get('[data-testid="ioc-stealer-dismissed"]').first().click();
+    cy.get('[data-testid="ioc-stealer-dismissed"]').should('not.exist');
+
+    cy.logout();
   });
 });
 

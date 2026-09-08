@@ -167,6 +167,14 @@ export default defineConfig({
                 alertAllowedTenants: "all",
             },
         },
+        DISMISS_RESULT_USER: {
+            username: "dismiss_result_user1",
+            email: "dismiss.result.user1@samplemail.test",
+            password: "1qaz!QAZ",
+            role: "Analyst",
+            licenses: ["Enterprise"],
+            permissions: ["dismiss_result"],
+        },
         TEST_DATA: {
             stealer_ioc_email: "nora.keen@samplemail.test",
             stealer_upgrade_name: "Avery Stone",

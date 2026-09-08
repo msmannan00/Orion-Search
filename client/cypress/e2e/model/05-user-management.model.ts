@@ -9,6 +9,7 @@ export interface ManagedUser {
 }
 
 export interface UserManagementTestData extends Record<string, unknown> {
+  stealer_ioc_email: string;
   stealer_upgrade_name: string;
   stealer_upgrade_email: string;
 }
