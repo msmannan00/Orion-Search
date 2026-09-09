@@ -642,3 +642,66 @@ fast, localised failures that name the offending command.
 Left alone deliberately: dropping `-v` from the `-docs` teardown would warm the database between runs
 but costs deterministic seeding for the screenshots, and lowering the timeouts will surface failures
 that are currently being papered over. Both are judgement calls for the operator, not mechanical wins.
+
+## DKIM Lookup (Entity Lookup)
+
+New Entity-Lookup sub-tool that mirrors the Phone & Domain lookup exactly (an async-job micro,
+polled by re-POSTing the same body so the deterministic `job_id` returns the cached job state).
+
+- Enum: `ApiSubCategory.DKIM_LOOKUP = 'DKIM-Lookup'` in `client/src/app/shared/constants/pages.ts`.
+  The sidebar builds every API item from `Object.values(ApiSubCategory)`, so `'DKIM-Lookup'` gives
+  the route `api/dkim-lookup` (`item.toLowerCase()`) and the label "DKIM Lookup"
+  (`replaceDashWithSpace`) with no translation entry — same as `Phone-Lookup`.
+- Route + component: `app.routes.ts` `path: 'dkim-lookup'` →
+  `client/src/app/sections/api/dkim-lookup/`.
+- Backend proxy: `dkim_check_proxy` in `backend/routes/api_routes.py` (`POST /api/dkim/check`),
+  a copy of `phone_universal_search_proxy` that forwards to `{TRUSTED_MICROS_API_BASE}/dkim/check/{user_id}`.
+  Note the micro route has no `/api` prefix (unlike the phone micro's `/api/phone/universal_search`).
+
+Flow (matches the two-mode DKIM micro in Orion-Micros `dkim_scan_manager`):
+- Search a domain → the micro runs **discovery** (empty selector) and returns
+  `result.selectors[]` (job `done`). The client then fires one **validation** job per selector and
+  renders a card each — "result for each selector".
+- If the archive has no selectors, the micro finishes as job `status:"error"`,
+  `message:"No historical selectors found …"`. The client treats that as "not found" and shows the
+  Selector-Required prompt so the user can add a selector manually and validate it.
+- Validation `done` → `result{is_valid, raw_record, parsed_data, warnings, dns_query}`. A record that
+  is present but invalid, or NXDOMAIN, comes back as job `status:"error"` with a `message`; the client
+  shows that per-selector error. (Micro quirk: an invalid-but-present record loses its parsed data
+  because the controller stores only the error `message`, not the `result`, on the error path.)
+
+Client ships from the built folder — run `./run.sh build -p|-d` for this to appear in the app.
+
+### DKIM Lookup — enrichment (max info + mxtoolbox-style checks + PDF)
+
+Micro (`Orion-Micros` `dkim_scan_manager`) rewritten for maximum extraction:
+- **Multi-string TXT fix (was corrupting 2048-bit keys).** Records are now reassembled with
+  `"".join(rdata.strings)` instead of `to_text().strip('"')`, which spliced a literal `" "` into
+  keys >255 chars — proven live on `fm1._domainkey.fastmail.com` (the key was 395 chars with
+  `...M" "G...` inside, yet flagged Valid). Now clean 392-char 2048-bit key.
+- **Key details:** RSA/Ed25519 key size derived via `cryptography.load_der_public_key(...).key_size`.
+- **All tags** parsed with friendly labels (v/k/p/t/s/h/n/g + unknowns kept).
+- **Archive fallback:** when live DNS has no record, the selector's last archived record
+  (`archive.prove.email` `value` + first/last seen) is returned with `source:"archive"`.
+- **mxtoolbox-style checks** (matches the reference the user pasted): per-selector `checks[]` =
+  DKIM Record Published / DKIM Syntax Check / DKIM Public Key Check; domain-level `related[]` =
+  DMARC Record Published / DMARC Policy Not Enabled / SPF Record Published. Full `dmarc`
+  (policy, pct, rua, raw) and `spf` objects included. Each check is `{test, status: ok|warning|error, response}`.
+- **Diagnostics no longer lost:** controller now always `progress.done(result)` (result carries its own
+  status), so invalid-but-present records keep their parsed_data/warnings. `progress.error` only on exception.
+- **Discovery** (`get_selectors_from_archive`) returns `{selectors, selectors_detail, dmarc, spf, related}`
+  and probes ~27 common selectors concurrently when the archive has none. Deterministic (sorted).
+
+Client (`sections/api/dkim-lookup`):
+- Redesigned result section: a domain-level **Domain Security** panel (DMARC/SPF related checks +
+  raw records) rendered once, and per-selector cards with the 3 DKIM checks (icon + response, mxtoolbox
+  style), source chip (Live DNS / Archived), key chip (e.g. `RSA 2048-bit`), status badge
+  (Valid/Invalid/Not Found), parsed tags, first/last seen, warnings, and raw record.
+- **PDF export** via the shared `ReportExportService.exportByType(payload, 'doc_pdf')` +
+  `ExportChoiceModalComponent` (same subsystem as `dashboard-api`; jspdf-based institutional doc,
+  no DOM screenshot). Builds a `GraphReportPayload` (summary + one table per selector + a domain table).
+
+Live wiring: the micro's extractor/controller are under the volume-mounted `app/orion`, so a
+`docker restart trusted-micros-api` (no rebuild) picks them up. The client is served from the
+volume-mounted `client/build`, so `npm run build` (or `./run.sh build -d`) + a browser hard-refresh
+is enough — no docker image rebuild.

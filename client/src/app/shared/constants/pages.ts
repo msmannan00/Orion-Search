@@ -34,7 +34,8 @@ export enum ApiSubCategory {
     FILE = 'File-Scanner',
     TEXT_ANALYSIS = 'Text-Analysis',
     CRYPTO = 'Crypto-Scanner',
-    PHONE_LOOKUP = 'Phone-Lookup'
+    PHONE_LOOKUP = 'Phone-Lookup',
+    DKIM_LOOKUP = 'DKIM-Lookup'
 }
 export enum SocialSubCategory {
     ALL = 'All',

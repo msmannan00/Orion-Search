@@ -1,0 +1,208 @@
+<div class="mx-auto w-full max-w-[2400px] px-5 pb-4 lg:px-8">
+
+
+  <form (ngSubmit)="searchDomain($event)" novalidate class="mt-6 flex items-center gap-3 max-[800px]:flex-col max-[800px]:items-stretch">
+    <div class="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-770)] p-3 max-[800px]:flex-col max-[800px]:items-stretch xl:max-w-[620px] [.light-theme_&]:!border-[#d3deea] [.light-theme_&]:!bg-[#f7faff] [.light-theme_&]:!shadow-[0_5px_18px_rgba(15,23,42,0.065)]">
+      <div class="min-w-0 flex-1">
+        <div class="flex h-[42px] w-full min-w-[280px] overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-white transition-[border-color,box-shadow] [body.light-theme_&]:border-[#c7d5e4] [body.light-theme_&]:focus-within:border-[#70aee8] [body.light-theme_&]:focus-within:shadow-[0_0_0_3px_rgba(43,144,238,0.14)]">
+          <div class="flex w-[45px] items-center justify-center bg-white">
+            <img alt="" aria-hidden="true" src="assets/images/shared/user1.svg" width="20" height="20" class="brightness-0 opacity-80">
+          </div>
+          <input data-testid="scan-primary-input" class="h-full min-w-0 flex-1 bg-white pr-3 text-[15px] text-[#172235] outline-none placeholder:text-[14px] placeholder:text-gray-400" [placeholder]="'Domain (e.g., example.com)' | translate" type="text" [(ngModel)]="domain" name="domain" required autocomplete="off">
+          <button data-testid="scan-search-button" class="inline-flex h-full min-w-[112px] shrink-0 items-center justify-center rounded-r-[8px] border border-l border-sky-300/20 bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] px-5 text-sm font-semibold leading-none text-white transition-[background-color,border-color,color] duration-150 hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] disabled:cursor-not-allowed disabled:opacity-40" type="submit" [disabled]="loading || !domain.trim()">
+            {{ 'Search' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    @if (canExport) {
+      <button type="button" data-testid="dkim-export-button" (click)="openExportChoice()" [appTooltip]="'Download report' | translate" class="inline-flex h-[42px] shrink-0 items-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-4 text-[13px] font-semibold text-[var(--color-text1)] transition-colors hover:bg-[var(--color-blue-880)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white">
+        <i class="bi bi-download text-[15px]"></i>
+        <span class="max-[520px]:hidden">{{ 'Export' | translate }}</span>
+      </button>
+    }
+  </form>
+
+
+  <div class="ml-0 mt-3">
+    <div class="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-5 py-3 text-[13px] text-[var(--color-text1)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_3px_12px_rgba(15,23,42,0.055)]">
+      <img alt="" aria-hidden="true" class="mr-[8px] inline-block" src="assets/images/shared/hint.svg">
+      <span>{{ 'Discovers DKIM selectors, validates each record, and runs related DMARC & SPF checks.' | translate }}</span>
+    </div>
+  </div>
+
+
+  @if (!queryTriggered && !loading && !selectors.length && !needsSelector && !discoveryError && !domainInfo) {
+    <app-empty-query></app-empty-query>
+  }
+
+
+  @if (loading) {
+    <div class="mt-[12px] ml-0 max-w-[720px]">
+      <div class="mb-[6px] text-[12px] font-medium text-[var(--color-text1)]">{{ currentStep || ('Scanning...' | translate) }} ({{ pct(progress) }}%)</div>
+      <div class="h-[10px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+        <div class="h-full rounded-full bg-[var(--color-blue-640)] transition-[width] duration-300 ease-out" [ngClass]="'ui-wpct-' + pct(progress)"></div>
+      </div>
+    </div>
+  }
+
+
+  @if (!loading && discoveryError) {
+    <section class="fade-in-dashboard-item mt-[15px] rounded-[10px] border border-rose-400/30 bg-[var(--color-blue-790)] p-[20px] text-center [.light-theme_&]:border-rose-200 [.light-theme_&]:bg-rose-50">
+      <div class="text-[16px] font-semibold text-[var(--color-text1)]">{{ 'Target Intelligence Failed' | translate }}</div>
+      <div class="mt-[4px] text-[13px] text-[var(--color-text4)]">{{ discoveryError }}</div>
+    </section>
+  }
+
+
+  @if (domainInfo) {
+    <div class="fade-in-dashboard-item mt-[18px] w-full overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-700)] text-[var(--color-text1)] shadow-sm [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
+      <div class="flex items-center gap-[8px] border-b border-[var(--color-divider)] px-[16px] py-[12px] text-[12px] font-[800] uppercase tracking-[0.06em] text-[#10b981]">
+        <i class="bi bi-globe2"></i> <span>{{ 'Domain Security' | translate }}</span>
+        <span class="font-mono text-[12px] normal-case tracking-normal text-[var(--color-text4)]">{{ domainInfo.domain }}</span>
+      </div>
+      <div class="px-[16px] py-[10px]">
+        @for (check of domainInfo.related; track check.test) {
+          <div class="grid grid-cols-[22px_1fr_1.2fr] items-start gap-3 border-b border-[var(--color-divider)] py-[8px] last:border-0 max-[560px]:grid-cols-[22px_1fr]">
+            <i class="bi {{ checkIcon(check.status) }} {{ checkColor(check.status) }} mt-[1px] text-[15px]"></i>
+            <div class="text-[13px] font-[600] text-[var(--color-text1)]">{{ check.test | translate }}</div>
+            <div class="text-[12px] text-[var(--color-text4)] max-[560px]:col-start-2">{{ check.response }}</div>
+          </div>
+        }
+        @if (domainInfo.dmarc?.published || domainInfo.spf?.published) {
+          <div class="mt-[10px] grid gap-[8px] md:grid-cols-2">
+            @if (domainInfo.dmarc?.raw_record) {
+              <div class="rounded-[8px] border border-[var(--color-divider)] p-[10px]">
+                <div class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">DMARC {{ domainInfo.dmarc?.policy ? '(p=' + domainInfo.dmarc?.policy + ')' : '' }}</div>
+                <div class="mt-[3px] break-all font-mono text-[12px] text-[var(--color-text4)]">{{ domainInfo.dmarc?.raw_record }}</div>
+              </div>
+            }
+            @if (domainInfo.spf?.raw_record) {
+              <div class="rounded-[8px] border border-[var(--color-divider)] p-[10px]">
+                <div class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">SPF</div>
+                <div class="mt-[3px] break-all font-mono text-[12px] text-[var(--color-text4)]">{{ domainInfo.spf?.raw_record }}</div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+
+  @if (needsSelector) {
+    <div class="fade-in-dashboard-item mt-[15px] rounded-[12px] border border-amber-400/30 bg-[var(--color-blue-700)] p-[16px] xl:max-w-[620px] [.light-theme_&]:!border-amber-200 [.light-theme_&]:!bg-amber-50">
+      <div class="flex items-center gap-[8px] text-[12px] font-[800] uppercase tracking-[0.06em] text-[#f59e0b]">
+        <i class="bi bi-exclamation-triangle"></i> <span>{{ 'Selector Required' | translate }}</span>
+      </div>
+      <div class="mt-[6px] text-[13px] text-[var(--color-text4)]">{{ noSelectorMessage }}</div>
+      <form (ngSubmit)="addSelector($event)" novalidate class="mt-[12px] flex items-center gap-2 max-[640px]:flex-col max-[640px]:items-stretch">
+        <input data-testid="dkim-selector-input" class="h-[40px] min-w-0 flex-1 rounded-[8px] border border-[var(--color-border)] bg-white px-3 text-[14px] text-[#172235] outline-none placeholder:text-[13px] placeholder:text-gray-400" [placeholder]="'Selector (e.g., google, default, selector1)' | translate" type="text" [(ngModel)]="manualSelector" name="manualSelector" required autocomplete="off">
+        <button data-testid="dkim-selector-add" class="inline-flex h-[40px] min-w-[112px] shrink-0 items-center justify-center rounded-[8px] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] px-5 text-sm font-semibold leading-none text-white transition-colors duration-150 hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] disabled:cursor-not-allowed disabled:opacity-40" type="submit" [disabled]="!manualSelector.trim()">
+          {{ 'Check Selector' | translate }}
+        </button>
+      </form>
+    </div>
+  }
+
+
+  @if (selectors.length) {
+    <div class="fade-in-dashboard-item mt-[16px] space-y-[16px]">
+      @for (entry of selectors; track entry.selector) {
+        <div class="w-full overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-700)] text-[var(--color-text1)] shadow-sm [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider)] px-[16px] py-[12px]">
+            <div class="flex min-w-0 items-center gap-[8px] text-[12px] font-[800] uppercase tracking-[0.06em] text-[#3b82f6]">
+              <i class="bi bi-shield-lock"></i> <span class="truncate font-mono normal-case tracking-normal text-[13px] text-[var(--color-text1)]">{{ entry.selector }}._domainkey</span>
+            </div>
+            <div class="flex shrink-0 items-center gap-[6px]">
+              @if (entry.validation?.found && entry.validation?.source) {
+                <span class="rounded-full border px-[9px] py-[3px] text-[11px] font-[600]" [ngClass]="entry.validation?.source === 'archive' ? 'border-amber-400/30 bg-amber-400/10 text-amber-300' : 'border-sky-400/30 bg-sky-400/10 text-sky-300'">
+                  {{ (entry.validation?.source === 'archive' ? 'Archived' : 'Live DNS') | translate }}
+                </span>
+              }
+              @if (keyLabel(entry.validation)) {
+                <span class="rounded-full border border-[var(--color-border)] bg-[var(--color-blue-880)] px-[9px] py-[3px] font-mono text-[11px] font-[600] text-[var(--color-text2)]">{{ keyLabel(entry.validation) }}</span>
+              }
+              <span class="rounded-full border px-[10px] py-[3px] text-[11px] font-[700]" [ngClass]="badge(entry).classes">{{ badge(entry).label | translate }}</span>
+            </div>
+          </div>
+
+          <div class="px-[16px] py-[12px]">
+            @if (entry.loading) {
+              <div class="max-w-[520px]">
+                <div class="mb-[6px] text-[12px] font-medium text-[var(--color-text4)]">{{ entry.step || ('Validating...' | translate) }} ({{ pct(entry.progress) }}%)</div>
+                <div class="h-[8px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+                  <div class="h-full rounded-full bg-[var(--color-blue-640)] transition-[width] duration-300 ease-out" [ngClass]="'ui-wpct-' + pct(entry.progress)"></div>
+                </div>
+              </div>
+            } @else if (entry.error) {
+              <div class="text-[13px] text-rose-300 [.light-theme_&]:text-rose-500">{{ entry.error }}</div>
+            } @else if (entry.validation) {
+
+              @if (entry.validation.checks?.length) {
+                <div class="mb-[10px]">
+                  @for (check of entry.validation.checks; track check.test) {
+                    <div class="grid grid-cols-[22px_1fr_1.2fr] items-start gap-3 border-b border-[var(--color-divider)] py-[7px] last:border-0 max-[560px]:grid-cols-[22px_1fr]">
+                      <i class="bi {{ checkIcon(check.status) }} {{ checkColor(check.status) }} mt-[1px] text-[15px]"></i>
+                      <div class="text-[13px] font-[600] text-[var(--color-text1)]">{{ check.test | translate }}</div>
+                      <div class="text-[12px] text-[var(--color-text4)] max-[560px]:col-start-2">{{ check.response }}</div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="space-y-[10px] border-t border-[var(--color-divider)] pt-[10px]">
+                @if (entry.validation.dns_query) {
+                  <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'DNS Query' | translate }}</span><br><span class="break-all font-mono text-[13px]">{{ entry.validation.dns_query }}</span></div>
+                }
+                @if (entry.validation.first_seen || entry.validation.last_seen) {
+                  <div class="flex flex-wrap gap-x-[24px] gap-y-[6px]">
+                    @if (entry.validation.first_seen) {
+                      <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'First Seen' | translate }}</span><br><span class="text-[13px] text-[var(--color-text2)]">{{ entry.validation.first_seen }}</span></div>
+                    }
+                    @if (entry.validation.last_seen) {
+                      <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'Last Seen' | translate }}</span><br><span class="text-[13px] text-[var(--color-text2)]">{{ entry.validation.last_seen }}</span></div>
+                    }
+                  </div>
+                }
+                @for (field of parsedEntries(entry.validation); track field.key) {
+                  <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ field.key }}</span><br><span class="break-all font-mono text-[13px] text-[var(--color-text2)]">{{ field.value || '—' }}</span></div>
+                }
+                @if (entry.validation.parsed_data?.['public_key (p)']) {
+                  <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'public_key (p)' }}</span><br><span class="break-all font-mono text-[12px] text-[var(--color-text4)]">{{ entry.validation.parsed_data?.['public_key (p)'] }}</span></div>
+                }
+                @if (entry.validation.warnings?.length) {
+                  <div>
+                    <span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'Warnings' | translate }}</span>
+                    <ul class="mt-1 space-y-1">
+                      @for (warning of entry.validation.warnings; track warning) {
+                        <li class="flex items-start gap-2 text-[13px] text-amber-300 [.light-theme_&]:text-amber-600"><i class="bi bi-exclamation-circle mt-[2px] text-[12px]"></i><span>{{ warning }}</span></li>
+                      }
+                    </ul>
+                  </div>
+                }
+                @if (entry.validation.raw_record) {
+                  <div><span class="text-[11px] font-[700] uppercase text-[var(--color-text6)]">{{ 'Raw Record' | translate }}</span><br><span class="break-all font-mono text-[12px] text-[var(--color-text4)]">{{ entry.validation.raw_record }}</span></div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+
+  <app-export-choice-modal
+    [visible]="isExportChoiceOpen"
+    [title]="('Export Report') | translate"
+    [subtitle]="('Choose the export format.') | translate"
+    [options]="reportExportOptions"
+    overlayTestId="dkim-lookup-export-overlay"
+    modalTestId="dkim-lookup-export-modal"
+    closeTestId="dkim-lookup-export-close"
+    (closed)="closeExportChoice()"
+    (optionSelected)="selectExport($event)">
+  </app-export-choice-modal>
+</div>
