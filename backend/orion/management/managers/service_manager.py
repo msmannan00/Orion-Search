@@ -101,6 +101,7 @@ class service_manager:
 
     async def build_map_assets(self, build_dir):
         await helper_controller.init_map_entities_task(build_dir)
+        await helper_controller.init_persona_posts_task(build_dir)
 
     @staticmethod
     def default_build_dir():

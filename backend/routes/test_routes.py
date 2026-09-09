@@ -569,3 +569,75 @@ async def test_social_session_tabs(graph_type: str = Query("social")):
 )
 async def test_social_session_tab_add(_tab: dict = Body(...), graph_type: str = Query("social")):
     return TestRouteHelper.pending_or_elastic_mock(f"social_session_tab_add_{graph_type}", "social_session_tab_add.json")
+
+@test_routes.post("/api/manage-profiles/platforms", dependencies=SCAN_DEPS)
+async def test_manage_profiles_platforms():
+    return {"status": "done", "result": {"items": [{"platform": "twitter", "base": "https://twitter.com"}]}}
+
+@test_routes.post("/api/manage-profiles/session", dependencies=SCAN_DEPS)
+async def test_manage_profiles_session():
+    return {"status": "done", "result": {"platform": "twitter", "saved": True}}
+
+@test_routes.post("/api/manage-profiles/session/verify", dependencies=SCAN_DEPS)
+async def test_manage_profiles_session_verify():
+    return {"status": "done", "result": {"verified": True, "username": "testuser"}}
+
+@test_routes.post("/api/manage-profiles/sessions", dependencies=SCAN_DEPS)
+async def test_manage_profiles_sessions():
+    return {"status": "done", "result": {"platforms": {"twitter": [{"id": "session123", "platform": "twitter", "capturedAt": "2026-09-04T12:00:00Z", "verified": True, "username": "testuser"}]}}}
+
+@test_routes.delete("/api/manage-profiles/session/{platform}/{session_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_session_delete(platform: str, session_id: str):
+    return {"status": "done"}
+
+@test_routes.get("/api/manage-profiles/personas", dependencies=SCAN_DEPS)
+async def test_manage_profiles_personas():
+    return {"personas": [{"persona_id": "p1", "name": "Test Persona", "adult_status": True, "age_group": "25-34", "gender": "male", "city": "New York", "country": "USA", "interests": ["tech"]}]}
+
+@test_routes.post("/api/manage-profiles/personas", dependencies=SCAN_DEPS)
+async def test_manage_profiles_persona_create(payload: dict = Body(...)):
+    payload["persona_id"] = "new_p"
+    return payload
+
+@test_routes.put("/api/manage-profiles/personas/{persona_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_persona_update(persona_id: str, payload: dict = Body(...)):
+    payload["persona_id"] = persona_id
+    return payload
+
+@test_routes.delete("/api/manage-profiles/personas/{persona_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_persona_delete(persona_id: str):
+    return {"message": "deleted"}
+
+@test_routes.get("/api/manage-profiles/profiles", dependencies=SCAN_DEPS)
+async def test_manage_profiles_profiles():
+    return {"profiles": [{"profile_id": "prof1", "platform": "twitter", "profile_username": "testuser", "connection_status": "connected", "assigned_persona_id": "p1"}]}
+
+@test_routes.post("/api/manage-profiles/profiles", dependencies=SCAN_DEPS)
+async def test_manage_profiles_profile_create(payload: dict = Body(...)):
+    payload["profile_id"] = "new_prof"
+    return payload
+
+@test_routes.put("/api/manage-profiles/profiles/{profile_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_profile_update(profile_id: str, payload: dict = Body(...)):
+    payload["profile_id"] = profile_id
+    return payload
+
+@test_routes.delete("/api/manage-profiles/profiles/{profile_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_profile_delete(profile_id: str):
+    return {"message": "deleted"}
+
+@test_routes.post("/api/manage-profiles/assignments", dependencies=SCAN_DEPS)
+async def test_manage_profiles_assign(payload: dict = Body(...)):
+    return {"status": "assigned"}
+
+@test_routes.delete("/api/manage-profiles/assignments/{profile_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_unassign(profile_id: str):
+    return {"status": "unassigned"}
+
+@test_routes.get("/api/manage-profiles/results/{profile_id}", dependencies=SCAN_DEPS)
+async def test_manage_profiles_results(profile_id: str):
+    return {"ad_detection_results": [{"date_time": "2026-09-04T12:00:00Z", "total_detected_ads": 2, "ads": [{"author": "AdAuthor1", "url": "https://twitter.com/ad1", "content_text": "Ad text 1", "likes": "10", "shares": "2", "views": "100", "detected_at": "2026-09-04T12:00:00Z"}]}], "post_results": [{"date_time": "2026-09-04T12:00:00Z", "post_url": "https://twitter.com/post1", "error": False}]}
+
+@test_routes.get("/api/extension/session")
+async def test_extension_session():
+    return {"extension_connected": True}

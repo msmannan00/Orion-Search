@@ -5,7 +5,7 @@ import hashlib
 import re
 from pathlib import Path
 from datetime import datetime, timezone
-
+import builtins
 from fastapi import HTTPException
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
@@ -314,6 +314,67 @@ class helper_controller:
             except Exception as ex:
                 log.g().e(f"File watcher error: {str(ex)}")
                 await asyncio.sleep(5)
+
+    @staticmethod
+    async def init_persona_posts_task(build_dir):
+        asyncio.create_task(helper_controller.init_persona_posts(build_dir))
+
+    @staticmethod
+    async def init_persona_posts(build_dir):
+
+        if build_dir is None:
+            return
+
+        build_dir = Path(build_dir)
+        posts_file = None
+        candidates = [
+            build_dir / "assets" / "data" / "persona_posts" / "posts.json",
+            build_dir.parent / "client" / "src" / "assets" / "data" / "persona_posts" / "posts.json",
+        ]
+
+        for candidate in candidates:
+            if candidate.exists():
+                posts_file = candidate
+                break
+
+        if not posts_file:
+            log.g().w("Persona posts file not found, skipping dump.")
+            return
+
+        try:
+            from orion.services.mongo_manager.mongo_controller import mongo_controller
+            from orion.services.mongo_manager.shared_model.db_social_profile_management_model import db_persona_posts
+            
+            engine = mongo_controller.get_instance().get_engine()
+            collection = engine.get_collection(db_persona_posts)
+
+            count = await collection.count_documents({})
+            if count > 0:
+                log.g().i(f"Persona posts already dumped ({count} records). Skipping.")
+                return
+
+            log.g().i(f"Loading persona posts from: {posts_file} (This may take a minute...)")
+
+            def load_json():
+                with builtins.open(posts_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            
+            data = await asyncio.to_thread(load_json)
+
+            if not isinstance(data, list):
+                log.g().e("Persona posts file is not a valid JSON array.")
+                return
+
+            log.g().i(f"Parsed {len(data)} persona post records. Inserting into MongoDB...")
+
+            chunk_size = 500
+            for i in range(0, len(data), chunk_size):
+                chunk = data[i:i + chunk_size]
+                await collection.insert_many(chunk)
+
+            log.g().i("Successfully dumped persona posts to MongoDB.")
+        except Exception as ex:
+            log.g().e(f"Error during persona posts dump: {str(ex)}")
 
     @staticmethod
     def clone_model(model):

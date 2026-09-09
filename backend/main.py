@@ -103,6 +103,7 @@ app.include_router(api_routes)
 app.include_router(geo_fencing_routes, include_in_schema=False)
 app.include_router(graph_routes, include_in_schema=False)
 app.include_router(social_routes, include_in_schema=False)
+app.include_router(manage_profiles_routes, include_in_schema=False)
 app.include_router(case_routes, include_in_schema=False)
 
 app.add_exception_handler(Exception, global_exception_handler)

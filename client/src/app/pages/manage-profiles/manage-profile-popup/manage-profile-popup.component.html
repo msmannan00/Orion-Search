@@ -1,0 +1,106 @@
+<app-case-edit-drawer
+  [title]="title() | translate"
+  [subtitle]="mode() === 'persona' ? ('Create and update social personas.' | translate) : ('Attach an available session to a managed profile.' | translate)"
+  [saveLabel]="saving() ? ('Saving...' | translate) : ('Save' | translate)"
+  saveTestId="manage-profile-popup-save"
+  cancelTestId="manage-profile-popup-cancel"
+  drawerTestId="manage-profile-popup-drawer"
+  (save)="save()"
+  (cancel)="close()">
+  <div class="bg-[var(--color-blue-830)] p-6 [body.light-theme_&]:bg-white">
+    <form (ngSubmit)="save()" class="space-y-5 [body.light-theme_&]:[&_input:focus]:ring-2 [body.light-theme_&]:[&_input:focus]:ring-sky-500/20">
+      @if (formError()) {
+        <div class="rounded-[8px] border border-red-400/15 bg-red-500/[0.04] px-4 py-3 text-sm text-red-300 [body.light-theme_&]:text-red-700">{{ formError() }}</div>
+      }
+
+      @if (mode() === 'persona') {
+        <div class="space-y-5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-830)]/35 p-4">
+          <h3 class="mb-4 text-[15px] font-bold leading-tight text-[var(--color-text1)]">{{ 'Persona Details' | translate }}</h3>
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Persona Name' | translate }} <span class="text-red-500 [body.light-theme_&]:text-red-700">*</span></label>
+            <input [ngModel]="personaForm().name" (ngModelChange)="onPersonaField('name', $event)" name="personaName" class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 py-2 text-[var(--color-text1)] outline-none focus:border-sky-400/40" />
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Age Group' | translate }}</label>
+              <div class="mt-1">
+                <app-ui-dropdown [options]="ageGroups" [selected]="personaForm().age_group" [searchable]="false" (valueChange)="onPersonaField('age_group', $event || '18-24')"></app-ui-dropdown>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Adult Status' | translate }}</label>
+              <div class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-790)] px-3 py-2 text-[var(--color-text4)]">{{ adultStatusLabel() }}</div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Gender' | translate }}</label>
+              <div class="mt-1">
+                <app-ui-dropdown [options]="genders" [selected]="personaForm().gender" [searchable]="false" (valueChange)="onPersonaField('gender', $event || 'unspecified')"></app-ui-dropdown>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Country' | translate }}</label>
+              <input [ngModel]="personaForm().country" (ngModelChange)="onPersonaField('country', $event)" name="country" class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 py-2 text-[var(--color-text1)] outline-none focus:border-sky-400/40" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'City' | translate }}</label>
+              <input [ngModel]="personaForm().city" (ngModelChange)="onPersonaField('city', $event)" name="city" class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 py-2 text-[var(--color-text1)] outline-none focus:border-sky-400/40" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Interests' | translate }}</label>
+            <div class="mt-1">
+              <app-ui-dropdown [options]="interests" [selectedValues]="personaForm().interests" [multiSelect]="true" [showSelectedChips]="true" placeholder="Select up to 3 interests" (valuesChange)="onInterestChange($event)"></app-ui-dropdown>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (mode() === 'profile') {
+        <div class="space-y-5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-830)]/35 p-4">
+          <h3 class="mb-4 text-[15px] font-bold leading-tight text-[var(--color-text1)]">{{ 'Profile Details' | translate }}</h3>
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Platform' | translate }} <span class="text-red-500 [body.light-theme_&]:text-red-700">*</span></label>
+            <div class="mt-1">
+              <app-ui-dropdown [options]="platformOptions()" [selected]="profileForm().platform" [searchable]="true" placeholder="Select platform" (valueChange)="onProfilePlatform($event)"></app-ui-dropdown>
+            </div>
+          </div>
+
+          @if (availableSessionOptions().length > 0) {
+            <div>
+              <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Session' | translate }} <span class="text-red-500 [body.light-theme_&]:text-red-700">*</span></label>
+              <div class="mt-1">
+                <app-ui-dropdown [options]="availableSessionOptions()" [selected]="profileForm().session_id || ''" [searchable]="true" placeholder="Select session" (valueChange)="onProfileSession($event)"></app-ui-dropdown>
+              </div>
+            </div>
+          } @else {
+            <div class="rounded-[8px] border border-dashed border-[var(--color-border)] bg-[var(--color-blue-820)] p-4 text-center text-sm text-[var(--color-text3)] [body.light-theme_&]:bg-[#f5f9fe]">
+              <p class="mb-3">{{ selectedPlatformEmptyText() }}</p>
+              <button type="button" (click)="sessionsRequested.emit()" class="h-8 rounded-lg border border-[var(--color-border)] px-3 text-[12px] font-semibold text-[var(--color-text2)] hover:bg-[var(--color-blue-810)]">{{ 'Go to Sessions' | translate }}</button>
+            </div>
+          }
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Profile Name' | translate }}</label>
+            <input [ngModel]="profileForm().profile_name" (ngModelChange)="profileForm.update(form => ({ ...form, profile_name: $event }))" name="profileName" class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 py-2 text-[var(--color-text1)] outline-none focus:border-sky-400/40" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Profile Username' | translate }}</label>
+            <input [ngModel]="profileForm().profile_username" (ngModelChange)="profileForm.update(form => ({ ...form, profile_username: $event }))" name="profileUsername" class="mt-1 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 py-2 text-[var(--color-text1)] outline-none focus:border-sky-400/40" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{ 'Actions / Purposes' | translate }} <span class="text-red-500 [body.light-theme_&]:text-red-700">*</span></label>
+            <div class="mt-1">
+              <app-ui-dropdown [options]="purposes" [selectedValues]="profileForm().purposes" [multiSelect]="true" [showSelectedChips]="true" placeholder="Select actions" (valuesChange)="onProfilePurposes($event)"></app-ui-dropdown>
+            </div>
+          </div>
+        </div>
+      }
+    </form>
+  </div>
+</app-case-edit-drawer>

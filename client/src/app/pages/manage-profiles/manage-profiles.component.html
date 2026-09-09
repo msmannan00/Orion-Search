@@ -1,98 +1,124 @@
 <div class="w-full p-3 sm:p-5">
+  @if (confirmationAction()) {
+    <app-confirmation-popup [message]="confirmationMessage()" (confirmed)="confirmAction($event)"></app-confirmation-popup>
+  }
+
   <div data-testid="manage-profiles-page" class="relative overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-blue-700)] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] p-4 shadow-[0_10px_28px_var(--color-shadow-light)] sm:p-5 [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-white [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_8px_24px_rgba(15,23,42,0.07)]">
     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/45 to-transparent"></div>
+
     <header class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-5">
       <div class="min-w-0">
         <h1 class="mb-0 text-xl font-semibold leading-tight text-[var(--color-text1)]">{{ 'Manage Profiles' | translate }}</h1>
-        <p class="mb-0 mt-1 max-w-2xl text-xs leading-5 text-[var(--color-text4)]">{{ 'Supported platforms available through the Orion extension.' | translate }}</p>
+        <p class="mb-0 mt-1 max-w-2xl text-xs leading-5 text-[var(--color-text4)]">{{ 'Manage personas, browser sessions, profiles, and assignments.' | translate }}</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        @if (activeTab() === 'personas') {
+          <button type="button" data-testid="manage-profiles-add-persona" (click)="openPersonaModal()" class="inline-flex h-8 items-center justify-center rounded-lg border border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] px-3 text-[11px] font-semibold text-[var(--color-text1)] transition enabled:hover:-translate-y-px enabled:hover:border-[#28557d] enabled:hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc]">{{ 'Add Persona' | translate }}</button>
+        }
+        @if (activeTab() === 'profiles') {
+          <button type="button" data-testid="manage-profiles-add-profile" (click)="openProfileModal()" class="inline-flex h-8 items-center justify-center rounded-lg border border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] px-3 text-[11px] font-semibold text-[var(--color-text1)] transition enabled:hover:-translate-y-px enabled:hover:border-[#28557d] enabled:hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc]">{{ 'Add Profile' | translate }}</button>
+        }
       </div>
     </header>
 
-    @if (state() === null || loading()) {
-      <div class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] [body.light-theme_&]:bg-[#f5f9fe]">
-        @for (row of shimmerRows; track row) {
-          <div class="border-b border-[var(--color-border)] px-3 py-3 last:border-b-0 sm:px-4">
-            <div class="flex items-center justify-between gap-4">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-8 w-8 flex-shrink-0 rounded-lg"></div>
-                <div class="min-w-0 space-y-2">
-                  <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-3.5 w-28 rounded"></div>
-                  <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-2.5 w-44 rounded"></div>
-                </div>
-              </div>
-              <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-9 w-28 flex-shrink-0 rounded-lg"></div>
-            </div>
-          </div>
-        }
-      </div>
-    } @else if (state() !== 'ready') {
-      <app-social-extension-manager [mode]="state()!"></app-social-extension-manager>
-    } @else if (error()) {
-      <div class="rounded-xl border border-red-400/15 bg-red-500/[0.04] p-6 text-center text-sm text-[var(--color-text3)]">{{ 'Unable to load platforms. Try again.' | translate }}</div>
-    } @else {
-      <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] [body.light-theme_&]:shadow-[0_2px_8px_rgba(15,23,42,0.035)]">
-        @for (entry of platforms(); track entry.platform) {
-          <section data-testid="manage-profiles-platform" class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
-            <div [ngClass]="isExpanded(entry.platform) ? 'w-0.5' : 'w-0 group-hover:w-0.5'" class="pointer-events-none absolute inset-y-0 left-0 z-[1] bg-[var(--color-blue-640)] transition-[width]"></div>
-            <div (click)="toggleRow(entry)" (keydown.enter)="toggleRow(entry, $event)" (keydown.space)="toggleRow(entry, $event)" [class.cursor-pointer]="sessionCount(entry.platform) > 0" [ngClass]="isExpanded(entry.platform) ? '!bg-[#1b2a40] [body.light-theme_&]:!bg-[#eef5fc]' : ''" [attr.role]="sessionCount(entry.platform) > 0 ? 'button' : null" [attr.tabindex]="sessionCount(entry.platform) > 0 ? 0 : null" [attr.aria-expanded]="sessionCount(entry.platform) > 0 ? isExpanded(entry.platform) : null" [attr.aria-controls]="sessionCount(entry.platform) > 0 ? ('manage-profiles-session-list-' + safePlatform(entry.platform)) : null" class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 transition-colors duration-[160ms] ease-[ease] hover:bg-[var(--ui-table-row-hover)] sm:flex sm:px-4 sm:py-3">
-              <span [attr.data-platform]="safePlatform(entry.platform)" class="manage-profile-logo-tile flex h-8 w-8 flex-shrink-0 self-start items-center justify-center overflow-hidden rounded-[9px] p-1 text-white shadow-[0_4px_12px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/[0.06] [body.light-theme_&]:text-[var(--color-text2)] [body.light-theme_&]:shadow-[0_3px_8px_rgba(15,23,42,0.09),inset_0_1px_0_rgba(255,255,255,0.85)] [body.light-theme_&]:ring-[#d5e2ee]/70">
-                <app-social-icon [platformName]="entry.platform"></app-social-icon>
-              </span>
-              <div class="min-w-0 flex-1">
-                <div class="flex min-w-0 flex-wrap items-center gap-2">
-                  @switch (platformStatus(entry.platform)) {
-                    @case ('failed') {
-                      <span class="h-2 w-2 shrink-0 rounded-full bg-red-400 ring-2 ring-red-400/10" role="img" [attr.aria-label]="'Not Verified' | translate" [title]="'Not Verified' | translate"></span>
-                    }
-                    @case ('pending') {
-                      <span class="h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-2 ring-slate-400/15" role="img" [attr.aria-label]="'Not Scanned' | translate" [title]="'Not Scanned' | translate"></span>
-                    }
-                    @default {
-                      <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-400 ring-2 ring-emerald-400/10" role="img" [attr.aria-label]="'Verified' | translate" [title]="'Verified' | translate"></span>
-                    }
-                  }
-                  <h2 class="mb-0 w-[68px] shrink-0 truncate text-[13px] font-semibold leading-5 text-[var(--color-text1)]">{{ entry.platform }}</h2>
-                  @if (sessionCount(entry.platform) > 0) {
-                    <span data-testid="manage-profiles-session-count" [attr.id]="'manage-profiles-session-count-' + safePlatform(entry.platform)" class="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap text-[10px] font-medium text-[var(--color-text4)]">
-                      <span aria-hidden="true" class="text-[var(--ui-table-row-border-hover)]">·</span>
-                      <span class="font-mono tabular-nums">{{ sessionCount(entry.platform) }}/{{ maxSessions }}</span>
-                      <span>{{ 'saved' | translate }}</span>
-                    </span>
-                  }
-                  @if (sessionCount(entry.platform) > 0) {
-                    <i class="bi bi-chevron-down shrink-0 text-[10px] leading-none text-[var(--color-text4)] transition-transform duration-200" [class.rotate-180]="isExpanded(entry.platform)" aria-hidden="true"></i>
-                  }
-                </div>
-                <a [href]="entry.base" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" class="mt-0.5 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[var(--color-blue-640)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">
-                  <span class="truncate">{{ entry.base }}</span>
-                </a>
-              </div>
-              <div class="col-start-2 flex min-w-0 items-center gap-2 sm:ml-auto sm:shrink-0">
-                <button type="button" data-testid="manage-profiles-session-fetch" (click)="$event.stopPropagation(); fetchSession(entry)" (keydown)="$event.stopPropagation()" [disabled]="sessionFetching().has(entry.platform) || sessionCount(entry.platform) >= maxSessions" [title]="(sessionCount(entry.platform) >= maxSessions ? 'Maximum sessions reached' : 'Fetch session') | translate" class="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] px-3 text-[11px] font-semibold text-[var(--color-text1)] outline-none transition-[background-color,border-color,color,transform] focus-visible:ring-2 focus-visible:ring-[var(--color-blue-640)]/35 enabled:hover:-translate-y-px enabled:hover:border-[#28557d] enabled:hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] disabled:cursor-not-allowed disabled:opacity-50 [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc] [.light-theme_&]:enabled:hover:border-[#8fb3d8] [.light-theme_&]:enabled:hover:bg-[#e4effa]">
-                  @if (sessionFetching().has(entry.platform)) {
-                    {{ 'Fetching…' | translate }}
-                  } @else if (sessionCount(entry.platform) >= maxSessions) {
-                    {{ 'Max reached' | translate }}
-                  } @else {
-                    {{ 'Fetch session' | translate }}
-                  }
-                </button>
-              </div>
-            </div>
+    <div class="mb-5 flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      @for (tab of tabs; track tab.key) {
+        <button type="button" [attr.data-testid]="'manage-profiles-tab-' + tab.key" (click)="setTab(tab.key)" [disabled]="!canOpenTab(tab.key)" class="h-9 shrink-0 rounded-lg border px-3 text-[12px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45" [ngClass]="activeTab() === tab.key ? 'border-sky-400/30 bg-sky-400/[0.12] text-[var(--color-text1)]' : 'border-[var(--color-border)] bg-[var(--color-blue-820)] text-[var(--color-text4)] hover:bg-[var(--color-blue-810)] hover:text-[var(--color-text2)]'">
+          {{ tab.label | translate }}
+        </button>
+      }
+    </div>
 
-            @if (sessionCount(entry.platform) > 0) {
-              <div [class]="(isExpanded(entry.platform) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0') + ' grid transition-[grid-template-rows,opacity] duration-[180ms] ease-out motion-reduce:transition-none'" [attr.id]="'manage-profiles-session-list-' + safePlatform(entry.platform)" [attr.aria-labelledby]="'manage-profiles-session-count-' + safePlatform(entry.platform)" [attr.aria-hidden]="!isExpanded(entry.platform)" [attr.inert]="!isExpanded(entry.platform) ? '' : null" role="region">
-                <div class="min-h-0 overflow-hidden">
-                  <div data-testid="manage-profiles-session-list" class="relative border-t border-[var(--ui-table-row-border)] !bg-[#1b2a40] [body.light-theme_&]:!bg-[#eef5fc]">
-                    <div class="pointer-events-none absolute inset-y-0 left-[27px] w-px bg-[var(--ui-table-row-border)] sm:left-[31px]"></div>
-                    @for (session of sessionsFor(entry.platform); track session.id) {
+    @if (formError()) {
+      <div class="mb-4 rounded-xl border border-red-400/15 bg-red-500/[0.04] px-4 py-3 text-sm text-[var(--color-text3)]">{{ formError() }}</div>
+    }
+
+    <div class="transition-opacity duration-[180ms] ease-out">
+      @if (activeTab() === 'sessions') {
+            @if (state() === null || loading()) {
+          <div class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] [body.light-theme_&]:bg-[#f5f9fe]">
+            @for (row of shimmerRows; track row) {
+              <div class="border-b border-[var(--color-border)] px-3 py-3 last:border-b-0 sm:px-4">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-8 w-8 flex-shrink-0 rounded-lg"></div>
+                    <div class="min-w-0 space-y-2">
+                      <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-3.5 w-28 rounded"></div>
+                      <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-2.5 w-44 rounded"></div>
+                    </div>
+                  </div>
+                  <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-9 w-28 flex-shrink-0 rounded-lg"></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (state() !== 'ready') {
+          <app-social-extension-manager [mode]="state()!"></app-social-extension-manager>
+        } @else if (error()) {
+          <div class="rounded-xl border border-red-400/15 bg-red-500/[0.04] p-6 text-center text-sm text-[var(--color-text3)]">{{ 'Unable to load platforms. Try again.' | translate }}</div>
+        } @else {
+          <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] [body.light-theme_&]:shadow-[0_2px_8px_rgba(15,23,42,0.035)]">
+            @for (entry of platforms(); track entry.platform) {
+              <section data-testid="manage-profiles-platform" class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+                <div [ngClass]="isExpanded(entry.platform) ? 'w-0.5' : 'w-0 group-hover:w-0.5'" class="pointer-events-none absolute inset-y-0 left-0 z-[1] bg-[var(--color-blue-640)] transition-[width]"></div>
+                <div (click)="toggleRow(entry)" (keydown.enter)="toggleRow(entry, $event)" (keydown.space)="toggleRow(entry, $event)" [class.cursor-pointer]="sessionCount(entry.platform) > 0" [ngClass]="isExpanded(entry.platform) ? '!bg-[#1b2a40] [body.light-theme_&]:!bg-[#eef5fc]' : ''" [attr.role]="sessionCount(entry.platform) > 0 ? 'button' : null" [attr.tabindex]="sessionCount(entry.platform) > 0 ? 0 : null" [attr.aria-expanded]="sessionCount(entry.platform) > 0 ? isExpanded(entry.platform) : null" [attr.aria-controls]="sessionCount(entry.platform) > 0 ? ('manage-profiles-session-list-' + safePlatform(entry.platform)) : null" class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2.5 transition-colors duration-[160ms] ease-[ease] hover:bg-[var(--ui-table-row-hover)] sm:flex sm:px-4 sm:py-3">
+                  <span [attr.data-platform]="safePlatform(entry.platform)" class="manage-profile-logo-tile flex h-8 w-8 flex-shrink-0 self-start items-center justify-center overflow-hidden rounded-[9px] p-1 text-white shadow-[0_4px_12px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/[0.06] [body.light-theme_&]:text-[var(--color-text2)] [body.light-theme_&]:shadow-[0_3px_8px_rgba(15,23,42,0.09),inset_0_1px_0_rgba(255,255,255,0.85)] [body.light-theme_&]:ring-[#d5e2ee]/70">
+                    <app-social-icon [platformName]="entry.platform"></app-social-icon>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                      @switch (platformStatus(entry.platform)) {
+                        @case ('failed') {
+                          <span class="h-2 w-2 shrink-0 rounded-full bg-red-400 ring-2 ring-red-400/10" role="img" [attr.aria-label]="'Not Verified' | translate" [title]="'Not Verified' | translate"></span>
+                        }
+                        @case ('pending') {
+                          <span class="h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-2 ring-slate-400/15" role="img" [attr.aria-label]="'Not Scanned' | translate" [title]="'Not Scanned' | translate"></span>
+                        }
+                        @default {
+                          <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-400 ring-2 ring-emerald-400/10" role="img" [attr.aria-label]="'Verified' | translate" [title]="'Verified' | translate"></span>
+                        }
+                      }
+                      <h2 class="mb-0 w-[68px] shrink-0 truncate text-[13px] font-semibold leading-5 text-[var(--color-text1)]">{{ entry.platform }}</h2>
+                      @if (sessionCount(entry.platform) > 0) {
+                        <span data-testid="manage-profiles-session-count" [attr.id]="'manage-profiles-session-count-' + safePlatform(entry.platform)" class="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap text-[10px] font-medium text-[var(--color-text4)]">
+                          <span aria-hidden="true" class="text-[var(--ui-table-row-border-hover)]">·</span>
+                          <span class="font-mono tabular-nums">{{ sessionCount(entry.platform) }}/{{ maxSessions }}</span>
+                          <span>{{ 'saved' | translate }}</span>
+                        </span>
+                      }
+                      @if (sessionCount(entry.platform) > 0) {
+                        <i class="bi bi-chevron-down shrink-0 text-[10px] leading-none text-[var(--color-text4)] transition-transform duration-200" [class.rotate-180]="isExpanded(entry.platform)" aria-hidden="true"></i>
+                      }
+                    </div>
+                    <a [href]="entry.base" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" class="mt-0.5 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[var(--color-blue-640)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">
+                      <span class="truncate">{{ entry.base }}</span>
+                    </a>
+                  </div>
+                  <div class="col-start-2 flex min-w-0 items-center gap-2 sm:ml-auto sm:shrink-0">
+                    <button type="button" data-testid="manage-profiles-session-fetch" (click)="$event.stopPropagation(); fetchSession(entry)" (keydown)="$event.stopPropagation()" [disabled]="sessionFetching().has(entry.platform) || sessionCount(entry.platform) >= maxSessions" [title]="(sessionCount(entry.platform) >= maxSessions ? 'Maximum sessions reached' : 'Fetch session') | translate" class="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] px-3 text-[11px] font-semibold text-[var(--color-text1)] outline-none transition-[background-color,border-color,color,transform] focus-visible:ring-2 focus-visible:ring-[var(--color-blue-640)]/35 enabled:hover:-translate-y-px enabled:hover:border-[#28557d] enabled:hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] disabled:cursor-not-allowed disabled:opacity-50 [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc] [.light-theme_&]:enabled:hover:border-[#8fb3d8] [.light-theme_&]:enabled:hover:bg-[#e4effa]">
+                      @if (sessionFetching().has(entry.platform)) {
+                        {{ 'Fetching…' | translate }}
+                      } @else if (sessionCount(entry.platform) >= maxSessions) {
+                        {{ 'Max reached' | translate }}
+                      } @else {
+                        {{ 'Fetch session' | translate }}
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                @if (sessionCount(entry.platform) > 0) {
+                  <div [class]="(isExpanded(entry.platform) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0') + ' grid transition-[grid-template-rows,opacity] duration-[180ms] ease-out motion-reduce:transition-none'" [attr.id]="'manage-profiles-session-list-' + safePlatform(entry.platform)" [attr.aria-labelledby]="'manage-profiles-session-count-' + safePlatform(entry.platform)" [attr.aria-hidden]="!isExpanded(entry.platform)" [attr.inert]="!isExpanded(entry.platform) ? '' : null" role="region">
+                    <div class="min-h-0 overflow-hidden">
+                      <div data-testid="manage-profiles-session-list" class="relative border-t border-[var(--ui-table-row-border)] !bg-[#1b2a40] [body.light-theme_&]:!bg-[#eef5fc]">
+                        <div class="pointer-events-none absolute inset-y-0 left-[27px] w-px bg-[var(--ui-table-row-border)] sm:left-[31px]"></div>
+                        @for (session of sessionsFor(entry.platform); track session.id) {
                           <article class="relative grid gap-2.5 border-b border-[var(--ui-table-row-border)] py-2.5 pl-[55px] pr-3 transition-colors last:border-b-0 hover:bg-[var(--ui-table-row-hover)] sm:pl-[59px] sm:pr-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                             <span [ngClass]="sessionStatus(session) === 'verified' ? 'bg-emerald-400 ring-emerald-400/10' : sessionStatus(session) === 'failed' ? 'bg-red-400 ring-red-400/10' : 'bg-slate-400 ring-slate-400/15'" class="absolute left-[24px] top-[18px] h-2 w-2 rounded-full ring-2 sm:left-[28px]" aria-hidden="true"></span>
                             <div class="min-w-0">
                               <div class="flex min-w-0 flex-wrap items-center gap-2">
                                 <h4 class="mb-0 truncate font-mono text-[12px] font-semibold text-[var(--color-text2)]">{{ 'Session' | translate }} #{{ session.id.slice(0, 8) }}</h4>
                               </div>
-
                               <div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text4)]">
                                 <span class="inline-flex min-w-0 items-center gap-1.5">
                                   <i class="bi bi-calendar3 shrink-0 text-[10px]" aria-hidden="true"></i>
@@ -103,7 +129,6 @@
                                   <span class="truncate">{{ session.verified && session.username ? '@' + session.username : '-' }}</span>
                                 </span>
                               </div>
-
                               @if (session.verifyError) {
                                 <p class="mb-0 mt-1.5 inline-flex max-w-full items-start gap-1.5 text-[10px] leading-4 text-red-400" [title]="session.verifyError">
                                   <i class="bi bi-shield-exclamation mt-0.5 shrink-0" aria-hidden="true"></i>
@@ -111,7 +136,6 @@
                                 </p>
                               }
                             </div>
-
                             <div class="my-0.5 ml-auto grid w-fit max-w-full grid-cols-3 divide-x divide-[var(--ui-table-row-border)] overflow-hidden rounded-[7px] border border-[var(--ui-table-row-border-hover)] bg-[var(--color-blue-850)] shadow-[0_2px_6px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)] md:my-0 md:shrink-0 [body.light-theme_&]:border-[#c6d5e5] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-[0_2px_6px_rgba(15,23,42,0.08)]" role="group" aria-label="Session actions">
                               <button type="button" data-testid="manage-profiles-session-verify" (click)="verifySession(entry, session.id)" [disabled]="isVerifying(session.id)" [title]="'Verify session' | translate" [attr.aria-label]="'Verify session' | translate" class="inline-flex h-8 min-w-0 items-center justify-center gap-1.5 bg-transparent px-2 text-[10px] font-semibold text-[var(--color-text2)] outline-none transition-colors hover:bg-emerald-400/[0.07] hover:text-emerald-400 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/30 disabled:cursor-not-allowed disabled:opacity-50">
                                 @if (isVerifying(session.id)) {
@@ -135,18 +159,142 @@
                               </button>
                             </div>
                           </article>
-                    }
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </section>
+            } @empty {
+              <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No platforms returned by the extension.' | translate }}</div>
+            }
+          </div>
+        }
+      }
+
+      @if (activeTab() === 'personas') {
+        @if (socialLoading()) {
+          <div class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] [body.light-theme_&]:bg-[#f5f9fe]">
+            @for (row of shimmerRows; track row) {
+              <div class="border-b border-[var(--color-border)] px-3 py-3 last:border-b-0 sm:px-4">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="min-w-0 space-y-2">
+                    <div class="ui-shimmer h-3.5 w-32 rounded bg-[var(--color-placeholder)]"></div>
+                    <div class="ui-shimmer h-2.5 w-56 max-w-full rounded bg-[var(--color-placeholder)]"></div>
+                  </div>
+                  <div class="flex gap-2">
+                    <div class="ui-shimmer h-8 w-8 rounded-lg bg-[var(--color-placeholder)]"></div>
+                    <div class="ui-shimmer h-8 w-8 rounded-lg bg-[var(--color-placeholder)]"></div>
                   </div>
                 </div>
               </div>
             }
-          </section>
-        } @empty {
-          <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No platforms returned by the extension.' | translate }}</div>
+          </div>
+        } @else {
+          <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+            @for (persona of personas(); track persona.persona_id) {
+              <section class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+                <div class="pointer-events-none absolute inset-y-0 left-0 w-0 bg-[var(--color-blue-640)] transition-[width] group-hover:w-0.5"></div>
+                <div class="flex flex-wrap items-center gap-3 px-3 py-3 hover:bg-[var(--ui-table-row-hover)] sm:px-4">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h2 class="mb-0 truncate text-[13px] font-semibold text-[var(--color-text1)]">{{ persona.name }}</h2>
+                      <span class="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-semibold capitalize text-[var(--color-text4)]">{{ persona.adult_status ? 'Adult' : 'Minor' }}</span>
+                    </div>
+                    <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ persona.age_group }} · {{ statusLabel(persona.gender) }} · {{ persona.city || persona.country ? (persona.city || '') + (persona.city && persona.country ? ', ' : '') + (persona.country || '') : 'No location' }}</p>
+                    <p class="mb-0 mt-1 line-clamp-1 text-[11px] text-[var(--color-text3)]">{{ persona.interests.join(', ') || 'No interests selected' }}</p>
+                  </div>
+                  <div class="flex shrink-0 items-center gap-1.5">
+                    <button type="button" (click)="openPersonaModal(persona)" class="inline-flex h-7 w-7 items-center justify-center rounded-[5px] border border-[var(--color-border)] bg-transparent text-[var(--color-text2)] transition hover:border-sky-400/25 hover:bg-sky-400/[0.07] hover:text-[var(--color-blue-640)]" title="Edit persona"><i class="bi bi-pencil-square text-[12px]"></i></button>
+                    <button type="button" (click)="deletePersona(persona)" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-text4)] transition hover:bg-red-500/10 hover:text-red-500" title="Delete persona"><i class="bi bi-trash3 text-sm"></i></button>
+                  </div>
+                </div>
+              </section>
+            } @empty {
+              <div class="p-8 text-center text-sm text-[var(--color-text3)]">
+                <p class="mb-3">{{ 'No personas created yet.' | translate }}</p>
+                <button type="button" (click)="openPersonaModal()" class="h-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-820)] px-3 text-[12px] font-semibold text-[var(--color-text2)] hover:bg-[var(--color-blue-810)]">{{ 'Add Persona' | translate }}</button>
+              </div>
+            }
+          </div>
         }
-      </div>
-    }
+      }
+
+      @if (activeTab() === 'profiles') {
+        <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          @for (profile of profiles(); track profile.profile_id) {
+            <section class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+              <div class="pointer-events-none absolute inset-y-0 left-0 w-0 bg-[var(--color-blue-640)] transition-[width] group-hover:w-0.5"></div>
+              <div class="flex flex-wrap items-center gap-3 px-3 py-3 hover:bg-[var(--ui-table-row-hover)] sm:px-4">
+                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-700)] p-1.5 text-white [body.light-theme_&]:text-[var(--color-text2)]"><app-social-icon [platformName]="platformLabel(profile.platform)"></app-social-icon></span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="mb-0 truncate text-[13px] font-semibold text-[var(--color-text1)]">{{ profile.profile_name || profile.profile_username || 'Profile' }}</h2>
+                    <span class="rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2 py-0.5 text-[10px] font-semibold capitalize text-emerald-300">{{ statusLabel(profile.connection_status) }}</span>
+                  </div>
+                  <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ platformLabel(profile.platform) }} · Session #{{ (profile.session_id || '').slice(0, 8) || 'None' }} · {{ profile.profile_username || 'No username' }}</p>
+                  <p class="mb-0 mt-1 line-clamp-1 text-[11px] text-[var(--color-text3)]">{{ (profile.purposes || []).map(purposeLabel.bind(this)).join(', ') || 'No actions selected' }}</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-1.5">
+                  <button type="button" (click)="openProfileModal(profile)" class="inline-flex h-7 w-7 items-center justify-center rounded-[5px] border border-[var(--color-border)] bg-transparent text-[var(--color-text2)] hover:border-sky-400/25 hover:bg-sky-400/[0.07] hover:text-[var(--color-blue-640)]" title="Edit profile"><i class="bi bi-pencil-square text-[12px]"></i></button>
+                  <button type="button" (click)="deleteProfile(profile)" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-text4)] hover:bg-red-500/10 hover:text-red-500" title="Delete profile"><i class="bi bi-trash3 text-sm"></i></button>
+                </div>
+              </div>
+            </section>
+          } @empty {
+            <div class="p-8 text-center text-sm text-[var(--color-text3)]">
+              <p class="mb-3">{{ 'No profiles created yet.' | translate }}</p>
+              <button type="button" (click)="openProfileModal()" class="h-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-820)] px-3 text-[12px] font-semibold text-[var(--color-text2)] hover:bg-[var(--color-blue-810)]">{{ 'Add Profile' | translate }}</button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (activeTab() === 'assignments') {
+        <div class="mb-4 grid grid-cols-[minmax(160px,1fr)_minmax(220px,1fr)_auto] gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] p-3 max-[760px]:grid-cols-1 [body.light-theme_&]:bg-[#f5f9fe]">
+          <app-ui-dropdown data-testid="manage-profiles-assign-persona" [options]="personaOptions()" [selected]="assignmentPersonaId()" placeholder="Select persona" [searchable]="true" (valueChange)="assignmentPersonaId.set($event || '')"></app-ui-dropdown>
+          <app-ui-dropdown data-testid="manage-profiles-assign-profile" [options]="assignmentProfileOptions()" [selected]="assignmentProfileId()" placeholder="Select profile" [searchable]="true" (valueChange)="assignmentProfileId.set($event || '')"></app-ui-dropdown>
+          <button type="button" data-testid="manage-profiles-assign-btn" (click)="assignProfile()" class="h-10 rounded-lg border border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] px-4 text-[12px] font-semibold text-[var(--color-text1)] hover:border-[#28557d]">{{ 'Assign' | translate }}</button>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          @for (profile of profiles(); track profile.profile_id) {
+            <section class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+              <div class="flex flex-wrap items-center gap-3 px-3 py-3 hover:bg-[var(--ui-table-row-hover)] sm:px-4">
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="mb-0 truncate text-[13px] font-semibold text-[var(--color-text1)]">{{ personaName(profile.assigned_persona_id) }}</h2>
+                    <span class="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-semibold capitalize text-[var(--color-text4)]">{{ statusLabel(profile.assignment_status) }}</span>
+                  </div>
+                  <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ platformLabel(profile.platform) }} · {{ profile.profile_name || profile.profile_username || 'Profile' }} · {{ statusLabel(profile.connection_status) }}</p>
+                </div>
+                <button type="button" [disabled]="!profile.assigned_persona_id" (click)="removeAssignment(profile)" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-text4)] hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40" title="Remove assignment"><i class="bi bi-trash3 text-sm"></i></button>
+              </div>
+            </section>
+          } @empty {
+            <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No profiles available for assignment.' | translate }}</div>
+          }
+        </div>
+      }
+
+      @if (activeTab() === 'results') {
+        <app-manage-profile-results [profiles]="profiles()" [platforms]="platforms()"></app-manage-profile-results>
+      }
+
+    </div>
   </div>
+
+  @if (modalMode()) {
+    <app-manage-profile-popup
+      [mode]="modalMode()!"
+      [persona]="selectedPersona()"
+      [profile]="selectedProfile()"
+      [platforms]="platforms()"
+      [sessions]="sessions()"
+      [profiles]="profiles()"
+      (closed)="closeModal()"
+      (saved)="onPopupSaved($event)"
+      (sessionsRequested)="closeModal(); setTab('sessions')"></app-manage-profile-popup>
+  }
 </div>
 
 @if (sessionPendingDelete(); as pendingDelete) {

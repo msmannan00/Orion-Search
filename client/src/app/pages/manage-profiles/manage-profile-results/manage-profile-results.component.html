@@ -1,0 +1,103 @@
+<div class="mb-4 grid grid-cols-[minmax(220px,1fr)_auto] gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] p-3 max-[760px]:grid-cols-1 [body.light-theme_&]:bg-[#f5f9fe]">
+  <app-ui-dropdown data-testid="manage-profiles-results-profile" [options]="resultsProfileOptions()" [selected]="resultsProfileId()" placeholder="Select profile" [searchable]="true" (valueChange)="selectResultsProfile($event || '')"></app-ui-dropdown>
+  <div class="flex flex-wrap items-center gap-2">
+    @for (activity of activities; track activity.key) {
+      <button type="button" (click)="setActivity(activity.key)" class="h-9 shrink-0 rounded-lg border px-3 text-[12px] font-semibold transition-colors" [ngClass]="activeActivity() === activity.key ? 'border-sky-400/30 bg-sky-400/[0.12] text-[var(--color-text1)]' : 'border-[var(--color-border)] bg-[var(--color-blue-820)] text-[var(--color-text4)] hover:bg-[var(--color-blue-810)] hover:text-[var(--color-text2)]'">{{ activity.label | translate }}</button>
+    }
+  </div>
+</div>
+
+@if (!resultsProfileId()) {
+  <div class="rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] p-8 text-center text-sm text-[var(--color-text3)]">{{ 'Select a profile to view its activity.' | translate }}</div>
+} @else if (resultsLoading()) {
+  <div class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-820)] [body.light-theme_&]:bg-[#f5f9fe]">
+    @for (row of shimmerRows; track $index) {
+      <div class="border-b border-[var(--color-border)] px-3 py-3 last:border-b-0 sm:px-4">
+        <div class="min-w-0 space-y-2">
+          <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-3.5 w-40 rounded"></div>
+          <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] bg-[var(--color-placeholder)] h-2.5 w-56 max-w-full rounded"></div>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="overflow-hidden rounded-xl border border-[var(--ui-table-shell-border)] bg-[var(--ui-table-row-odd)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+    @if (activeActivity() === 'ad_detection') {
+      @for (result of adDetectionResults(); track $index) {
+        <section class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+          <div class="pointer-events-none absolute inset-y-0 left-0 w-0 bg-[var(--color-blue-640)] transition-[width] group-hover:w-0.5"></div>
+          <div (click)="toggleResult('ad-' + $index)" (keydown.enter)="toggleResult('ad-' + $index)" (keydown.space)="toggleResult('ad-' + $index)" role="button" tabindex="0" [attr.aria-expanded]="isResultExpanded('ad-' + $index)" class="flex cursor-pointer flex-wrap items-center gap-3 px-3 py-3 hover:bg-[var(--ui-table-row-hover)] sm:px-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="mb-0 truncate text-[13px] font-semibold text-[var(--color-text1)]">{{ result.total_detected_ads }} {{ (result.total_detected_ads === 1 ? 'ad detected' : 'ads detected') | translate }}</h2>
+                @if (result.error) {
+                  <span class="rounded-full border border-red-400/15 bg-red-500/[0.06] px-2 py-0.5 text-[10px] font-semibold text-red-400">{{ (result.session_expired ? 'Session Expired' : 'Failed') | translate }}</span>
+                } @else {
+                  <span class="rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2 py-0.5 text-[10px] font-semibold text-emerald-300">{{ 'Completed' | translate }}</span>
+                }
+              </div>
+              <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ result.date_time | date: 'medium' }}</p>
+              @if (result.error_reason) {
+                <p class="mb-0 mt-1 line-clamp-2 text-[11px] text-[var(--color-text3)]">{{ result.error_reason }}</p>
+              }
+            </div>
+            @if (result.ads.length) {
+              <i class="bi text-[12px] text-[var(--color-text4)]" [ngClass]="isResultExpanded('ad-' + $index) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            }
+          </div>
+          @if (isResultExpanded('ad-' + $index) && result.ads.length) {
+            <div class="border-t border-[var(--ui-table-row-border)] bg-[var(--color-blue-820)] px-3 py-2 sm:px-4 [body.light-theme_&]:bg-[#f5f9fe]">
+              @for (ad of result.ads; track ad.url) {
+                <div class="border-b border-[var(--ui-table-row-border)] py-2 last:border-b-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="truncate text-[12px] font-semibold text-[var(--color-text1)]">{{ ad.author || 'Unknown' }}</span>
+                    <a [href]="ad.url" target="_blank" rel="noopener noreferrer" class="truncate text-[11px] font-medium text-[var(--color-blue-640)] hover:underline">{{ ad.url }}</a>
+                  </div>
+                  @if (ad.content_text) {
+                    <p class="mb-0 mt-1 line-clamp-2 text-[11px] text-[var(--color-text3)]">{{ ad.content_text }}</p>
+                  }
+                  <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ 'Likes' | translate }}: {{ ad.likes || '-' }} · {{ 'Shares' | translate }}: {{ ad.shares || '-' }} · {{ 'Views' | translate }}: {{ ad.views || '-' }} · {{ ad.detected_at | date: 'short' }}</p>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      } @empty {
+        <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No ad detection results yet.' | translate }}</div>
+      }
+    }
+
+    @if (activeActivity() === 'posting') {
+      @for (result of postResults(); track $index) {
+        <section class="group relative border-b border-[var(--ui-table-row-border)] odd:bg-[var(--ui-table-row-odd)] even:bg-[var(--ui-table-row-even)] last:border-b-0">
+          <div class="pointer-events-none absolute inset-y-0 left-0 w-0 bg-[var(--color-blue-640)] transition-[width] group-hover:w-0.5"></div>
+          <div class="flex flex-wrap items-center gap-3 px-3 py-3 hover:bg-[var(--ui-table-row-hover)] sm:px-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="mb-0 truncate text-[13px] font-semibold text-[var(--color-text1)]">{{ (result.error ? 'Post failed' : 'Post published') | translate }}</h2>
+                @if (result.error) {
+                  <span class="rounded-full border border-red-400/15 bg-red-500/[0.06] px-2 py-0.5 text-[10px] font-semibold text-red-400">{{ (result.session_expired ? 'Session Expired' : 'Failed') | translate }}</span>
+                } @else {
+                  <span class="rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2 py-0.5 text-[10px] font-semibold text-emerald-300">{{ 'Published' | translate }}</span>
+                }
+              </div>
+              <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ result.date_time | date: 'medium' }}</p>
+              @if (result.post_url) {
+                <a [href]="result.post_url" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[var(--color-blue-640)] hover:underline"><span class="truncate">{{ result.post_url }}</span></a>
+              }
+              @if (result.error_reason) {
+                <p class="mb-0 mt-1 line-clamp-2 text-[11px] text-[var(--color-text3)]">{{ result.error_reason }}</p>
+              }
+            </div>
+          </div>
+        </section>
+      } @empty {
+        <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No posting results yet.' | translate }}</div>
+      }
+    }
+
+    @if (activeActivity() === 'hate_speech') {
+      <div class="p-8 text-center text-sm text-[var(--color-text3)]">{{ 'No hate speech results yet.' | translate }}</div>
+    }
+  </div>
+}

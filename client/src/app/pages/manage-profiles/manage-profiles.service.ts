@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, filter, map, of, switchMap, take, timer } from 'rxjs';
-import { PlatformEntry, SessionEntry } from './model/manage-profiles.model';
+import { PlatformEntry, SessionEntry, SocialPersona, SocialPersonaCreateRequest, SocialPersonaListResponse, SocialPersonaUpdateRequest, SocialProfile, SocialProfileAssignmentRequest, SocialProfileAssignmentResponse, SocialProfileConnectRequest, SocialProfileListResponse, SocialProfileResultsResponse, SocialProfileUpdateRequest } from './model/manage-profiles.model';
 import { SocialExtensionService } from '../../shared/services/social-extension.service';
 
 export type ManageProfilesExtensionState = 'checking' | 'ready' | 'signin' | 'install' | 'update' | 'unsupported';
@@ -50,5 +50,49 @@ export class ManageProfilesService {
   deleteSession(platform: string, sessionId: string): Observable<void> {
     return this.http.delete(`/api/manage-profiles/session/${encodeURIComponent(platform)}/${encodeURIComponent(sessionId)}`, { withCredentials: true }).pipe(map(() => undefined),
       catchError(() => of(undefined)));
+  }
+
+  getPersonas(): Observable<SocialPersonaListResponse> {
+    return this.http.get<SocialPersonaListResponse>('/api/manage-profiles/personas', { withCredentials: true });
+  }
+
+  createPersona(payload: SocialPersonaCreateRequest): Observable<SocialPersona> {
+    return this.http.post<SocialPersona>('/api/manage-profiles/personas', payload, { withCredentials: true });
+  }
+
+  updatePersona(personaId: string, payload: SocialPersonaUpdateRequest): Observable<SocialPersona> {
+    return this.http.put<SocialPersona>(`/api/manage-profiles/personas/${personaId}`, payload, { withCredentials: true });
+  }
+
+  deletePersona(personaId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`/api/manage-profiles/personas/${personaId}`, { withCredentials: true });
+  }
+
+  getProfiles(): Observable<SocialProfileListResponse> {
+    return this.http.get<SocialProfileListResponse>('/api/manage-profiles/profiles', { withCredentials: true });
+  }
+
+  connectProfile(payload: SocialProfileConnectRequest): Observable<SocialProfile> {
+    return this.http.post<SocialProfile>('/api/manage-profiles/profiles', payload, { withCredentials: true });
+  }
+
+  updateProfile(profileId: string, payload: SocialProfileUpdateRequest): Observable<SocialProfile> {
+    return this.http.put<SocialProfile>(`/api/manage-profiles/profiles/${profileId}`, payload, { withCredentials: true });
+  }
+
+  deleteProfile(profileId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`/api/manage-profiles/profiles/${profileId}`, { withCredentials: true });
+  }
+
+  assignProfile(payload: SocialProfileAssignmentRequest): Observable<SocialProfileAssignmentResponse> {
+    return this.http.post<SocialProfileAssignmentResponse>('/api/manage-profiles/assignments', payload, { withCredentials: true });
+  }
+
+  removeAssignment(profileId: string): Observable<SocialProfileAssignmentResponse> {
+    return this.http.delete<SocialProfileAssignmentResponse>(`/api/manage-profiles/assignments/${profileId}`, { withCredentials: true });
+  }
+
+  getProfileResults(profileId: string): Observable<SocialProfileResultsResponse> {
+    return this.http.get<SocialProfileResultsResponse>(`/api/manage-profiles/results/${profileId}`, { withCredentials: true });
   }
 }
