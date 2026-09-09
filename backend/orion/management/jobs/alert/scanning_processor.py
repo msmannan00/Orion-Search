@@ -79,7 +79,7 @@ class ScanningAlertProcessor:
                 response = await self._crawl_model.scan_domain(payload)
                 scan_result = ResponseParser.to_dict(response, allow_model_dump=False, allow_dict_method=False)
                 if scan_result is None:
-                    break
+                    return None
 
                 status = scan_result.get("status")
                 if status == "pending":
@@ -90,21 +90,23 @@ class ScanningAlertProcessor:
                 if not isinstance(result, dict):
                     return False
 
-                break
+                alert_fields = ScanResultMapper.to_alert_fields(scan_type, ioc_type, ioc_value, result)
+                if not alert_fields:
+                    return None
 
-            alert_fields = ScanResultMapper.to_alert_fields(scan_type, ioc_type, ioc_value, result)
-            if not alert_fields:
-                return None
-
-            self._alert_buffer.add_alert(tenant_id, alert_fields)
-            return AlertSummaryHelper.new_scan_summary()
+                self._alert_buffer.add_alert(tenant_id, alert_fields)
+                return AlertSummaryHelper.new_scan_summary()
 
         except Exception:
             return AlertSummaryHelper.new_scan_summary()
 
     async def handle_vulnerability_scanning_alert(self, tenant_id: str, ioc_value: str, ioc_type: str):
         summary = AlertSummaryHelper.new_scan_summary()
-        if ioc_type != "m_domain" or self._search_model is None:
+        if ioc_type != "m_domain":
+            return summary
+
+        search_model = self._search_model
+        if search_model is None:
             return summary
 
         try:
@@ -117,7 +119,7 @@ class ScanningAlertProcessor:
                 if self._cancellation_service.is_cancelled(tenant_id):
                     return summary
 
-                response = await self._search_model.network_intel(payload, "url_vulnerability_scan")
+                response = await search_model.network_intel(payload, "url_vulnerability_scan")
                 scan_result = ResponseParser.to_dict(response, allow_dict_method=False)
                 if scan_result is None:
                     return summary
@@ -130,19 +132,18 @@ class ScanningAlertProcessor:
                 result = scan_result.get("result")
                 if not isinstance(result, dict):
                     return summary
-                break
 
-            for finding in VulnerabilityScanResultMapper.findings_from_result(result):
-                if self._cancellation_service.is_cancelled(tenant_id):
-                    return summary
+                for finding in VulnerabilityScanResultMapper.findings_from_result(result):
+                    if self._cancellation_service.is_cancelled(tenant_id):
+                        return summary
 
-                alert_fields = VulnerabilityScanResultMapper.to_alert_fields(ioc_type, ioc_value, result, finding)
-                if not alert_fields:
-                    continue
+                    alert_fields = VulnerabilityScanResultMapper.to_alert_fields(ioc_type, ioc_value, result, finding)
+                    if not alert_fields:
+                        continue
 
-                self._alert_buffer.add_alert(tenant_id, alert_fields)
+                    self._alert_buffer.add_alert(tenant_id, alert_fields)
 
-            return summary
+                return summary
 
         except Exception:
             return AlertSummaryHelper.new_scan_summary()

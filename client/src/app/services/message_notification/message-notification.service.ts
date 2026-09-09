@@ -10,7 +10,7 @@ export class MessageNotificationService {
   message = computed(() => this.messageSignal());
   type = computed(() => this.typeSignal());
 
-  show(message: string, type: MessageType = 'fail', duration: number = 3000) {
+  show(message: string, type: MessageType = 'fail', duration = 3000) {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;

@@ -2,60 +2,71 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, timer } from 'rxjs';
-import { exhaustMap, filter, map, takeUntil } from 'rxjs/operators';
-import type { social_profile, social_resource } from '../models/social.models';
+import { Observable, Subject, of, timer } from 'rxjs';
+import { debounceTime, exhaustMap, map, switchMap, takeUntil } from 'rxjs/operators';
+import type { social_profile } from '../models/social.models';
 import { formatFollowers } from '../../../shared/utils/formatters';
 import { SocialIconComponent } from '../../../shared/partials/social-icon/social-icon.component';
 import { SocialFetchService } from '../services/social-fetch.service';
 import { SocialStorageService } from '../services/social-storage.service';
 import { getProfileDetailEntries } from '../utils/summary-view.util';
 import { buildSocialProfileUrl } from '../utils/profile-url.util';
+import { crawlKey, getPlatformCardId as cardId, getProfileGroupKey, isSamePlatform } from '../utils/social-profile.util';
+import { SocialLiveSyncService } from '../services/social-live-sync.service';
 import { StealerlogSectionComponent } from '../stealerlog-section/stealerlog-section.component';
 import { WantedListSectionComponent } from '../wanted-list-section/wanted-list-section.component';
+import { PhoneLookupSectionComponent } from '../phone-lookup-section/phone-lookup-section.component';
 import type { FetchStateKey, FetchTabKey, SocialResultSource } from '../enums/social-graph.enums';
-import type { FeedUser, FetchTab } from '../models/social-usability.models';
+import type { CrawlResultView, FeedUser, FetchTab } from '../models/social-usability.models';
 import type { ExtensionState } from '../../../shared/model/extension/extension.model';
 import { toUsername } from '../utils/username.util';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { SocialDefaultListSectionComponent } from './default-list-section.component';
 import { SocialProfileTabsSectionComponent } from '../profile-detail/profile-tabs-section/profile-tabs-section.component';
 import { SocialExtensionManagerComponent } from '../../../shared/partials/extension-manager/extension-manager.component';
 import { SocialExtensionService } from '../../../shared/services/social-extension.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { getInputValue } from '../../../shared/utils/event-input.util';
+import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
+
+
 
 @Component({
   selector: 'app-social-profile-listing',
   templateUrl: './profile-listing.component.html',
+  styleUrls: ['./profile-listing.component.css'],
   standalone: true,
-  imports: [NgClass, SocialIconComponent, StealerlogSectionComponent, WantedListSectionComponent, SocialDefaultListSectionComponent, SocialProfileTabsSectionComponent, SocialExtensionManagerComponent, TranslatePipe],
-  animations: [fadeInDashboardItem],
+  imports: [NgClass, SocialIconComponent, StealerlogSectionComponent, WantedListSectionComponent, PhoneLookupSectionComponent, SocialDefaultListSectionComponent, SocialProfileTabsSectionComponent, SocialExtensionManagerComponent, TranslatePipe],
+  providers: [SocialLiveSyncService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SocialProfileListingComponent {
   private readonly detailsTab: FetchTab = { key: 'details', label: 'Details', icon: 'bi bi-person-badge' };
+  private readonly connectionsTab: FetchTab = { key: 'connections', label: 'Connections', icon: 'bi bi-people' };
   private readonly onlinePresenceTab: FetchTab = { key: 'onlinePresence', label: 'Online Presence', icon: 'bi bi-globe2' };
   private readonly stealerLogsTab: FetchTab = { key: 'stealerLogs', label: 'Stealer Logs', icon: 'bi bi-shield-exclamation' };
   private readonly profileFetchTabs: FetchTab[] = [this.detailsTab, this.onlinePresenceTab, this.stealerLogsTab];
-  private readonly crawlResults = signal<Record<string, { loading?: boolean; items?: unknown[]; error?: string }>>({});
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fetchService = inject(SocialFetchService);
   private readonly extensionService = inject(SocialExtensionService);
   private readonly storageService = inject(SocialStorageService);
+  private readonly liveSync = inject(SocialLiveSyncService);
   private readonly fetchCancelSubjects = new Map<string, Subject<void>>();
   private appliedProfileQuery = signal(false);
-  private readonly loadingByRequestKey = signal<Record<string, boolean>>({});
+  private readonly loadingByRequestKey = signal<Record<string, boolean | undefined>>({});
   private readonly loadingPlatformIds = computed(() => {
     const platformIds = new Set<string>();
     const addFrom = (key: string) => {
-      const platformId = key.match(/^(?:[^:]*:)?(platform-[^:]+)/)?.[1];
+      const parts = key.split(':');
+      const platformId = parts[0].startsWith('platform-')
+        ? parts[0]
+        : parts[1]?.startsWith('platform-') ? parts[1] : undefined;
       if (platformId) {
         platformIds.add(platformId);
       }
     };
-    for (const [key, state] of Object.entries(this.crawlResults())) {
+    for (const [key, state] of Object.entries(this.liveSync.crawlResults())) {
       if (state?.loading) {
         addFrom(key);
       }
@@ -76,29 +87,28 @@ export class SocialProfileListingComponent {
   });
   private readonly loadingUsernames = computed(() => {
     const usernames = new Set<string>();
-    for (const platformId of this.loadingPlatformIds()) {
-      const username = platformId.match(/^platform-(.+?)\|/)?.[1];
-      if (username) {
-        usernames.add(username);
-      }
-    }
+    const loadingIds = this.loadingPlatformIds();
     for (const [username, profiles] of this.storageService.state.scanResults()) {
-      for (const platform of profiles) {
-        if (Object.values(platform.section_status ?? {}).some(status => status === 'fetching')) {
-          usernames.add(username);
-        }
+      const loading = profiles.some(platform =>
+        loadingIds.has(this.getPlatformCardId(platform))
+        || Object.values(platform.section_status ?? {}).some(status => status === 'fetching'));
+      if (loading) {
+        usernames.add(username);
       }
     }
     return usernames;
   });
   private extensionOpened = false;
+  private readonly connectionSearchResults = signal<Record<string, unknown[] | null>>({});
+  private readonly connectionSearch$ = new Subject<{ platformData: social_profile; term: string }>();
 
   readonly scanResults = this.storageService.state.scanResults;
-  readonly extensionState = signal<ExtensionState>('install');
+  readonly extensionState = signal<ExtensionState>('checking');
   isInitialLoading = input(false);
   sidebarPlatformClicked = output<string>();
   profileOverviewLabelChanged = output<string | null>();
   manageProfilesRequested = output<FeedUser>();
+  scanInProgress = output();
   highlightedNodeId = input<string | null>(null);
   activeTabs = signal<Record<string, FetchTabKey | null>>({});
   profileOverviewIds = signal<Set<string>>(new Set<string>());
@@ -139,22 +149,37 @@ export class SocialProfileListingComponent {
 
   constructor() {
     this.startExtensionHeartbeat();
+    this.connectionSearch$.pipe(debounceTime(250), switchMap(({ platformData, term }) => {
+      const key = this.getPlatformCardId(platformData);
+      const query = term.trim();
+      if (!query) {
+        return of({ key, items: null as unknown[] | null });
+      }
+      return this.fetchService.searchConnections(platformData.meta.platform, platformData.meta.username, query).pipe(map(items => ({ key, items: items })));
+    }), takeUntilDestroyed(this.destroyRef)).subscribe(({ key, items }) => {
+      this.connectionSearchResults.update(current => ({ ...current, [key]: items }));
+    });
     effect(() => {
       this.storageService.state.loadingUsernames.set(this.loadingUsernames());
     });
     effect(() => {
       this.storageService.state.scanResults();
       this.extensionState();
-      queueMicrotask(() => this.resumeInFlightSections());
+      queueMicrotask(() => {
+        this.resumeInFlightSections();
+      });
     });
     effect(() => {
       this.activeUsers();
       this.isInitialLoading();
-      queueMicrotask(() => this.openProfileOverviewFromQuery());
+      queueMicrotask(() => {
+        this.openProfileOverviewFromQuery();
+      });
     });
   }
 
   setActiveTab(platformId: string, tabKey: FetchTabKey, platformData?: social_profile): void {
+    this.liveSync.stoppedPlatformIds.delete(platformId);
     this.activeTabs.update(current => ({ ...current, [platformId]: tabKey }));
     if (platformData) {
       this.fetchTabData(platformData, tabKey);
@@ -163,7 +188,7 @@ export class SocialProfileListingComponent {
 
   openProfileOverviewTab(platformId: string, tabKey: FetchTabKey, platformData?: social_profile): void {
     this.profileOverviewIds.set(new Set<string>([platformId]));
-    this.setActiveTab(platformId, platformData ? this.getAllowedTabKey(platformData, tabKey) : tabKey, platformData);
+    this.setActiveTab(platformId, platformData ? this.getAllowedTabKey(tabKey) : tabKey, platformData);
     if (platformData) {
       this.setProfileQuery(platformData);
       this.emitProfileOverviewLabel(platformData);
@@ -182,66 +207,38 @@ export class SocialProfileListingComponent {
   }
 
   getActiveTab(platformId: string): FetchTabKey {
-    return this.activeTabs()[platformId] ?? 'details';
+    return getOwnProperty(this.activeTabs(), platformId) ?? 'details';
   }
 
   getActiveTabForPlatform(platformData: social_profile): FetchTabKey {
-    return this.getAllowedTabKey(platformData, this.getActiveTab(this.getPlatformCardId(platformData)));
+    return this.getAllowedTabKey(this.getActiveTab(this.getPlatformCardId(platformData)));
   }
 
   getFetchTabs(): FetchTab[] {
-    const types = this.activeProfilePlatform()?.profile_details?.crawl_type ?? [];
+    const active = this.activeProfilePlatform();
+    if (active && this.getResultSource(active) === 'darkweb') {
+      return [this.detailsTab, this.onlinePresenceTab];
+    }
+    const appended = new Set(['following', 'connections', 'onlinePresence', 'stealerLogs']);
+    const types = (this.activeProfilePlatform()?.profile_details?.crawl_type ?? []).filter(type => !appended.has(type));
     if (!types.length) {
       return this.profileFetchTabs;
     }
     const crawlTabs: FetchTab[] = types.map(type => ({ key: type as FetchTabKey, label: type.charAt(0).toUpperCase() + type.slice(1), icon: type === 'details' ? 'bi bi-person-badge' : 'bi bi-collection' }));
-    return [...crawlTabs, this.onlinePresenceTab, this.stealerLogsTab];
+
+
+    const withDetails = crawlTabs.some(tab => tab.key === 'details') ? crawlTabs : [this.detailsTab, ...crawlTabs];
+    return [...withDetails, this.connectionsTab, this.onlinePresenceTab, this.stealerLogsTab];
   }
 
-  private crawlKey(platformData: social_profile, type: FetchTabKey): string {
-    return `${this.getPlatformCardId(platformData)}:${type}`;
-  }
-
-  crawlResultFor(platformData: social_profile, type: FetchTabKey): { loading?: boolean; items?: unknown[]; error?: string } {
-    const state = this.crawlResults()[this.crawlKey(platformData, type)] ?? {};
-    const collection = (platformData.resources ?? []).find(entry => entry.id === type);
-    return { loading: state.loading, error: state.error, items: collection?.resources ?? state.items };
-  }
-
-  private fetchCrawlType(platformData: social_profile, type: FetchTabKey, force = false): void {
-    if (!this.isExtensionReady()) {
-      return;
-    }
-    const key = this.crawlKey(platformData, type);
-    if (this.crawlResults()[key]?.loading) {
-      return;
-    }
-    const existing = (platformData.resources ?? []).find(entry => entry.id === type);
-    const command = (force || !existing?.is_parsed) ? 'crawl' : 'poll';
-    if (command === 'crawl') {
-      this.crawlResults.update(current => ({ ...current, [key]: { loading: true } }));
-      this.setSectionStatus(platformData, type, 'fetching');
-    }
-    const url = buildSocialProfileUrl(platformData.meta.platform, platformData.meta.username, platformData.meta.url);
-    const cancel$ = new Subject<void>();
-    this.fetchCancelSubjects.set(key, cancel$);
-    this.fetchService.crawlProfile(platformData.meta.platform, platformData.meta.username, url, type, command).pipe(takeUntil(cancel$), takeUntilDestroyed(this.destroyRef)).subscribe(result => {
-      this.fetchCancelSubjects.delete(key);
-      this.crawlResults.update(current => ({ ...current, [key]: { loading: false, error: result.error } }));
-      if (result.idle || result.error) {
-        if (command === 'crawl') {
-          this.setSectionStatus(platformData, type, 'failed');
-        }
-        return;
-      }
-      if (result.items) {
-        this.setFetchedResourceCollection(platformData, type, result.items as social_resource[]);
-      }
-    });
+  crawlResultFor(platformData: social_profile, type: FetchTabKey): CrawlResultView {
+    return this.liveSync.crawlResultFor(platformData, type);
   }
 
   stopPlatformFetches(platformData: social_profile): void {
     const cardId = this.getPlatformCardId(platformData);
+    this.liveSync.stoppedPlatformIds.add(cardId);
+    this.liveSync.stopPlatform(cardId);
     for (const [key, cancel$] of Array.from(this.fetchCancelSubjects)) {
       if (key.includes(cardId)) {
         cancel$.next();
@@ -250,11 +247,11 @@ export class SocialProfileListingComponent {
         this.cancelServerCrawl(platformData, key);
       }
     }
-    this.crawlResults.update(current => {
+    this.liveSync.crawlResults.update(current => {
       const next = { ...current };
       for (const key of Object.keys(next)) {
-        if (key.startsWith(`${cardId}:`) && next[key]?.loading) {
-          next[key] = { ...next[key], loading: false };
+        if (key.startsWith(`${cardId}:`) && getOwnProperty(next, key)?.loading) {
+          setOwnProperty(next, key, { ...getOwnProperty(next, key), loading: false });
         }
       }
       return next;
@@ -263,12 +260,12 @@ export class SocialProfileListingComponent {
       const next = { ...current };
       for (const key of Object.keys(next)) {
         if (key.includes(cardId)) {
-          delete next[key];
+          Reflect.deleteProperty(next, key);
         }
       }
       return next;
     });
-    this.clearFetchingStatus(platformData);
+    this.liveSync.clearFetchingStatus(platformData);
   }
 
   stopUserFetches(username: string): void {
@@ -294,59 +291,6 @@ export class SocialProfileListingComponent {
     return key.slice(0, key.indexOf(':')) === 'profile' ? 'details' : null;
   }
 
-  private clearFetchingStatus(platformData: social_profile): void {
-    let updatedProfiles: social_profile[] | null = null;
-    this.storageService.state.scanResults.update(results => {
-      const currentProfiles = results.get(platformData.meta.username);
-      if (!currentProfiles) {
-        return results;
-      }
-      let changed = false;
-      const nextProfiles = currentProfiles.map(platform => {
-        if (!this.isSamePlatform(platform, platformData)) {
-          return platform;
-        }
-        const status = { ...(platform.section_status ?? {}) };
-        for (const section of Object.keys(status)) {
-          if (status[section] === 'fetching') {
-            delete status[section];
-            changed = true;
-          }
-        }
-        return changed ? { ...platform, section_status: status } : platform;
-      });
-      if (!changed) {
-        return results;
-      }
-      updatedProfiles = nextProfiles;
-      return new Map(results).set(platformData.meta.username, nextProfiles);
-    });
-    if (updatedProfiles) {
-      this.storageService.saveProfiles(platformData.meta.username, updatedProfiles, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-    }
-  }
-
-  private setFetchedResourceCollection(platformResult: social_profile, type: FetchTabKey, resources: social_resource[]): void {
-    let updatedProfiles: social_profile[] | null = null;
-    this.storageService.state.scanResults.update(results => {
-      const currentProfiles = results.get(platformResult.meta.username);
-      if (!currentProfiles) {
-        return results;
-      }
-      updatedProfiles = currentProfiles.map(platform => {
-        if (!this.isSamePlatform(platform, platformResult)) {
-          return platform;
-        }
-        const others = (platform.resources ?? []).filter(entry => entry.id !== type);
-        return { ...platform, section_status: { ...platform.section_status, [type]: 'completed' }, resources: [...others, { id: type, is_parsed: true, resources }] };
-      });
-      return new Map(results).set(platformResult.meta.username, updatedProfiles);
-    });
-    if (updatedProfiles) {
-      this.storageService.saveProfiles(platformResult.meta.username, updatedProfiles, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-    }
-  }
-
   isFetchTabAllowed(tabKey: FetchTabKey): boolean {
     return this.profileFetchTabs.some(tab => tab.key === tabKey);
   }
@@ -367,14 +311,30 @@ export class SocialProfileListingComponent {
   }
 
   private fetchTabData(platformData: social_profile, tabKey: FetchTabKey): void {
-    if (this.hasTabData(platformData, tabKey) && !this.isTabLoading(platformData, tabKey)) {
+    if (tabKey !== 'stealerLogs' && this.hasTabData(platformData, tabKey) && !this.isTabLoading(platformData, tabKey)) {
       return;
     }
     this.refetchTabData(platformData, tabKey);
   }
 
   private startExtensionHeartbeat(): void {
+    let indeterminateMisses = 0;
     timer(0, 3000).pipe(exhaustMap(() => this.extensionService.detect()), takeUntilDestroyed(this.destroyRef)).subscribe(state => {
+
+
+
+      if (state === 'checking') {
+        indeterminateMisses += 1;
+        const previous = this.extensionState();
+        if ((previous === 'ready' || previous === 'update' || previous === 'signin') && indeterminateMisses < 3) {
+          return;
+        }
+        this.extensionState.set(indeterminateMisses >= 3 ? 'install' : 'checking');
+        return;
+      }
+      indeterminateMisses = 0;
+
+
       this.extensionState.set(state);
 
       if (state === 'signin' && !this.extensionOpened) {
@@ -391,6 +351,7 @@ export class SocialProfileListingComponent {
     if (this.getResultSource(platformData) === 'darkweb' && tabKey === 'details') {
       return;
     }
+    this.liveSync.stoppedPlatformIds.delete(this.getPlatformCardId(platformData));
     switch (tabKey) {
       case 'details':
         this.fetchProfileDetails(platformData);
@@ -401,9 +362,6 @@ export class SocialProfileListingComponent {
       case 'stealerLogs':
         this.fetchStealerLogs(platformData);
         break;
-      default:
-        this.fetchCrawlType(platformData, tabKey, true);
-        break;
     }
   }
 
@@ -412,17 +370,59 @@ export class SocialProfileListingComponent {
     if (tabKey === 'details' || tabKey === 'onlinePresence' || tabKey === 'stealerLogs') {
       this.fetchTabData(platformData, tabKey);
     }
-    else {
-      this.fetchCrawlType(platformData, tabKey);
-    }
   }
 
   onProfileTabRefetch(platformData: social_profile, tabKey: FetchTabKey): void {
-    if (tabKey !== 'details' && tabKey !== 'onlinePresence' && tabKey !== 'stealerLogs') {
-      this.fetchCrawlType(platformData, tabKey, true);
-      return;
+    if (tabKey === 'details' || tabKey === 'onlinePresence' || tabKey === 'stealerLogs') {
+      this.refetchTabData(platformData, tabKey);
     }
-    this.refetchTabData(platformData, tabKey);
+  }
+
+  onProfileTabSyncAll(platformData: social_profile, tabKey: FetchTabKey): void {
+    if (this.isExtensionReady()) {
+      if (this.liveSync.isScanning(platformData)) {
+        this.scanInProgress.emit();
+      }
+      void this.liveSync.startLiveFetch(platformData, tabKey);
+    }
+  }
+
+  onProfileTabStopSync(platformData: social_profile, tabKey: FetchTabKey): void {
+    this.liveSync.stopSync(platformData, tabKey);
+  }
+
+  onProfileTabLoadConnections(platformData: social_profile, postUrl: string): void {
+    if (this.isExtensionReady() && postUrl) {
+      if (this.liveSync.isScanning(platformData)) {
+        this.scanInProgress.emit();
+      }
+      void this.liveSync.loadConnections(platformData, postUrl);
+    }
+  }
+
+  onProfileTabSyncAllConnections(platformData: social_profile): void {
+    if (this.isExtensionReady()) {
+      if (this.liveSync.isScanning(platformData)) {
+        this.scanInProgress.emit();
+      }
+      void this.liveSync.syncAllConnections(platformData);
+    }
+  }
+
+  onProfileConnectionSearch(platformData: social_profile, term: string): void {
+    this.connectionSearch$.next({ platformData, term });
+  }
+
+  getConnectionSearchResults(platformData: social_profile): unknown[] | null {
+    return this.connectionSearchResults()[this.getPlatformCardId(platformData)] ?? null;
+  }
+
+  connectionsLoading(): Set<string> {
+    return this.liveSync.connectionsLoading();
+  }
+
+  connectionsByPost(): ReadonlyMap<string, unknown[]> {
+    return this.liveSync.connectionsByPost();
   }
 
   onProfileOnlinePresenceTermChanged(platformData: social_profile, term: string): void {
@@ -444,9 +444,22 @@ export class SocialProfileListingComponent {
 
   getLoadingStates(platformData: social_profile): Partial<Record<FetchTabKey, boolean>> {
     return this.getFetchTabs().reduce<Partial<Record<FetchTabKey, boolean>>>((currentStates, tab) => {
-      currentStates[tab.key] = this.isTabLoading(platformData, tab.key);
+      currentStates[tab.key] = this.isSectionBusy(platformData, tab.key);
       return currentStates;
     }, {});
+  }
+
+  private isSectionBusy(platformData: social_profile, tabKey: FetchTabKey): boolean {
+    if (tabKey === 'connections') {
+      return false;
+    }
+    if (tabKey === 'details' || tabKey === 'onlinePresence' || tabKey === 'stealerLogs') {
+      return this.isTabLoading(platformData, tabKey);
+    }
+    if (this.liveSync.crawlResults()[crawlKey(platformData, tabKey)]?.loading) {
+      return true;
+    }
+    return getOwnProperty(platformData.section_status, tabKey) === 'fetching';
   }
 
   private hasTabData(platformData: social_profile, tabKey: FetchTabKey): boolean {
@@ -462,7 +475,7 @@ export class SocialProfileListingComponent {
     }
   }
 
-  formatMetadataValue(value: any): string {
+  formatMetadataValue(value: unknown): string {
     if (value === null || value === undefined) {
       return '';
     }
@@ -477,18 +490,18 @@ export class SocialProfileListingComponent {
     return String(value);
   }
 
-  copyToClipboard(text: any): void {
+  copyToClipboard(text: unknown): void {
     const str = this.formatMetadataValue(text);
     void navigator.clipboard?.writeText(str);
   }
 
-  getStealerLogs(platformData: social_profile): any[] {
-    return platformData.stealer_logs || [];
+  getStealerLogs(platformData: social_profile): unknown[] {
+    return platformData.stealer_logs ?? [];
   }
 
   getOnlinePresenceSearchTerm(platformData: social_profile): string {
     const key = this.getPlatformCardId(platformData);
-    return this.onlinePresenceSearchTerms()[key] ?? '';
+    return getOwnProperty(this.onlinePresenceSearchTerms(), key) ?? '';
   }
 
   searchOnlinePresence(platformData: social_profile): void {
@@ -496,7 +509,11 @@ export class SocialProfileListingComponent {
   }
 
   isExtensionReady(): boolean {
-    return this.extensionState() === 'ready';
+    return this.extensionState() === 'ready' || this.extensionState() === 'update';
+  }
+
+  extensionUpdateUrl(): string {
+    return this.extensionService.downloadUrl();
   }
 
   private fetchProfileDetails(platformData: social_profile): void {
@@ -505,7 +522,13 @@ export class SocialProfileListingComponent {
     }
     this.cancelFetch(platformData, 'profile');
     const profileUrl = buildSocialProfileUrl(platformData.meta.platform, platformData.meta.username, platformData.meta.url);
-    this.fetchData(platformData, 'profile', this.fetchService.crawlProfile(platformData.meta.platform, platformData.meta.username, profileUrl, 'details').pipe(filter(result => !!result.idle || !!result.error || ((result.items?.length ?? 0) > 0 && !!result.items?.[0] && Object.keys(result.items[0] as object).length > 0)), map(result => (result.idle || result.error) ? { failed: true } : { profile: (result.items ?? [])[0] as Record<string, unknown> })));
+    const detailsKey = crawlKey(platformData, 'details');
+    this.fetchData(platformData, 'profile', this.fetchService.crawlProfile(platformData.meta.platform, platformData.meta.username, profileUrl, 'details').pipe(map(result => {
+      const profile = (result.items ?? [])[0] as Record<string, unknown> | undefined;
+      const hasProfile = !result.idle && !result.error && !!profile && Object.keys(profile).length > 0;
+      this.liveSync.crawlResults.update(current => ({ ...current, [detailsKey]: { loading: false, error: hasProfile ? undefined : (result.error ?? 'crawl_failed'), login_url: hasProfile ? undefined : result.login_url } }));
+      return hasProfile ? { profile } : { failed: true };
+    })));
   }
 
   private fetchOnlinePresence(platformData: social_profile, token: string): void {
@@ -522,8 +545,7 @@ export class SocialProfileListingComponent {
   private fetchStealerLogs(platformData: social_profile): void {
     this.cancelFetch(platformData, 'stealerLogs');
     const username = platformData.meta.username;
-    const domain = this.getPlatformDomain(platformData);
-    this.fetchData(platformData, 'stealerLogs', this.fetchService.fetchPlatformStealerLogs(username, domain).pipe(map(stealerLogs => ({ stealerLogs }))));
+    this.fetchData(platformData, 'stealerLogs', this.fetchService.fetchPlatformStealerLogs(username).pipe(map(stealerLogs => ({ stealerLogs }))));
   }
 
   private fetchData(platformResult: social_profile, stateKey: FetchStateKey, request$: Observable<unknown>): void {
@@ -535,7 +557,7 @@ export class SocialProfileListingComponent {
     this.fetchCancelSubjects.set(requestKey, cancel$);
     this.setLoading(requestKey, true);
     const section = this.sectionOf(stateKey);
-    this.setSectionStatus(platformResult, section, 'fetching');
+    this.liveSync.setSectionStatus(platformResult, section, 'fetching');
     let failed = false;
     request$.pipe(takeUntil(cancel$), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: response => {
@@ -546,10 +568,13 @@ export class SocialProfileListingComponent {
         this.setFetchedPlatformData(platformResult, stateKey, response);
       },
       error: () => {
-        this.setSectionStatus(platformResult, section, 'failed'); this.finishFetch(requestKey); 
+        this.liveSync.setSectionStatus(platformResult, section, 'failed'); this.finishFetch(requestKey);
       },
       complete: () => {
-        this.setSectionStatus(platformResult, section, failed ? 'failed' : 'completed'); this.finishFetch(requestKey); 
+        if (!this.liveSync.stoppedPlatformIds.has(this.getPlatformCardId(platformResult))) {
+          this.liveSync.setSectionStatus(platformResult, section, failed ? 'failed' : 'completed');
+        }
+        this.finishFetch(requestKey);
       },
     });
   }
@@ -588,33 +613,7 @@ export class SocialProfileListingComponent {
       const stateKey = (section === 'details' ? 'profile' : section) as FetchStateKey;
       return !!this.loadingByRequestKey()[this.getRequestKey(stateKey, platformData)];
     }
-    return !!this.crawlResults()[this.crawlKey(platformData, section as FetchTabKey)]?.loading;
-  }
-
-  private setSectionStatus(platformData: social_profile, section: string, status: string): void {
-    let updatedProfiles: social_profile[] | null = null;
-    this.storageService.state.scanResults.update(results => {
-      const currentProfiles = results.get(platformData.meta.username);
-      if (!currentProfiles) {
-        return results;
-      }
-      let changed = false;
-      const nextProfiles = currentProfiles.map(platform => {
-        if (!this.isSamePlatform(platform, platformData) || (platform.section_status ?? {})[section] === status) {
-          return platform;
-        }
-        changed = true;
-        return { ...platform, section_status: { ...platform.section_status, [section]: status } };
-      });
-      if (!changed) {
-        return results;
-      }
-      updatedProfiles = nextProfiles;
-      return new Map(results).set(platformData.meta.username, nextProfiles);
-    });
-    if (updatedProfiles) {
-      this.storageService.saveProfiles(platformData.meta.username, updatedProfiles, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-    }
+    return !!this.liveSync.crawlResults()[crawlKey(platformData, section as FetchTabKey)]?.loading;
   }
 
   private resumeInFlightSections(): void {
@@ -624,9 +623,18 @@ export class SocialProfileListingComponent {
     this.loadOpenProfileOnceReady();
     for (const [, profiles] of this.storageService.state.scanResults()) {
       for (const platform of profiles) {
+        if (this.liveSync.stoppedPlatformIds.has(this.getPlatformCardId(platform))) {
+          continue;
+        }
         for (const [section, status] of Object.entries(platform.section_status ?? {})) {
-          if (status === 'fetching' && !this.isSectionLoadingInMemory(platform, section)) {
-            this.refetchTabData(platform, section as FetchTabKey);
+          if (status !== 'fetching' || this.isSectionLoadingInMemory(platform, section)) {
+            continue;
+          }
+          if (section === 'details' || section === 'onlinePresence' || section === 'stealerLogs') {
+            this.refetchTabData(platform, section);
+          }
+          else {
+            void this.liveSync.startLiveFetch(platform, section as FetchTabKey);
           }
         }
       }
@@ -635,17 +643,14 @@ export class SocialProfileListingComponent {
 
   private loadOpenProfileOnceReady(): void {
     const platformData = this.activeProfilePlatform();
-    if (!platformData || platformData.profile_details?.is_parsed === true) {
+    if (!platformData || platformData.profile_details?.is_parsed === true || this.liveSync.stoppedPlatformIds.has(this.getPlatformCardId(platformData))) {
       return;
     }
-    if (this.isTabLoading(platformData, 'details') || (platformData.section_status ?? {})['details'] === 'failed') {
+    const detailsStatus = platformData.section_status?.details;
+    if (this.isTabLoading(platformData, 'details') || detailsStatus === 'failed' || detailsStatus === 'completed') {
       return;
     }
     this.fetchProfileDetails(platformData);
-  }
-
-  private getPlatformDomain(platformData: social_profile): string {
-    return platformData.meta.url || platformData.meta.platform;
   }
 
   private setFetchedPlatformData(platformResult: social_profile, stateKey: FetchStateKey, response: unknown): void {
@@ -654,46 +659,41 @@ export class SocialProfileListingComponent {
     }
     const responseRecord = response as Record<string, unknown>;
     const dataKey = Object.keys(responseRecord)[0];
-    const data = dataKey ? responseRecord[dataKey] : null;
-    const hasData = !!data && (Array.isArray(data) ? data.length > 0 : Object.keys(data as object).length > 0);
+    const data = dataKey ? getOwnProperty(responseRecord, dataKey) : null;
+    const hasData = !!data && (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0);
     let updatedProfiles: social_profile[] | null = null;
 
     this.storageService.state.scanResults.update(results => {
-      const currentProfiles = results.get(platformResult.meta.username);
+      const currentProfiles = results.get(getProfileGroupKey(this.storageService.state.scanResults(), platformResult));
       if (!currentProfiles) {
         return results;
       }
-      updatedProfiles = currentProfiles.map(platform => this.isSamePlatform(platform, platformResult)
-        ? { ...platform, ...this.buildFetchedPlatformData(platform, stateKey, data, hasData), section_status: { ...platform.section_status, [this.sectionOf(stateKey)]: 'completed' } }
+      updatedProfiles = currentProfiles.map(platform => isSamePlatform(platform, platformResult)
+        ? { ...platform, ...this.buildFetchedPlatformData(stateKey, data, hasData, platform.profile_details), section_status: { ...platform.section_status, [this.sectionOf(stateKey)]: 'completed' } }
         : platform);
-      return new Map(results).set(platformResult.meta.username, updatedProfiles);
+      return new Map(results).set(getProfileGroupKey(this.storageService.state.scanResults(), platformResult), updatedProfiles);
     });
 
     if (updatedProfiles) {
-      this.storageService.saveProfiles(platformResult.meta.username, updatedProfiles, true)
+      this.storageService.saveProfiles(getProfileGroupKey(this.storageService.state.scanResults(), platformResult), updatedProfiles, true)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe();
     }
   }
 
-  private buildFetchedPlatformData(platform: social_profile, stateKey: FetchStateKey, data: unknown, hasData: boolean): Partial<social_profile> {
+  private buildFetchedPlatformData(stateKey: FetchStateKey, data: unknown, hasData: boolean, previous?: social_profile['profile_details']): Partial<social_profile> {
     const propertyMap: Partial<Record<FetchStateKey, keyof social_profile>> = {
       profile: 'profile_details',
       onlinePresence: 'online_presence',
       stealerLogs: 'stealer_logs',
     };
-    const propertyName = propertyMap[stateKey];
+    const propertyName = getOwnProperty(propertyMap, stateKey);
     if (!propertyName) {
       return {};
     }
 
-    return { [propertyName]: hasData ? data : null } as Partial<social_profile>;
-  }
-
-  private isSamePlatform(left: social_profile, right: social_profile): boolean {
-    return left.meta.username === right.meta.username
-      && left.meta.platform.toLowerCase() === right.meta.platform.toLowerCase()
-      && left.meta.username.toLowerCase() === right.meta.username.toLowerCase();
+    const value = stateKey === 'profile' && hasData && data && typeof data === 'object' ? { ...previous, ...(data as Record<string, unknown>), is_parsed: true } : data;
+    return { [propertyName]: hasData ? value : null };
   }
 
   private getRequestKey(stateKey: FetchStateKey, platformData: social_profile): string {
@@ -704,10 +704,10 @@ export class SocialProfileListingComponent {
     this.loadingByRequestKey.update(current => {
       const next = { ...current };
       if (isLoading) {
-        next[requestKey] = true;
+        setOwnProperty(next, requestKey, true);
       }
       else {
-        delete next[requestKey];
+        Reflect.deleteProperty(next, requestKey);
       }
       return next;
     });
@@ -719,7 +719,7 @@ export class SocialProfileListingComponent {
   }
 
   getPlatformCardId(platformData: social_profile): string {
-    return `platform-${platformData.meta.username}|${platformData.meta.platform}|${platformData.meta.username}`;
+    return cardId(platformData);
   }
 
   getPlatformTrackKey(_index: number, platformData: social_profile): string {
@@ -727,7 +727,7 @@ export class SocialProfileListingComponent {
   }
 
   getUsernameInitial(username: string): string {
-    return username.match(/\p{L}/u)?.[0].toLocaleUpperCase() ?? '?';
+    return (/\p{L}/u.exec(username))?.[0].toLocaleUpperCase() ?? '?';
   }
 
   getDisplayUsername(username: string): string {
@@ -735,7 +735,7 @@ export class SocialProfileListingComponent {
   }
 
   onPlatformSearchInput(event: Event): void {
-    this.platformSearchTerm.set((event.target as HTMLInputElement | null)?.value ?? '');
+    this.platformSearchTerm.set(getInputValue(event));
   }
 
   getSidebarPlatforms(user: FeedUser): social_profile[] {
@@ -749,12 +749,15 @@ export class SocialProfileListingComponent {
     });
   }
 
-  getResultSource(_platformData: social_profile): SocialResultSource {
-    return 'normal';
+  getResultSource(platformData: social_profile): SocialResultSource {
+    const platform = String(platformData?.meta?.platform ?? '').toLowerCase();
+    const kind = `${platformData?.meta?.entity_type ?? ''} ${platformData?.meta?.target_type ?? ''}`.toLowerCase();
+    const darkweb = ['forum', 'telegram', 'discord', 'chat', 'darkweb', 'dark_web', 'onion', 'paste', 'leak'];
+    return darkweb.some(key => platform.includes(key)) || kind.includes('dark') || kind.includes('forum') ? 'darkweb' : 'normal';
   }
 
   getStatValue(platformData: social_profile, key: keyof NonNullable<social_profile['profile_details']>): string {
-    const profileValue = platformData.profile_details?.[key];
+    const profileValue = getOwnProperty(platformData.profile_details, key);
     const rawValue = profileValue ?? this.getFallbackStatValue(platformData, key);
     if (rawValue === null || rawValue === undefined || rawValue === '') {
       return this.missingStatValue;
@@ -763,7 +766,7 @@ export class SocialProfileListingComponent {
     return Number.isFinite(numericValue) ? formatFollowers(numericValue) : String(rawValue);
   }
 
-  getProfileDetailEntries(platformData: social_profile): { key: string; value: any; }[] {
+  getProfileDetailEntries(platformData: social_profile): { key: string; value: unknown; }[] {
     return getProfileDetailEntries(platformData);
   }
 
@@ -773,8 +776,6 @@ export class SocialProfileListingComponent {
         return this.firstStatValue(platformData.profile_details?.total_posts);
       case 'total_followers':
         return this.firstStatValue(Number(platformData.profile_details?.total_followers ?? 0));
-      case 'total_following':
-        return this.firstStatValue(platformData.profile_details?.total_following);
       case 'total_likes':
         return this.firstStatValue(platformData.profile_details?.total_likes);
       default:
@@ -782,7 +783,7 @@ export class SocialProfileListingComponent {
     }
   }
 
-  private firstStatValue(...values: Array<string | number | null | undefined>): string | number | null {
+  private firstStatValue(...values: (string | number | null | undefined)[]): string | number | null {
     return values.find(value => value !== null && value !== undefined && value !== '') ?? null;
   }
 
@@ -849,10 +850,11 @@ export class SocialProfileListingComponent {
       this.appliedProfileQuery.set(true);
       return;
     }
-    const wantedProfile = profile.toLowerCase();
+    const normalize = (value: string | null | undefined): string => (value ?? '').trim().replace(/^@+/, '').toLowerCase();
+    const wantedProfile = normalize(profile);
     const wantedPlatform = platform.toLowerCase();
     for (const user of this.activeUsers()) {
-      const match = user.platforms.find(item => (item.meta.platform || '').toLowerCase() === wantedPlatform && (item.meta.username || '').toLowerCase() === wantedProfile);
+      const match = user.allPlatforms.find(item => (item.meta.platform || '').toLowerCase() === wantedPlatform && normalize(item.meta.username) === wantedProfile);
       if (match) {
         const platformId = this.getPlatformCardId(match);
         this.storageService.state.activeUsername.set(user.username);
@@ -869,13 +871,16 @@ export class SocialProfileListingComponent {
     if (this.isInitialLoading()) {
       return;
     }
-    const ownerKey = Array.from(this.storageService.state.scanResults().keys()).find(key => key.toLowerCase() === profile.toLowerCase()) ?? profile;
-    const built: social_profile = { id: `${platform}:${ownerKey}`, meta: { platform, username: ownerKey, url: '' } };
+    const ownerKey = Array.from(this.storageService.state.scanResults().keys()).find(key => normalize(key) === wantedProfile) ?? profile;
+    const duplicate = (this.storageService.state.scanResults().get(ownerKey) ?? []).find(item => (item.meta.platform || '').toLowerCase() === wantedPlatform && normalize(item.meta.username) === wantedProfile);
+    const built: social_profile = duplicate ?? { id: `${platform}:${ownerKey}`, meta: { platform, username: ownerKey, url: '' } };
     const platformId = this.getPlatformCardId(built);
-    this.storageService.state.scanResults.update(current => {
-      const existing = current.get(ownerKey) ?? [];
-      return new Map(current).set(ownerKey, [...existing, built]);
-    });
+    if (!duplicate) {
+      this.storageService.state.scanResults.update(current => {
+        const existing = current.get(ownerKey) ?? [];
+        return new Map(current).set(ownerKey, [...existing, built]);
+      });
+    }
     this.storageService.state.activeUsername.set(ownerKey);
     this.profileOverviewIds.set(new Set([platformId]));
     this.setActiveTab(platformId, 'details');
@@ -925,14 +930,14 @@ export class SocialProfileListingComponent {
   }
 
   private getActiveResultSource(username: string, platforms: social_profile[]): SocialResultSource {
-    const preferred = this.activeResultSources()[username] ?? 'normal';
+    const preferred = getOwnProperty(this.activeResultSources(), username) ?? 'normal';
     if (platforms.some(platform => this.getResultSource(platform) === preferred)) {
       return preferred;
     }
     return platforms.some(platform => this.getResultSource(platform) === 'normal') ? 'normal' : 'darkweb';
   }
 
-  private getAllowedTabKey(platformData: social_profile, tabKey: FetchTabKey): FetchTabKey {
+  private getAllowedTabKey(tabKey: FetchTabKey): FetchTabKey {
     return this.getFetchTabs().some(tab => tab.key === tabKey) ? tabKey : 'details';
   }
 }

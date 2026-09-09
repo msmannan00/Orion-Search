@@ -52,7 +52,7 @@ export class CaseLinkedCasesSectionComponent {
       return null;
     }
 
-    return this.editedCase?.linkedCases?.[this.editingLinkedCaseIndex] || null;
+    return this.editedCase?.linkedCases?.[this.editingLinkedCaseIndex] ?? null;
   }
 
   openEditLinkedCase(index: number): void {
@@ -66,13 +66,13 @@ export class CaseLinkedCasesSectionComponent {
   }
 
   hasLinkedCasesChanged(): boolean {
-    return (this.editedCase?.linkedCases?.length || 0) !== (this.caseData?.linkedCases?.length || 0);
+    return (this.editedCase?.linkedCases?.length ?? 0) !== (this.caseData?.linkedCases?.length || 0);
   }
 
-  getLinkableCases(caseItem: Case | null = this.editedCase || this.caseData, currentSelectedCaseId = ''): Case[] {
+  getLinkableCases(caseItem: Case | null = this.editedCase ?? this.caseData, currentSelectedCaseId = ''): Case[] {
     const currentCaseId = caseItem?.caseId;
 
-    const alreadyLinkedCaseIds = new Set((caseItem?.linkedCases || [])
+    const alreadyLinkedCaseIds = new Set((caseItem?.linkedCases ?? [])
       .map(linkedCase => linkedCase.targetCaseId)
       .filter(caseId => caseId && caseId !== currentSelectedCaseId));
 
@@ -81,7 +81,7 @@ export class CaseLinkedCasesSectionComponent {
       !alreadyLinkedCaseIds.has(item.caseId));
   }
 
-  hasLinkableCases(caseItem: Case | null = this.editedCase || this.caseData, currentSelectedCaseId = ''): boolean {
+  hasLinkableCases(caseItem: Case | null = this.editedCase ?? this.caseData, currentSelectedCaseId = ''): boolean {
     return this.getLinkableCases(caseItem, currentSelectedCaseId).length > 0;
   }
 

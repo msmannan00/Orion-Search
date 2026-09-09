@@ -1,15 +1,17 @@
 import json
 import asyncio
 import secrets
+from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
-from starlette.responses import JSONResponse
+from starlette.responses import FileResponse, JSONResponse
 
 from configs.app_dependency import get_extension_user
 from configs.auth_cookie import clear_extension_cookie, extension_token_from_request, set_extension_cookie
 from configs.limiter_dependency import auth_rate_limit
 from orion.api.interactive.auth_manager.auth_manager import auth_manager
 from orion.api.interactive.extension_manager.extension_socket_manager import extension_socket_manager
+from orion.services.mongo_manager.shared_model.db_auth_models import db_user_account
 from orion.services.redis_manager.redis_controller import redis_controller
 from orion.services.redis_manager.redis_enums import REDIS_COMMANDS
 from orion.services.session_manager.session_manager import session_manager
@@ -17,6 +19,17 @@ from orion.services.session_manager.session_manager import session_manager
 extension_routes = APIRouter()
 
 WS_TICKET_TTL_SECONDS = 30
+EXTENSION_DIR = Path(__file__).resolve().parents[1] / "workspace" / "extension"
+EXTENSION_ARTIFACTS = {
+    "chrome/orion-social-chrome.crx": ("application/x-chrome-extension", False),
+    "chrome/orion-social-chrome-unpacked.zip": ("application/zip", True),
+    "chrome/updates.xml": ("application/xml", False),
+    "chrome/policy/linux/orion-social.json": ("application/json", True),
+    "chrome/policy/windows/orion-social.reg": ("application/octet-stream", True),
+    "chrome/policy/macos/orion-social.mobileconfig": ("application/x-apple-aspen-config", True),
+    "firefox/orion-social-firefox.xpi": ("application/x-xpinstall", False),
+    "firefox/updates.json": ("application/json", False),
+}
 
 
 async def system_session_active(current_user, redis_store: redis_controller) -> bool:
@@ -30,7 +43,7 @@ async def system_session_active(current_user, redis_store: redis_controller) -> 
     return redis_session_id == session_id
 
 
-async def extension_user_from_token(token: str | None):
+async def extension_user_from_token(token: str | None) -> db_user_account | None:
     try:
         return await session_manager.get_instance().get_current_user(token)
     except Exception:
@@ -72,7 +85,7 @@ async def extension_login(request: Request, response: Response = None, username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="login_failed")
 
     set_extension_cookie(response, access_token)
-    return {"detail": "Logged in"}
+    return {"detail": "Logged in", "access_token": access_token}
 
 
 @extension_routes.get("/api/extension/session")
@@ -97,7 +110,7 @@ async def extension_refresh(request: Request, response: Response = None):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh_failed")
 
     set_extension_cookie(response, access_token)
-    return {"detail": "Refreshed"}
+    return {"detail": "Refreshed", "access_token": access_token}
 
 
 @extension_routes.post("/api/extension/logout")
@@ -148,9 +161,9 @@ async def extension_socket(websocket: WebSocket):
             try:
                 text = await asyncio.wait_for(websocket.receive_text(), timeout=5)
             except TimeoutError:
-                if await socket_user_key(token) != user_key:
-                    await websocket.close()
-                    return
+                # The socket was authenticated at connect via the ws-ticket; keep it alive
+                # for the connection's lifetime instead of re-validating the token every 5s
+                # (which the web session competes for and would close the socket repeatedly).
                 await socket_manager.touch_socket(user_key, socket_id)
                 continue
 
@@ -168,3 +181,22 @@ async def extension_socket(websocket: WebSocket):
         return
     finally:
         await socket_manager.unregister(user_key, websocket, socket_id)
+
+
+@extension_routes.get("/ext/{artifact:path}")
+async def extension_artifact(artifact: str):
+    entry = EXTENSION_ARTIFACTS.get(artifact)
+    if not entry:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension package not found")
+
+    media_type, as_attachment = entry
+    file_path = EXTENSION_DIR / artifact
+    if not file_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension package not found")
+
+    return FileResponse(
+        file_path,
+        media_type=media_type,
+        filename=file_path.name if as_attachment else None,
+        headers={"Cache-Control": "no-store"},
+    )

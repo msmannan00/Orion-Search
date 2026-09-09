@@ -11,6 +11,7 @@ import { SocialExtensionManagerComponent } from '../../shared/partials/extension
 import { SocialIconComponent } from '../../shared/partials/social-icon/social-icon.component';
 import { UiDropdownComponent, UiDropdownOption } from '../../shared/partials/ui-dropdown/ui-dropdown.component';
 import { ConfirmationPopupComponent } from '../../shared/partials/confirmation-popup/confirmation-popup.component';
+
 import { MessageNotificationService } from '../../services/message_notification/message-notification.service';
 import { SocialPersona, SocialPlatform, SocialProfile } from './model/manage-profiles.model';
 import { ManageProfilePopupComponent, ManageProfilePopupSaveEvent } from './manage-profile-popup/manage-profile-popup.component';
@@ -19,10 +20,11 @@ import { ManageProfileResultsComponent } from './manage-profile-results/manage-p
 type ManageProfilesTab = 'personas' | 'sessions' | 'profiles' | 'assignments' | 'results';
 type ModalMode = 'persona' | 'profile';
 
-interface PendingSessionDelete {
-  platform: string;
-  sessionId: string;
-}
+import type { PendingSessionDelete } from './model/manage-profiles.interfaces.model';
+export type { PendingSessionDelete } from './model/manage-profiles.interfaces.model';
+
+
+
 
 @Component({
   selector: 'app-manage-profiles',
@@ -30,7 +32,9 @@ interface PendingSessionDelete {
   imports: [DatePipe, NgClass, TranslatePipe, SocialExtensionManagerComponent, SocialIconComponent, UiDropdownComponent, ConfirmationPopupComponent, ManageProfilePopupComponent, ManageProfileResultsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './manage-profiles.component.html',
+  styleUrls: ['./manage-profiles.component.scss'],
 })
+
 export class ManageProfilesComponent {
   private readonly service = inject(ManageProfilesService);
   private readonly notification = inject(MessageNotificationService);
@@ -157,6 +161,24 @@ export class ManageProfilesComponent {
     return this.sessionsFor(platform).filter(session => !session.verified).length;
   }
 
+  sessionStatus(session: SessionEntry): 'verified' | 'failed' | 'pending' {
+    if (session.verified) {
+      return 'verified';
+    }
+    return session.verifiedAt ? 'failed' : 'pending';
+  }
+
+  platformStatus(platform: string): 'verified' | 'failed' | 'pending' {
+    const sessions = this.sessionsFor(platform);
+    if (sessions.some(session => this.sessionStatus(session) === 'failed')) {
+      return 'failed';
+    }
+    if (sessions.some(session => this.sessionStatus(session) === 'verified')) {
+      return 'verified';
+    }
+    return 'pending';
+  }
+
   isExpanded(platform: string): boolean {
     return this.expanded().has(this.safePlatform(platform));
   }
@@ -201,6 +223,7 @@ export class ManageProfilesComponent {
   deleteSession(platform: string, sessionId: string): void {
     this.service.deleteSession(platform, sessionId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.loadCapturedSessions();
+
       this.loadSocialData();
       this.notification.show('Session deleted successfully', 'success');
     });
@@ -208,14 +231,14 @@ export class ManageProfilesComponent {
 
   openPersonaModal(persona?: SocialPersona): void {
     this.formError.set('');
-    this.selectedPersona.set(persona || null);
+    this.selectedPersona.set(persona ?? null);
     this.selectedProfile.set(null);
     this.modalMode.set('persona');
   }
 
   openProfileModal(profile?: SocialProfile): void {
     this.formError.set('');
-    this.selectedProfile.set(profile || null);
+    this.selectedProfile.set(profile ?? null);
     this.selectedPersona.set(null);
     this.modalMode.set('profile');
   }
@@ -264,7 +287,9 @@ export class ManageProfilesComponent {
           this.notification.show('Persona deleted successfully', 'success');
           this.loadSocialData();
         },
-        error: (error) => this.notification.show(error?.error?.detail || 'Failed to delete persona'),
+        error: (error) => {
+          this.notification.show(error?.error?.detail ?? 'Failed to delete persona');
+        },
       });
     }
     if (action === 'profile' && this.selectedProfile()) {
@@ -273,7 +298,9 @@ export class ManageProfilesComponent {
           this.notification.show('Profile deleted successfully', 'success');
           this.loadSocialData();
         },
-        error: (error) => this.notification.show(error?.error?.detail || 'Failed to delete profile'),
+        error: (error) => {
+          this.notification.show(error?.error?.detail ?? 'Failed to delete profile');
+        },
       });
     }
     if (action === 'assignment' && this.selectedProfile()) {
@@ -282,7 +309,9 @@ export class ManageProfilesComponent {
           this.notification.show('Assignment removed successfully', 'success');
           this.loadSocialData();
         },
-        error: (error) => this.notification.show(error?.error?.detail || 'Failed to remove assignment'),
+        error: (error) => {
+          this.notification.show(error?.error?.detail ?? 'Failed to remove assignment');
+        },
       });
     }
   }
@@ -305,7 +334,9 @@ export class ManageProfilesComponent {
         this.notification.show('Persona assigned successfully', 'success');
         this.loadSocialData();
       },
-      error: (error) => this.formError.set(error?.error?.detail || 'Failed to assign persona'),
+      error: (error) => {
+        this.formError.set(error?.error?.detail ?? 'Failed to assign persona');
+      },
     });
   }
 
@@ -320,35 +351,45 @@ export class ManageProfilesComponent {
   }
 
   assignmentProfileOptions(): UiDropdownOption[] {
-    return this.profiles().map(profile => ({ key: profile.profile_id, label: `${this.platformLabel(profile.platform)} - ${profile.profile_name || profile.profile_username || 'Profile'}` }));
+    return this.profiles().map(profile => ({ key: profile.profile_id, label: `${this.platformLabel(profile.platform)} - ${profile.profile_name ?? profile.profile_username ?? 'Profile'}` }));
   }
 
   personaName(personaId?: string | null): string {
-    return this.personas().find(persona => persona.persona_id === personaId)?.name || 'Unassigned';
+    return this.personas().find(persona => persona.persona_id === personaId)?.name ?? 'Unassigned';
   }
 
   platformLabel(platform?: string | null): string {
-    const entry = this.platforms().find(item => this.safePlatform(item.platform) === this.safePlatform(platform || ''));
-    return entry?.platform || (platform === 'x' ? 'Twitter/X' : platform === 'facebook' ? 'Facebook' : (platform || 'Unknown'));
+    const entry = this.platforms().find(item => this.safePlatform(item.platform) === this.safePlatform(platform ?? ''));
+    return entry?.platform ?? (platform === 'x' ? 'Twitter/X' : platform === 'facebook' ? 'Facebook' : (platform ?? 'Unknown'));
   }
 
   purposeLabel(purpose: string): string {
-    return this.purposes.find(item => item.key === purpose)?.label || purpose.replace(/_/g, ' ');
+    return this.purposes.find(item => item.key === purpose)?.label ?? purpose.replace(/_/g, ' ');
   }
 
   statusLabel(value?: string | null): string {
-    return (value || '').replace(/_/g, ' ') || 'Unknown';
+    return (value ?? '').replace(/_/g, ' ') ?? 'Unknown';
   }
 
   private loadSocialData(): void {
     this.socialLoading.set(true);
     this.service.getPersonas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => this.personas.set(response?.personas || []),
-      error: (error) => this.formError.set(error?.error?.detail || 'Failed to load personas'),
+      next: (response) => {
+        this.personas.set(response?.personas ?? []);
+      },
+      error: (error) => {
+        this.formError.set(error?.error?.detail ?? 'Failed to load personas');
+      },
     });
-    this.service.getProfiles().pipe(finalize(() => this.socialLoading.set(false)), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => this.profiles.set(response?.profiles || []),
-      error: (error) => this.formError.set(error?.error?.detail || 'Failed to load profiles'),
+    this.service.getProfiles().pipe(finalize(() => {
+      this.socialLoading.set(false);
+    }), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        this.profiles.set(response?.profiles ?? []);
+      },
+      error: (error) => {
+        this.formError.set(error?.error?.detail ?? 'Failed to load profiles');
+      },
     });
   }
 

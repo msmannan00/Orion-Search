@@ -9,6 +9,8 @@ import { MessageNotificationService } from '../../../../../services/message_noti
 import { CaseEditDrawerComponent } from '../case-details/case-edit-drawer/case-edit-drawer';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../../shared/services/translation.service';
+import { setOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-add-new-case',
@@ -40,6 +42,11 @@ export class AddNewCase {
     this.caseService.getNextCaseId().subscribe({
       next: (res) => {
         this.caseForm.caseId = res.nextCaseId;
+        delete this.validationErrors.caseId;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.validationErrors.caseId = 'Unable to generate Case ID. Please retry.';
         this.cdr.detectChanges();
       }
     });
@@ -79,7 +86,7 @@ export class AddNewCase {
 
   private validateOther(value: string | undefined | null, otherValue: string | undefined | null, key: string, message: string): void {
     if (value === 'other' && !otherValue?.trim()) {
-      this.validationErrors[key] = message;
+      setOwnProperty(this.validationErrors, key, message);
     }
   }
 
@@ -92,27 +99,27 @@ export class AddNewCase {
       entityId,
       type: this.primaryEntity.type,
       value,
-      entityDescription: this.primaryEntity.entityDescription?.trim() || value,
+      entityDescription: this.primaryEntity.entityDescription?.trim() ?? value,
       confidence: this.primaryEntity.confidence,
       source: this.primaryEntity.source,
-      entityTypeOtherValue: this.primaryEntity.entityTypeOtherValue?.trim() || '',
-      entitySourceOtherValue: this.primaryEntity.entitySourceOtherValue?.trim() || '',
+      entityTypeOtherValue: this.primaryEntity.entityTypeOtherValue?.trim() ?? '',
+      entitySourceOtherValue: this.primaryEntity.entitySourceOtherValue?.trim() ?? '',
       identifiers: this.primaryEntity.identifiers
         .filter(identifier => identifier.type && identifier.value.trim())
         .map(identifier => ({
           ...identifier,
           value: identifier.value.trim(),
-          issuer: identifier.issuer?.trim() || '',
-          identifierTypeOtherValue: identifier.identifierTypeOtherValue?.trim() || ''
+          issuer: identifier.issuer?.trim() ?? '',
+          identifierTypeOtherValue: identifier.identifierTypeOtherValue?.trim() ?? ''
         })),
       socialProfiles: this.primaryEntity.socialProfiles
         .filter(profile => profile.platform && profile.username.trim())
         .map(profile => ({
           ...profile,
           username: profile.username.trim(),
-          displayName: profile.displayName?.trim() || '',
-          profileUrl: profile.profileUrl?.trim() || '',
-          platformOtherValue: profile.platformOtherValue?.trim() || ''
+          displayName: profile.displayName?.trim() ?? '',
+          profileUrl: profile.profileUrl?.trim() ?? '',
+          platformOtherValue: profile.platformOtherValue?.trim() ?? ''
         })),
       tags: this.primaryEntity.tags || []
     };
@@ -122,15 +129,15 @@ export class AddNewCase {
     this.validationErrors = {};
 
     if (!this.caseForm.title.trim()) {
-      this.validationErrors['title'] = 'Case title is required';
+      this.validationErrors.title = 'Case title is required';
     }
 
     if (!this.caseForm.caseId.trim()) {
-      this.validationErrors['caseId'] = 'Case ID is required';
+      this.validationErrors.caseId = 'Case ID is required';
     }
 
     if (!this.primaryEntity.value.trim()) {
-      this.validationErrors['entityValue'] = 'Primary entity value is required';
+      this.validationErrors.entityValue = 'Primary entity value is required';
     }
 
     this.validateOther(this.caseForm.caseType, this.caseForm.caseTypeOtherValue, 'caseTypeOther', 'Other case type is required');
@@ -145,7 +152,7 @@ export class AddNewCase {
     });
 
     if (invalidIdentifier) {
-      this.validationErrors['identifier'] = 'Identifiers require type, value, and other value when type is Other';
+      this.validationErrors.identifier = 'Identifiers require type, value, and other value when type is Other';
     }
 
     const invalidSocialProfile = this.primaryEntity.socialProfiles.find(profile => {
@@ -155,7 +162,7 @@ export class AddNewCase {
     });
 
     if (invalidSocialProfile) {
-      this.validationErrors['socialProfile'] = 'Social profiles require platform, username, and other value when platform is Other';
+      this.validationErrors.socialProfile = 'Social profiles require platform, username, and other value when platform is Other';
     }
 
     if (Object.keys(this.validationErrors).length > 0) {
@@ -174,8 +181,8 @@ export class AddNewCase {
       severity: this.caseForm.severity,
       priority: this.caseForm.priority,
       intakeSource: this.caseForm.intakeSource,
-      caseTypeOtherValue: this.caseForm.caseTypeOtherValue?.trim() || '',
-      intakeSourceOtherValue: this.caseForm.intakeSourceOtherValue?.trim() || '',
+      caseTypeOtherValue: this.caseForm.caseTypeOtherValue?.trim() ?? '',
+      intakeSourceOtherValue: this.caseForm.intakeSourceOtherValue?.trim() ?? '',
       tags: this.caseForm.tags,
       primaryEntityId: primaryEntity.entityId,
       assignedAnalystIds: [],
@@ -194,7 +201,7 @@ export class AddNewCase {
       },
       error: (err) => {
         console.error('Failed to save case:', err);
-        this.messageNotificationService.show(err?.error?.detail || err?.message || this.translationService.translate('Failed to save case'));
+        this.messageNotificationService.show(err?.error?.detail ?? err?.message ?? this.translationService.translate('Failed to save case'));
       }
     });
   }

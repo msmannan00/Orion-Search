@@ -4,7 +4,7 @@
       <div class="flex items-start justify-between gap-3">
         <div class="flex min-w-0 flex-1 flex-wrap gap-[10px]">
           @if (item.m_content_type?.length) {
-            @for (tag of item.m_content_type; track $index) {
+            @for (tag of $any(item.m_content_type); track $index) {
               <span class="h-[31px] rounded-[25px] bg-[var(--color-tags)] px-[13px] py-[6px] text-[12px] font-normal text-[var(--color-text3)]">{{ tag }}</span>
             }
           } @else {

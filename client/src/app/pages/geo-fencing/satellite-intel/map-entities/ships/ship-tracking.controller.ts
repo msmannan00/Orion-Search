@@ -2,6 +2,7 @@ import { Subscription } from 'rxjs';
 import { SatelliteLiveShip } from '../../model/satellite-intel-api.models';
 import { MapEntityLoadingBridge, SatelliteTrackingViewport } from '../../../models/geo-fencing.models';
 import { SatelliteShipTrackingService } from './ship-tracking.service';
+import { isFiniteNumber } from '../../../../../shared/utils/type-guards.util';
 
 export class SatelliteShipTrackingController {
   private trackSub?: Subscription;
@@ -88,7 +89,7 @@ export class SatelliteShipTrackingController {
         if (!this.enabled) {
           return;
         }
-        const payload = (res?.result ?? res) as any;
+        const payload = (res?.result ?? res) as unknown;
         const ships = this.service.extractItems(payload);
         if (ships !== null) {
           this.applyResult(ships, payload, 'Global ship tracking');
@@ -99,7 +100,7 @@ export class SatelliteShipTrackingController {
         }
       },
       error: (err) => {
-        this.error = err?.error?.detail || err?.message || 'Global ship tracking failed';
+        this.error = err?.error?.detail ?? err?.message ?? 'Global ship tracking failed';
       },
     });
     this.trackSub.add(() => {
@@ -135,7 +136,7 @@ export class SatelliteShipTrackingController {
         if (!this.enabled) {
           return;
         }
-        const payload = (res?.result ?? res) as any;
+        const payload = (res?.result ?? res) as unknown;
         const ships = this.service.extractItems(payload);
         if (ships !== null) {
           this.applyResult(this.filterShipsToViewport(ships, viewport), payload, 'Ship tracking', !viewportChanged);
@@ -146,7 +147,7 @@ export class SatelliteShipTrackingController {
         }
       },
       error: (err) => {
-        this.error = err?.error?.detail || err?.message || 'Ship tracking failed';
+        this.error = err?.error?.detail ?? err?.message ?? 'Ship tracking failed';
       },
     });
     this.trackSub.add(() => {
@@ -162,7 +163,7 @@ export class SatelliteShipTrackingController {
     });
   }
 
-  private applyResult(ships: SatelliteLiveShip[], payload: any, label: string, keepLastAllowed = true): void {
+  private applyResult(ships: SatelliteLiveShip[], payload: unknown, label: string, keepLastAllowed = true): void {
     const feedIssue = this.service.getFeedIssue(payload);
     if (ships.length > 0) {
       if (feedIssue && keepLastAllowed && this.shouldKeepLastShips() && ships.length < this.data.length) {
@@ -200,11 +201,11 @@ export class SatelliteShipTrackingController {
     return ships.filter((ship) => {
       const latitude = ship.latitude;
       const longitude = ship.longitude;
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      if (!isFiniteNumber(latitude) || !isFiniteNumber(longitude)) {
         return false;
       }
-      const lonDistance = Math.min(Math.abs((longitude as number) - viewport.lon), 360 - Math.abs((longitude as number) - viewport.lon));
-      return Math.abs((latitude as number) - viewport.lat) <= viewport.delta && lonDistance <= viewport.delta;
+      const lonDistance = Math.min(Math.abs(longitude - viewport.lon), 360 - Math.abs(longitude - viewport.lon));
+      return Math.abs(latitude - viewport.lat) <= viewport.delta && lonDistance <= viewport.delta;
     });
   }
 

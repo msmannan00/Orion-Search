@@ -1,11 +1,22 @@
 <div data-testid="social-wanted-list-section" class="w-full min-w-[220px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] px-3 py-3 shadow-[0_8px_18px_var(--color-shadow-light)] md:w-[238px]">
-  <div class="mb-2">
-    <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text2)]">{{ 'Wanted List' | translate }}</div>
-    <div class="mt-1 truncate text-[10px] leading-4 text-[var(--color-text4)]">{{ 'Search watchlist records.' | translate }}</div>
+  <div class="mb-2 flex items-start gap-2">
+    <div class="min-w-0 flex-1">
+      <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text2)]">{{ 'Wanted List' | translate }}</div>
+      <div class="mt-1 truncate text-[10px] leading-4 text-[var(--color-text4)]">{{ 'Search watchlist records.' | translate }}</div>
+    </div>
+    @if ((hasSavedWantedList() || isClearing()) && !isLoading()) {
+      <button data-testid="social-wanted-clear-button" type="button" (click)="clearSavedWantedList($event)" [disabled]="isClearing()" class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] text-[var(--color-text4)] outline-none transition-colors hover:bg-red-500/10 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-red-400/30 disabled:cursor-wait disabled:opacity-60" [title]="'Clear saved results' | translate" [attr.aria-label]="'Clear saved wanted list results' | translate">
+        @if (isClearing()) {
+          <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+        } @else {
+          <i class="bi bi-trash3 text-[12px] leading-none"></i>
+        }
+      </button>
+    }
   </div>
   <div class="flex min-w-0 items-center gap-2">
     <input data-testid="social-wanted-search-input" type="text" [value]="query()" (input)="onQueryInput($event)" (keydown.enter)="search($event)" [placeholder]="'Name or alias' | translate" class="h-8 min-w-0 flex-1 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 text-xs text-[var(--color-text1)] outline-none placeholder:text-[var(--color-text4)] focus:border-sky-400/35">
-    <button data-testid="social-wanted-search-button" type="button" (click)="search($event)" [disabled]="isLoading() || !query().trim()" class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] text-[var(--color-text3)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)] disabled:cursor-not-allowed disabled:opacity-50" [title]="'Search wanted list' | translate" [attr.aria-label]="'Search wanted list' | translate">
+    <button data-testid="social-wanted-search-button" type="button" (click)="search($event)" [disabled]="isLoading() || isClearing() || !query().trim()" class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] text-[var(--color-text3)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)] disabled:cursor-not-allowed disabled:opacity-50" [title]="'Search wanted list' | translate" [attr.aria-label]="'Search wanted list' | translate">
       @if (isLoading()) {
         <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
       } @else {

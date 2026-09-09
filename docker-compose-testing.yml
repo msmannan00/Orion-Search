@@ -20,19 +20,23 @@ services:
       - ./backend/orion:/app/orion:cached
       - ./backend/routes:/app/routes:cached
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
+      - ./backend/tests:/app/tests:cached
       - ./backend/migrations:/app/migrations:cached
+      - ./backend/build/backups:/app/backups:cached
       - ./client/build:/app/build:delegated
+      - ./client/build:/app/workspace/build:delegated
     expose:
       - "8070"
     networks:
       - backend
       - shared_bridge
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8070" ]
+      test: [ "CMD-SHELL", "curl --fail --silent http://localhost:8070/api/public > /dev/null" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 300s
     command: >
       sh -c "exec gunicorn --preload -w 1 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8070 --timeout 900"
 
@@ -61,7 +65,7 @@ services:
     networks:
       backend:
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8529/_admin/server/availability" ]
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8529/_admin/server/availability" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -78,8 +82,9 @@ services:
       - documentation
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./backend/.ssl:/etc/nginx/local-certs:ro
+      - ./backend/workspace/ssl:/etc/nginx/local-certs:ro
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
@@ -167,7 +172,7 @@ services:
       - backend
 
   mongo:
-    image: mongo:latest
+    image: mongo:8.2.12@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3
     container_name: trustly-web-mongodb
     restart: always
     environment:

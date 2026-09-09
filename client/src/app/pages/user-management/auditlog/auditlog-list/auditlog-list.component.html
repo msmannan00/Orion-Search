@@ -13,7 +13,7 @@
           }
         </tr>
       </thead>
-      <tbody @fadeInDashboardItem>
+      <tbody class="ui-fade-in-item">
         @for (item of dumpData.items; track item.id || $index; let i = $index) {
           <tr data-testid="auditlog-row">
             <td>{{ (i + 1) + ((currentPage$ | async)! - 1) * 100 }}</td>
@@ -38,7 +38,7 @@
       </tbody>
     </table>
   </div>
-  <div class="hidden" @fadeInDashboardItem>
+  <div class="hidden ui-fade-in-item">
     @for (item of dumpData.items; track item.id || $index; let i = $index) {
       <div data-testid="auditlog-row" class="overflow-hidden rounded-xl border border-[var(--tenant-line)] bg-[var(--color-blue-830)]">
         <div class="flex items-center justify-between border-b border-[var(--tenant-line)] bg-[var(--color-blue-820-light)] px-3 py-2">
@@ -95,7 +95,7 @@
           }
         </tr>
       </thead>
-      <tbody @fadeInDashboardItem>
+      <tbody class="ui-fade-in-item">
         @for (_ of [1,2,3,4,5]; track _) {
           <tr>
             <td><div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-3 w-[75%] rounded bg-[var(--color-placeholder)]"></div></td>
@@ -111,7 +111,7 @@
       </tbody>
     </table>
   </div>
-  <div class="hidden" @fadeInDashboardItem>
+  <div class="hidden ui-fade-in-item">
     @for (_ of [1,2,3]; track _) {
       <div class="overflow-hidden rounded-xl border border-[var(--tenant-line)] bg-[var(--color-blue-830)]">
         <div class="border-b border-[var(--tenant-line)] bg-[var(--color-blue-820-light)] px-3 py-2">

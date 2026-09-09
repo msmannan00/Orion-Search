@@ -13,4 +13,5 @@ export interface LatestDocumentCallbackModel {
     defacement_model: LatestDocument[];
     chat_model: LatestDocument[];
     exploit_model: LatestDocument[];
+    [key: string]: LatestDocument[];
 }

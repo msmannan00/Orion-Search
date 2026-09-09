@@ -4,6 +4,8 @@ import { CASE_STATUS_OPTIONS, CASE_TYPE_OPTIONS, INTAKE_SOURCE_OPTIONS, PRIORITY
 import { Case, CaseChartItem, CaseStatus, CaseType, IntakeSource, Priority, Severity } from '../case.model';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../../shared/services/translation.service';
+import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-case-analytics-panel',
@@ -55,7 +57,7 @@ export class CaseAnalyticsPanel {
     return this.filteredCases.filter(caseItem =>
       caseItem.status !== 'resolved' &&
       caseItem.status !== 'closed' &&
-      this.getDaysSince(caseItem.updatedAt || caseItem.createdAt) >= 7).length;
+      this.getDaysSince(caseItem.updatedAt ?? caseItem.createdAt) >= 7).length;
   }
 
   get statusChart(): CaseChartItem[] {
@@ -93,25 +95,25 @@ export class CaseAnalyticsPanel {
     const counts = new Map<string, CaseChartItem>();
 
     this.filteredCases.forEach(caseItem => {
-      const analysts = caseItem.assignedAnalysts || [];
+      const analysts = caseItem.assignedAnalysts ?? [];
 
       if (!analysts.length && !caseItem.assignedAnalystIds?.length) {
-        const current = counts.get('unassigned') || { key: 'unassigned', label: 'Unassigned', count: 0 };
+        const current = counts.get('unassigned') ?? { key: 'unassigned', label: 'Unassigned', count: 0 };
         counts.set('unassigned', { ...current, count: current.count + 1 });
         return;
       }
 
       if (analysts.length) {
         analysts.forEach(analyst => {
-          const label = analyst.username || analyst.email || analyst.id;
-          const current = counts.get(analyst.id) || { key: analyst.id, label, count: 0 };
+          const label = analyst.username ?? analyst.email ?? analyst.id;
+          const current = counts.get(analyst.id) ?? { key: analyst.id, label, count: 0 };
           counts.set(analyst.id, { ...current, count: current.count + 1 });
         });
         return;
       }
 
       caseItem.assignedAnalystIds.forEach(analystId => {
-        const current = counts.get(analystId) || { key: analystId, label: analystId, count: 0 };
+        const current = counts.get(analystId) ?? { key: analystId, label: analystId, count: 0 };
         counts.set(analystId, { ...current, count: current.count + 1 });
       });
     });
@@ -125,7 +127,7 @@ export class CaseAnalyticsPanel {
       .sort((first, second) =>
         this.getSeverityWeight(second.severity) - this.getSeverityWeight(first.severity) ||
         this.getPriorityWeight(second.priority) - this.getPriorityWeight(first.priority) ||
-        this.getDaysSince(second.updatedAt || second.createdAt) - this.getDaysSince(first.updatedAt || first.createdAt))
+        this.getDaysSince(second.updatedAt ?? second.createdAt) - this.getDaysSince(first.updatedAt ?? first.createdAt))
       .slice(0, 5);
   }
 
@@ -165,7 +167,7 @@ export class CaseAnalyticsPanel {
 
   getUpdatedLabel(caseItem: Case): string {
     this.translationService.version();
-    const days = this.getDaysSince(caseItem.updatedAt || caseItem.createdAt);
+    const days = this.getDaysSince(caseItem.updatedAt ?? caseItem.createdAt);
 
     if (days <= 0) {
       return this.translationService.translate('Updated today');
@@ -188,7 +190,7 @@ export class CaseAnalyticsPanel {
     return {
       key: value,
       label,
-      count: this.filteredCases.filter(caseItem => caseItem[field] === value).length
+      count: this.filteredCases.filter(caseItem => getOwnProperty(caseItem, field) === value).length
     };
   }
 
@@ -252,13 +254,13 @@ export class CaseAnalyticsPanel {
 
   private getCaseAgeDays(caseItem: Case): number {
     const start = this.parseDate(caseItem.createdAt);
-    const end = this.parseDate(caseItem.closedAt || caseItem.closure?.closedAt || caseItem.updatedAt);
+    const end = this.parseDate(caseItem.closedAt ?? caseItem.closure?.closedAt ?? caseItem.updatedAt);
 
     if (!start) {
       return 0;
     }
 
-    return Math.max(0, Math.round(((end || new Date()).getTime() - start.getTime()) / 86400000));
+    return Math.max(0, Math.round(((end ?? new Date()).getTime() - start.getTime()) / 86400000));
   }
 
   private getDaysSince(value?: Date | string | null): number {
@@ -281,10 +283,10 @@ export class CaseAnalyticsPanel {
   }
 
   private getPriorityWeight(priority?: Priority | null): number {
-    return { low: 1, medium: 2, high: 3, critical: 4 }[priority || 'low'] || 0;
+    return { low: 1, medium: 2, high: 3, critical: 4 }[priority ?? 'low'] || 0;
   }
 
   private getSeverityWeight(severity?: Severity | null): number {
-    return { info: 1, low: 2, medium: 3, high: 4, critical: 5 }[severity || 'info'] || 0;
+    return { info: 1, low: 2, medium: 3, high: 4, critical: 5 }[severity ?? 'info'] || 0;
   }
 }

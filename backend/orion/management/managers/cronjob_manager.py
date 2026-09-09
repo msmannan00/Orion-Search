@@ -2,13 +2,20 @@ import asyncio
 from datetime import timedelta
 from interface import BASE_DIR
 from orion.constants.constant import allowed_key_titles
+from orion.api.interactive.backup_manager.backup_manager import BackupManager
+from orion.api.interactive.backup_manager.maintenance_state import maintenance_state
 from orion.helper_manager.helper_controller import helper_controller
 from orion.management.jobs.insight_job import insight_job
 from orion.management.jobs.alert.alert_job import alert_job
+
 from orion.management.jobs.social_profile.social_profile_job import social_profile_job
+
+from orion.api.server.config_manager.config_controller import config_controller
+
 from orion.api.interactive.scheduler_manager.scheduler_manager import DailySchedulerConfig, SchedulerManager
 from orion.services.elastic_manager.elastic_controller import elastic_controller
 from orion.services.log_manager.log_controller import log
+from orion.services.mongo_manager.shared_model.db_backup_model import BackupType
 from orion.services.redis_manager.redis_enums import REDIS_KEYS
 
 
@@ -37,13 +44,17 @@ class cronjob_manager:
 
     @staticmethod
     def build_assets():
-        build_dir = BASE_DIR / "build"
+        build_dir = BASE_DIR / "workspace" / "build"
         helper_controller.build_assets(build_dir)
 
 
     @staticmethod
     async def purge_loop():
         while True:
+            if maintenance_state.get_instance().is_active():
+                log.g().i("Purge loop paused: maintenance mode is active")
+                await asyncio.sleep(30)
+                continue
             await elastic_controller.get_instance().purge_old_records()
             await asyncio.sleep(86400)
 
@@ -57,7 +68,11 @@ class cronjob_manager:
         await self.__init_handles()
         asyncio.create_task(cronjob_manager.purge_loop())
         asyncio.create_task(cronjob_manager.iocs_alert_loop())
+
         asyncio.create_task(cronjob_manager.social_profile_loop())
+
+        asyncio.create_task(cronjob_manager.backup_loop())
+
 
     @staticmethod
     async def iocs_alert_loop():
@@ -73,6 +88,11 @@ class cronjob_manager:
         )
 
         while True:
+            if maintenance_state.get_instance().is_active():
+                log.g().i("IOC alert loop paused: maintenance mode is active")
+                await asyncio.sleep(30)
+                continue
+
             if not allowed_key_titles:
                 await asyncio.sleep(60)
                 continue
@@ -102,7 +122,7 @@ class cronjob_manager:
                         hour=hour,
                         minute=minute,
                         timezone_name=timezone_name,
-                        handler=lambda tenant=tenant: alert_job.get_instance().run_tenant_categories(tenant),
+                        handler=lambda job_tenant=tenant: alert_job.get_instance().run_tenant_categories(job_tenant),
                         stale_after=timedelta(minutes=15),
                         heartbeat_interval=timedelta(seconds=60),
                     )
@@ -113,6 +133,7 @@ class cronjob_manager:
             await asyncio.sleep(600)
 
     @staticmethod
+
     async def social_profile_loop():
         while True:
             try:
@@ -140,3 +161,20 @@ class cronjob_manager:
                 log.g().e(f"Social profile loop failed: {e}")
 
             await asyncio.sleep(600)
+
+    async def backup_loop():
+        while True:
+            try:
+                if maintenance_state.get_instance().is_active():
+                    log.g().i("Backup loop skipped: maintenance mode is active")
+                    await asyncio.sleep(30)
+                    continue
+
+                enabled = await config_controller.getInstance()._is_backup_schedule()
+                if enabled == "1":
+                    await BackupManager.get_instance().run_backup_now(BackupType.AUTO)
+            except Exception as e:
+                log.g().e(f"Backup loop failed: {e}")
+
+            await asyncio.sleep(259200)
+

@@ -10,7 +10,7 @@ graph_routes = APIRouter(dependencies=[Depends(status_required([UserStatus.ACTIV
 @graph_routes.post(
     "/api/graph/session/upsert",
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced"]))])
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced", "social_mapper"]))])
 async def upsert_graph_session(data: dict = Body(...), graph_type: str = Query("graph"), current_user=Depends(get_current_user)):
     gt = (data or {}).get("graph_type") or graph_type or "graph"
     return await graphs_model.getInstance().upsert_data(str(current_user.id), gt, data)

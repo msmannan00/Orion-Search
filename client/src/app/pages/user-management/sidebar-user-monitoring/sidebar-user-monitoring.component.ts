@@ -29,7 +29,7 @@ export class SidebarUserMonitoringComponent implements OnInit {
         return;
       }
       const fallbackTab = this.visibleTabs[0]?.id || '';
-      const nextTab = this.visibleTabs.some(tab => tab.id === requestedTab) ? requestedTab || fallbackTab : fallbackTab;
+      const nextTab = this.visibleTabs.some(tab => tab.id === requestedTab) ? requestedTab ?? fallbackTab : fallbackTab;
       this.activeTab = nextTab;
       if (nextTab && requestedTab !== nextTab) {
         this.router.navigate([], {

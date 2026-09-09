@@ -89,7 +89,7 @@ describe('Orion Intelligence - Account Settings and Password Reset Flow', () => 
                 }
 
                 cy.openLastMailAndGetUrl().then((url) => {
-                    expect(url).to.be.a('string').and.not.be.empty;
+                    expect(url).to.be.a('string').and.have.length.greaterThan(0);
                     cy.visit(url);
                 });
                 cy.url().should('include', '/reset');

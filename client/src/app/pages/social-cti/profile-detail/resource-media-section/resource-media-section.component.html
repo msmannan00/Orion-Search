@@ -1,0 +1,112 @@
+<div data-testid="social-media-grid" class="grid gap-3" [class.grid-cols-3]="isImageGrid()" [class.grid-cols-2]="!isImageGrid()" [class.xl:grid-cols-3]="!isImageGrid()">
+  @for (view of views(); track view.key) {
+    <article data-testid="social-media-tile" [class.ui-connection-beam]="isConnectionsLoading(view)" class="group/tile flex min-w-0 flex-col overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[#111a2c] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] shadow-[0_6px_20px_var(--color-shadow-light)] transition-[border-color,box-shadow] hover:border-sky-400/25 [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-[#f7fafd] [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
+      <a [href]="view.url || view.fullImage || view.image" target="_blank" rel="noopener noreferrer" class="relative block w-full overflow-hidden bg-black/40 outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35" [class]="view.isVertical ? 'aspect-[3/4]' : (view.isVideo ? 'aspect-video' : 'aspect-square')">
+        @if (view.image) {
+          <img [src]="view.image" [alt]="view.title || view.author || view.kind" referrerpolicy="no-referrer" loading="lazy" (error)="onImageError($event)" class="h-full w-full object-cover transition-transform duration-300 group-hover/tile:scale-[1.03]">
+        } @else {
+          <span class="flex h-full w-full items-center justify-center text-3xl text-[var(--color-text4)]">
+            <i class="bi" [class.bi-play-fill]="view.isVideo" [class.bi-image]="!view.isVideo" aria-hidden="true"></i>
+          </span>
+        }
+        <span class="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent"></span>
+        @if (view.isVideo) {
+          <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-lg transition-transform group-hover/tile:scale-110">
+              <i class="bi bi-play-fill text-xl" aria-hidden="true"></i>
+            </span>
+          </span>
+        }
+        <span class="pointer-events-none absolute left-2 top-2 flex flex-wrap gap-1">
+          @if (view.kind) {
+            <span class="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white">{{ view.kind | translate }}</span>
+          }
+          @for (flag of view.flags; track flag) {
+            <span class="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white" [class]="flag === 'Live' ? 'bg-red-600' : 'bg-black/60'">{{ flag | translate }}</span>
+          }
+        </span>
+        @if (view.duration) {
+          <span class="pointer-events-none absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">{{ view.duration }}</span>
+        }
+        @if (view.dimensions && !view.duration) {
+          <span class="pointer-events-none absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">{{ view.dimensions }}</span>
+        }
+        @if (view.views || view.likes) {
+          <span class="pointer-events-none absolute bottom-2 left-2 flex items-center gap-2 text-[10px] font-semibold text-white">
+            @if (view.views) {
+              <span class="inline-flex items-center gap-1 tabular-nums"><i class="bi bi-eye text-[10px]" aria-hidden="true"></i>{{ view.views }}</span>
+            }
+            @if (view.likes) {
+              <span class="inline-flex items-center gap-1 tabular-nums"><i class="bi bi-heart-fill text-[10px] text-rose-400" aria-hidden="true"></i>{{ view.likes }}</span>
+            }
+          </span>
+        }
+      </a>
+
+      <div class="flex min-w-0 flex-1 flex-col px-2.5 pb-2 pt-2">
+        @if (view.title) {
+          <a [href]="view.url" target="_blank" rel="noopener noreferrer" class="line-clamp-2 text-[12px] font-bold leading-4 text-[var(--color-text1)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">{{ view.title }}</a>
+        }
+        @if (view.caption) {
+          <p class="mb-0 line-clamp-2 text-[11px] leading-4 text-[var(--color-text3)]" [class.mt-1]="view.title">{{ view.caption }}</p>
+        }
+        @if (view.author || view.time.date || view.timeText || view.comments || view.rating) {
+          <div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-[var(--color-text4)]">
+            @if (view.author) {
+              <span class="min-w-0 truncate font-mono">{{ view.author }}</span>
+            }
+            @if (view.time.date) {
+              <span>{{ view.time.date | date:'mediumDate' }}</span>
+            } @else if (view.timeText) {
+              <span>{{ view.timeText }}</span>
+            }
+            @if (view.comments) {
+              <span class="inline-flex items-center gap-1 tabular-nums"><i class="bi bi-chat-dots text-[10px]" aria-hidden="true"></i>{{ view.comments }}</span>
+            }
+            @if (view.rating) {
+              <span class="inline-flex items-center gap-1 tabular-nums"><i class="bi bi-star-fill text-[10px] text-amber-400" aria-hidden="true"></i>{{ view.rating }}</span>
+            }
+          </div>
+        }
+        @if (view.tags.length) {
+          <div class="mt-1.5 flex flex-wrap gap-1">
+            @for (tag of view.tags; track tag) {
+              <span class="inline-flex items-center rounded-full bg-[var(--color-blue-640)]/15 px-1.5 py-px text-[9px] font-semibold text-[var(--color-blue-640)]">#{{ tag }}</span>
+            }
+          </div>
+        }
+        @if (view.extra.length || (connectionsEnabled() && view.url)) {
+          <div class="mt-1.5 flex items-center gap-1.5">
+            @if (view.extra.length) {
+              <button type="button" (click)="toggle(view)" [attr.aria-expanded]="isExpanded(view)" class="inline-flex w-fit cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text4)] outline-none hover:text-[var(--color-text2)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+                {{ view.extra.length }} {{ 'more' | translate }}
+                <i class="bi text-[9px]" [class.bi-chevron-up]="isExpanded(view)" [class.bi-chevron-down]="!isExpanded(view)" aria-hidden="true"></i>
+              </button>
+            }
+            @if (connectionsEnabled() && view.url) {
+              <app-social-connections [postUrl]="view.url" [platform]="platform()" [profileUsername]="profileUsername()" [connectionsLoading]="connectionsLoading()" [connectionsByPost]="connectionsByPost()" (loadConnections)="loadConnections.emit($event)"></app-social-connections>
+              <button data-testid="social-feed-load-connections" type="button" (click)="onLoadConnections(view, $event)" [disabled]="isConnectionsLoading(view)" [title]="'Pull this post\'s commenters into Connections' | translate" class="ml-auto inline-flex h-8 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-1.5 text-[12px] font-semibold text-[var(--color-text3)] outline-none transition-colors hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-60">
+                {{ (isConnectionsLoading(view) ? 'Loading…' : 'Connections') | translate }}
+              </button>
+            }
+          </div>
+        }
+        @if (isExpanded(view)) {
+          <dl class="mb-0 mt-1.5 grid grid-cols-1 gap-y-1.5 border-t border-[rgba(148,163,184,0.10)] pt-2 [body.light-theme_&]:border-[#dce6f1]">
+            @for (entry of view.extra; track entry.key) {
+              <div class="min-w-0">
+                <dt class="min-w-0 truncate text-[9px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text4)]" [title]="formatKeyLabel(entry.key)">{{ formatKeyLabel(entry.key) }}</dt>
+                <dd class="mb-0 min-w-0 break-all text-[10px] font-medium leading-4 text-[var(--color-text2)]">{{ entry.value }}</dd>
+              </div>
+            }
+          </dl>
+        }
+      </div>
+    </article>
+  }
+  @for (filler of fillers(); track filler) {
+    <div data-testid="social-media-placeholder" aria-hidden="true" class="flex aspect-square items-center justify-center rounded-[12px] border border-dashed border-[rgba(148,163,184,0.18)] bg-transparent text-[var(--color-text4)]/50 [body.light-theme_&]:border-[#c9d7e6]">
+      <i class="bi bi-image text-xl" aria-hidden="true"></i>
+    </div>
+  }
+</div>

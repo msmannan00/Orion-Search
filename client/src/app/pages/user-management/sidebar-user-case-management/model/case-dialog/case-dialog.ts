@@ -23,7 +23,7 @@ export class CaseDialog implements OnChanges {
   @Output() saved = new EventEmitter<string>();
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['caseItem'] && this.caseItem) {
+    if (changes.caseItem && this.caseItem) {
       this.selectedAnalystId = this.caseItem.assignedAnalystIds?.[0] || '';
     }
   }
@@ -47,7 +47,7 @@ export class CaseDialog implements OnChanges {
   }
 
   setAnalyst(value: string | null): void {
-    this.selectedAnalystId = value || '';
+    this.selectedAnalystId = value ?? '';
   }
 
   confirmAssignAnalyst(): void {

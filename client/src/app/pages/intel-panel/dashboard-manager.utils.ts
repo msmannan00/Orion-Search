@@ -1,11 +1,11 @@
-interface QueryPageParams {
-    q: string;
-    page: number | string;
-}
+
+import type { QueryPageParams } from './model/dashboard-manager.utils.model';
+export type { QueryPageParams } from './model/dashboard-manager.utils.model';
+
 type QueryPageSource = Record<string, unknown>;
 export function applyQueryAndPageFromParams(params: QueryPageSource, target: QueryPageParams): string {
-  const query = (params['q'] as string | undefined) ?? '';
-  const page = (params['page'] as number | string | undefined) ?? '1';
+  const query = (params.q as string | undefined) ?? '';
+  const page = (params.page as number | string | undefined) ?? '1';
   target.q = query;
   target.page = page;
   return query;

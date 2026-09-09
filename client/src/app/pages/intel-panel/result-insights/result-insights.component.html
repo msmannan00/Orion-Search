@@ -159,7 +159,7 @@
               <div class="relative mt-3 overflow-hidden rounded-md">
                 <div class="pointer-events-none absolute inset-x-0 top-0 z-10 h-5 bg-gradient-to-b from-[var(--ui-consolidated-main-bg)] to-transparent"></div>
                 <div class="[animation:ui-stagger-result-card-enter_200ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:!animate-none flex max-h-64 flex-wrap gap-2 overflow-y-auto px-0.5 py-1 pr-1">
-                  @for (item of filteredItems; track item; let i = $index; let isLast = $last) {
+                  @for (item of filteredItems; track item; let i = $index) {
                     <button type="button" class="ui-consolidated-sub [&&&]:![background:var(--ui-consolidated-sub-bg,#fff)] [&&&]:![border-color:var(--ui-consolidated-border,#d7e2ef)] hover:[&&&]:![background:var(--ui-consolidated-sub-hover,#fbfdff)] inline-flex max-w-full cursor-pointer items-center gap-2 rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-xs text-[var(--color-text3)] transition-colors hover:border-[var(--color-blue-640)] hover:bg-[var(--color-blue-720)]" [ngClass]="copiedInsightItemKey === section.key + '-' + i ? 'border-[var(--color-blue-640)] bg-[var(--color-blue-720)]' : ''" (click)="copyInsightItem(item, section.key, i, $event)" [attr.data-testid]="'insights-item-' + section.key + '-' + i" [title]="(copiedInsightItemKey === section.key + '-' + i ? ('Copied' | translate) : ('Copy' | translate)) + ': ' + item">
                       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-blue-640)] opacity-80"></span>
                       <span class="min-w-0 truncate font-medium text-[var(--color-text1)]">{{ item }}</span>

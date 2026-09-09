@@ -29,7 +29,9 @@ export class HomepageComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.router.url.includes('#') && this.scrollToElement();
+    if (this.router.url.includes('#')) {
+      this.scrollToElement();
+    }
   }
 
   scrollToElement() {

@@ -1,0 +1,51 @@
+<button data-testid="social-feed-view-connections" type="button" (click)="open($event, dlg)" [attr.aria-expanded]="isOpen()" aria-haspopup="dialog" [title]="'View post connections' | translate" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-[var(--color-text4)] outline-none transition-colors hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+  <i class="bi bi-person text-[15px] relative -top-[1px]" aria-hidden="true"></i>
+</button>
+<dialog #dlg data-testid="social-feed-connections-popup" [attr.aria-label]="'Post connections' | translate" (click)="$event.stopPropagation()" (close)="onClosed()" class="m-auto w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] p-0 text-[var(--color-text1)] shadow-[0_14px_36px_rgba(0,0,0,0.32)] backdrop:bg-black/45 [body.light-theme_&]:bg-[#f8fbff]">
+  <div class="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-2">
+    <span class="text-[12px] font-semibold text-[var(--color-text1)]">{{ 'Post connections' | translate }}</span>
+    <button type="button" (click)="close($event, dlg)" [attr.aria-label]="'Close' | translate" class="inline-flex h-6 w-6 items-center justify-center border-0 bg-transparent text-[var(--color-text4)] hover:text-[var(--color-text1)]">
+      <i class="bi bi-x-lg text-[11px]" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="relative mx-2 mt-2">
+    <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--color-text4)]" aria-hidden="true"></i>
+    <input type="text" data-testid="social-feed-connections-search" [value]="searchTerm()" (input)="onSearch($event)" [placeholder]="'Search connections by username' | translate" class="h-9 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] pl-9 pr-3 text-[12px] text-[var(--color-text1)] outline-none transition-colors placeholder:text-[var(--color-text4)] focus-visible:border-[var(--color-blue-640)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/45 [.light-theme_&]:border-[#c7d5e6] [.light-theme_&]:bg-[#f8fbff]">
+  </div>
+  <div class="max-h-64 overflow-y-auto p-1.5">
+    @if (isLoading() && users().length === 0) {
+      <div class="flex items-center justify-center gap-2 px-3 py-5 text-[11px] text-[var(--color-text4)]">
+        <span class="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-blue-640)] border-r-transparent"></span>{{ 'Loading users…' | translate }}
+      </div>
+    } @else if (users().length === 0) {
+      <button type="button" (click)="onLoad($event)" [disabled]="isLoading()" class="flex w-full flex-col items-center gap-2 rounded-[8px] px-3 py-6 text-center text-[11px] font-semibold text-[var(--color-blue-640)] outline-none transition-colors hover:bg-[var(--color-blue-720)] hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-60">
+        <i class="bi bi-search text-[15px]" aria-hidden="true"></i>{{ 'Search connections' | translate }}
+      </button>
+    } @else {
+      @for (user of displayedUsers(); track user.key) {
+        <div class="flex min-w-0 items-center gap-2.5 rounded-[7px] px-2 py-2 hover:bg-[var(--color-blue-720)]">
+          @if (user.avatar) {
+            <img [src]="user.avatar" [alt]="user.name" referrerpolicy="no-referrer" (error)="onImageError($event)" class="h-8 w-8 flex-shrink-0 rounded-full object-cover">
+          } @else {
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-blue-720)] text-[11px] font-bold text-[var(--color-text2)]">{{ user.initial }}</span>
+          }
+          <div class="min-w-0 flex-1">
+            @if (user.url) {
+              <a [href]="user.url" target="_blank" rel="noopener noreferrer" class="block truncate text-[12px] font-semibold text-[var(--color-text1)] hover:text-[var(--color-blue-640)]">{{ user.name }}</a>
+            } @else {
+              <span class="block truncate text-[12px] font-semibold text-[var(--color-text1)]">{{ user.name }}</span>
+            }
+            @if (user.handle) {
+              <span class="block truncate text-[10px] text-[var(--color-text4)]">&#64;{{ user.handle }}</span>
+            }
+          </div>
+        </div>
+      }
+      @if (canLoadMore()) {
+        <button data-testid="social-feed-connections-load-more" type="button" (click)="loadMore()" class="mt-1 flex w-full items-center justify-center gap-1.5 rounded-[8px] px-3 py-2 text-[11px] font-semibold text-[var(--color-blue-640)] outline-none transition-colors hover:bg-[var(--color-blue-720)] hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+          <i class="bi bi-arrow-down-circle text-[12px]" aria-hidden="true"></i>{{ 'Load more' | translate }}
+        </button>
+      }
+    }
+  </div>
+</dialog>

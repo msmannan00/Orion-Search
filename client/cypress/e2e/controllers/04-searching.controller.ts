@@ -12,26 +12,19 @@ const SIDEBAR_GROUP_ROUTE_PREFIX: Record<string, string> = {
   Dump: 'dump',
 };
 
-const SIDEBAR_SUBITEM_TEST_ID_ALIAS: Record<string, Record<string, string>> = {
-  'Web Scans': {
-    'Basic Scan': 'network-scan',
-    'Port Scan': 'network-scan',
-  },
-};
-
 function getSidebarGroupTestId(title: string): string {
   const routePrefix = SIDEBAR_GROUP_ROUTE_PREFIX[title];
-  expect(routePrefix, `routePrefix mapping for "${title}"`).to.exist;
+  assert.exists(routePrefix, `routePrefix mapping for "${title}"`);
   return `sidebar-group-${routePrefix}`;
 }
 
 function ensureSidebarExpanded() {
   cy.get('body').then(($body) => {
     if ($body.find('[data-testid="sidebar-expand-button"]:visible').length) {
-      cy.get('[data-testid="sidebar-expand-button"]').click();
+      void cy.get('[data-testid="sidebar-expand-button"]').click();
     }
   });
-  cy.get('[data-testid="sidebar-collapse-button"]').should('be.visible');
+  void cy.get('[data-testid="sidebar-collapse-button"]').should('be.visible');
 }
 
 export function openSidebarGroup(title: string) {
@@ -39,81 +32,48 @@ export function openSidebarGroup(title: string) {
   const groupTestId = getSidebarGroupTestId(title);
   cy.get(`[data-testid="${groupTestId}"]`).scrollIntoView().should('be.visible').then(($group) => {
     const sub = $group.parent('div').find('> ul');
-    cy.wrap($group).click({ force: true });
+    void cy.wrap($group).click({ force: true });
     if (!sub.length) {
       return;
     }
-    cy.wrap(sub).should(($ul) => {
+    void cy.wrap(sub).should(($ul) => {
       expect(getComputedStyle($ul[0] as HTMLElement).pointerEvents).not.to.equal('none');
     });
   });
 }
 
-export function clickSidebarSubItem(groupTitle: string, itemTitle: string) {
-  const routePrefix = SIDEBAR_GROUP_ROUTE_PREFIX[groupTitle];
-  const aliasedTestId = SIDEBAR_SUBITEM_TEST_ID_ALIAS[groupTitle]?.[itemTitle];
-
-  if (aliasedTestId) {
-    cy.get(`[data-testid="sidebar-subitem-${routePrefix}-${aliasedTestId}"]`)
-      .scrollIntoView()
-      .should('be.visible')
-      .click();
-    return;
-  }
-
-  cy.contains(`[data-testid^="sidebar-subitem-${routePrefix}-"]`, new RegExp(`^\\s*${itemTitle}\\s*$`))
-    .scrollIntoView()
-    .should('be.visible')
-    .click();
-}
-
 export function waitForSearchReady() {
-  cy.get('app-loading-form').should('not.exist');
-}
-
-export function typeDashboardSearch(value: string) {
-  cy.scrollDashboardToTop();
-  waitForSearchReady();
-  cy.scrollDashboardToTop();
-  cy.get('input[data-testid="dashboard-general-input"][name="q"]').first().should('be.visible').and('be.enabled').type(`{selectall}{backspace}${value}{enter}`, { force: true });
+  void cy.get('app-loading-form').should('not.exist');
 }
 
 export function typeDashboardSearchSlow(value: string) {
   const selector = 'input[data-testid="dashboard-general-input"][name="q"]';
-  cy.scrollDashboardToTop();
+  void cy.scrollDashboardToTop();
   waitForSearchReady();
-  cy.scrollDashboardToTop();
-  cy.typeSlow(selector, value, { submit: true });
+  void cy.scrollDashboardToTop();
+  void cy.typeSlow(selector, value, { submit: true });
 }
 
 export function typeInputSlow(selector: string, value: string, submit = true) {
-  cy.typeSlow(selector, value, { submit });
-}
-
-export function openExploitSubmenu(submenu: string) {
-  clickSidebarSubItem('Exploit', submenu);
-}
-
-export function typeExploitSearch(value: string) {
-  typeDashboardSearchSlow(value);
+  void cy.typeSlow(selector, value, { submit });
 }
 
 export function clickOpenReport() {
-  cy.get('[data-testid="open-report"]').filter(':visible').filter(':has(img[src*="redirect.svg"])').first().should('be.visible').invoke('removeAttr', 'target').click();
+  void cy.get('[data-testid="open-report"]').filter(':visible').filter(':has(img[src*="redirect.svg"])').first().should('be.visible').invoke('removeAttr', 'target').click();
 }
 
 export function clickOpenExploitReport() {
-  cy.get('[data-testid="open-report"]').filter(':visible').first().scrollIntoView().should('be.visible').invoke('removeAttr', 'target').click({ force: true });
+  void cy.get('[data-testid="open-report"]').filter(':visible').first().scrollIntoView().should('be.visible').invoke('removeAttr', 'target').click({ force: true });
 }
 
 export function clickOpenDefacementReport() {
-  cy.get('[data-testid="defacement-group-card"]').first().find('button').scrollIntoView().should('be.visible').click({ force: true });
-  cy.get('[data-testid="defacement-record-sidebar"] a').first().invoke('removeAttr', 'target').click({ force: true });
+  void cy.get('[data-testid="defacement-group-card"]').first().find('button').scrollIntoView().should('be.visible').click({ force: true });
+  void cy.get('[data-testid="defacement-record-sidebar"] a').first().invoke('removeAttr', 'target').click({ force: true });
 }
 
 export function openDefacementReportAndValidate() {
   clickOpenDefacementReport();
-  cy.get('body', {timeout: 60000}).should(($body) => {
+  void cy.get('body', {timeout: 60000}).should(($body) => {
     const hasJsonViewer = $body.find('app-json-api-viewer').length > 0;
     const hasDefacementReport = $body.find('app-report-defacement').length > 0;
     expect(hasJsonViewer || hasDefacementReport, 'defacement report opened').to.eq(true);
@@ -129,34 +89,34 @@ export function exerciseJsonViewerOnce() {
     }
   });
 
-  cy.get('app-json-api-viewer').should('exist').and('be.visible');
-  cy.contains('app-json-api-viewer span', 'Json Response').should('be.visible').click();
-  cy.get('app-json-api-viewer app-json-viewer').should('exist');
+  void cy.get('app-json-api-viewer').should('exist').and('be.visible');
+  void cy.contains('app-json-api-viewer span', 'Json Response').should('be.visible').click();
+  void cy.get('app-json-api-viewer app-json-viewer').should('exist');
 
   const expandableRowSelector = 'app-json-api-viewer app-json-viewer li:has(> div.group + div.ml-5)';
 
-  cy.get(expandableRowSelector).first().scrollIntoView().should('be.visible').find('> div.ml-5').should('exist');
+  void cy.get(expandableRowSelector).first().scrollIntoView().should('be.visible').find('> div.ml-5').should('exist');
   cy.get(expandableRowSelector).first().find('> div.group .text-\\[14px\\]').invoke('text').then((keyText) => {
     const normalizedKey = keyText.trim();
 
-    cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
+    void cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
       .closest('li')
       .as('jsonExpandableRow');
 
-    cy.get('@jsonExpandableRow').scrollIntoView().find('> div.group').should('be.visible').click();
-    cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
+    void cy.get('@jsonExpandableRow').scrollIntoView().find('> div.group').should('be.visible').click();
+    void cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
       .closest('li')
       .find('> div.ml-5')
       .should('not.exist');
 
-    cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
+    void cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
       .closest('li')
       .scrollIntoView()
       .find('> div.group')
       .should('be.visible')
       .click();
 
-    cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
+    void cy.contains('app-json-api-viewer app-json-viewer li > div.group .text-\\[14px\\]', normalizedKey)
       .closest('li')
       .find('> div.ml-5')
       .should('exist');
@@ -169,12 +129,12 @@ export function openFirstReportAndValidateNavigationOrModal() {
 
     cy.get('body').then(($body) => {
       if ($body.find('app-json-api-viewer').length) {
-        cy.get('app-json-api-viewer').should('be.visible');
-        cy.get('body').type('{esc}');
+        void cy.get('app-json-api-viewer').should('be.visible');
+        void cy.get('body').type('{esc}');
         return;
       }
 
-      cy.location('pathname').should('not.eq', pathBefore);
+      void cy.location('pathname').should('not.eq', pathBefore);
     });
   });
 }

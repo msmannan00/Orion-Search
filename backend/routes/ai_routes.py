@@ -92,7 +92,7 @@ async def cancel_nexus_chat(current_user=Depends(get_current_user)):
         ),
     ],
 )
-async def clear_nexus_chat_session(payload: dict | None = Body(default=None), current_user=Depends(get_current_user)):
+async def clear_nexus_chat_session(_payload: dict | None = Body(default=None), _current_user=Depends(get_current_user)):
     return True
 
 

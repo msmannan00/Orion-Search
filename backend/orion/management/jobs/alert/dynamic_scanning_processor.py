@@ -59,6 +59,7 @@ class DynamicScanningProcessor:
         try:
             summary = AlertSummaryHelper.new_scan_summary()
             param_model = model_cls(text=search_payload)
+            result_list: Any = []
 
             while True:
                 if self._cancellation_service.is_cancelled(tenant_id):
@@ -74,7 +75,7 @@ class DynamicScanningProcessor:
                     await asyncio.sleep(5)
                     continue
 
-                inner_result = scan_result.get("result", {})
+                inner_result: Any = scan_result.get("result", {})
                 if isinstance(inner_result, dict):
                     result_list = inner_result.get("result", [])
                 elif isinstance(inner_result, list):

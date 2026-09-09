@@ -254,7 +254,9 @@ export class ThreatLensComponent implements OnDestroy {
       return;
     }
 
-    void reset.then(() => this.refreshIpScan());
+    void reset.then(() => {
+      this.refreshIpScan();
+    });
   }
 
   resetSelectedCountry(): void {
@@ -514,8 +516,8 @@ export class ThreatLensComponent implements OnDestroy {
       return false;
     }
 
-    const payload = (done.result ?? done) as GeoCameraResponse & Record<string, any>;
-    const rawStatus = String(payload?.status || done?.status || '').toLowerCase();
+    const payload = (done.result ?? done) as GeoCameraResponse & Record<string, unknown>;
+    const rawStatus = String(payload?.status ?? done?.status ?? '').toLowerCase();
     const progress = Number(payload?.progress ?? done?.progress);
     const step = String(payload?.step ?? done?.step ?? '').toLowerCase();
     const status = (rawStatus === 'pending' || rawStatus === 'busy') && progress >= 100 && step.includes('done')

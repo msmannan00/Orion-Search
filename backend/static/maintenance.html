@@ -206,6 +206,39 @@
                 padding-top: 12px;
             }
         }
+
+        .progress {
+            margin: 22px 0 4px;
+            width: 100%;
+        }
+
+        .progress-track {
+            background: rgb(255 255 255 / 12%);
+            border-radius: 999px;
+            height: 6px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .progress-value {
+            background: linear-gradient(92deg, #4ea2f1, #2c7ac5);
+            border-radius: 999px;
+            height: 100%;
+            transition: width 400ms ease;
+            width: 0;
+        }
+
+        .progress-label {
+            display: flex;
+            font-size: 12px;
+            justify-content: space-between;
+            margin-top: 8px;
+            opacity: 0.75;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -213,22 +246,70 @@
     <img alt="" class="logo" src="/maintenance-assets/logo_url_default.png">
     <div class="status">Maintenance</div>
     <h1>Orion is temporarily unavailable</h1>
-    <p>Maintenance or update in progress. Please try again in a few moments.</p>
+    <p id="summary">Maintenance or update in progress. Please try again in a few moments.</p>
+    <div class="progress" hidden id="progress">
+        <div class="progress-track">
+            <div class="progress-value" id="progress-value"></div>
+        </div>
+        <div class="progress-label"><span id="progress-message"></span><span id="progress-percent"></span></div>
+    </div>
     <a class="home-link" href="/dashboard/home">Go to homepage</a>
     <div class="meta">The gateway is online and will reconnect automatically when the application is ready.</div>
 </main>
 <script>
-    const reconnect = async () => {
+    const summary = document.getElementById('summary');
+    const progress = document.getElementById('progress');
+    const progressValue = document.getElementById('progress-value');
+    const progressMessage = document.getElementById('progress-message');
+    const progressPercent = document.getElementById('progress-percent');
+
+    const OPERATION_LABEL = {backup: 'Backup in progress', restore: 'Restore in progress'};
+
+    const renderJob = (job) => {
+        if (!job || job.status !== 'running') {
+            progress.hidden = true;
+            return false;
+        }
+        const percent = Math.max(0, Math.min(100, Number(job.progress) || 0));
+        summary.textContent = OPERATION_LABEL[job.operation] || 'Maintenance in progress';
+        progressMessage.textContent = job.message || '';
+        progressPercent.textContent = percent + '%';
+        progressValue.style.width = percent + '%';
+        progress.hidden = false;
+        return true;
+    };
+
+    const readJob = async () => {
+        try {
+            const response = await fetch('/api/admin/backups/status', {cache: 'no-store', credentials: 'include'});
+            if (!response.ok) {
+                return null;
+            }
+            return await response.json();
+        } catch (_) {
+            return null;
+        }
+    };
+
+    const isBackOnline = async () => {
         try {
             const response = await fetch('/dashboard/home', {cache: 'no-store'});
-            if (response.ok) {
-                window.location.replace('/dashboard/home');
-                return;
-            }
-        } catch (_) {}
-        window.setTimeout(reconnect, 5000);
+            return response.ok;
+        } catch (_) {
+            return false;
+        }
     };
-    window.setTimeout(reconnect, 5000);
+
+    const tick = async () => {
+        renderJob(await readJob());
+        if (await isBackOnline()) {
+            window.location.replace('/dashboard/home');
+            return;
+        }
+        window.setTimeout(tick, 5000);
+    };
+
+    tick();
 </script>
 </body>
 </html>

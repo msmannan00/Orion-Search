@@ -1,5 +1,5 @@
 import type { WritableSignal } from '@angular/core';
-import type { FetchMergeMode, FetchTabKey, PostContentTabKey, SocialPlatformCapabilityKey } from '../enums/social-graph.enums';
+import type { FetchTabKey, SocialPlatformCapabilityKey } from '../enums/social-graph.enums';
 import type { Job, social_profile, social_profile_config } from './social.models';
 
 export type ManagedPlatform = social_profile & {
@@ -39,16 +39,6 @@ export interface FeedUser {
     allPlatforms: social_profile[];
 }
 
-export interface PostCursorFetchRequest {
-    platformData: social_profile;
-    tabKey: PostContentTabKey;
-    cursorId?: string;
-    commentOffset?: number;
-    maxComments?: number;
-    mergeMode: FetchMergeMode;
-    commentsOnly?: boolean;
-}
-
 export interface FetchTab {
     key: FetchTabKey;
     label: string;
@@ -76,4 +66,17 @@ export interface social_state {
     isHomeMenuCollapsed: WritableSignal<boolean>;
     activeUsername: WritableSignal<string | null>;
     loadingUsernames: WritableSignal<Set<string>>;
+}
+
+export interface CrawlResultState {
+    loading?: boolean;
+    items?: unknown[];
+    error?: string;
+    login_url?: string;
+    count?: number;
+    log?: string;
+}
+
+export interface CrawlResultView extends CrawlResultState {
+    lastSynced?: string;
 }

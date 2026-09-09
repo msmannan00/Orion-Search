@@ -19,3 +19,28 @@ export interface UrlScanProofItem {
     confidence: RiskLevel;
     risk: RiskLevel;
 }
+
+export interface UrlScanGradeCounts {
+    high: number;
+    medium: number;
+    low: number;
+    informational: number;
+}
+
+export interface UrlScanResult {
+    status?: string;
+    progress?: number;
+    step?: string;
+    meta?: UrlScanMeta;
+    grade?: string;
+    grade_counts?: UrlScanGradeCounts;
+    threats?: Record<string, UrlScanThreatItem[]>;
+    proofs?: Record<string, UrlScanProofItem[]>;
+}
+
+export interface UrlScanResponse {
+    status?: string;
+    progress?: number;
+    step?: string;
+    result?: UrlScanResult;
+}

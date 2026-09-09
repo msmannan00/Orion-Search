@@ -42,21 +42,20 @@ class helper_controller:
             return {}
 
     @staticmethod
-    def extract_stealer_hash(log):
-        email = log["email"][0] if log.get("email") else None
-        username = log["username"][0] if log.get("username") else None
-        domain = log["domain"][0] if log.get("domain") else None
-        ip = log["ip"][0] if log.get("ip") else None
-        channel = log.get("channel")
+    def extract_stealer_hash(stealer_log):
+        email = stealer_log["email"][0] if stealer_log.get("email") else None
+        username = stealer_log["username"][0] if stealer_log.get("username") else None
+        domain = stealer_log["domain"][0] if stealer_log.get("domain") else None
+        ip = stealer_log["ip"][0] if stealer_log.get("ip") else None
+        channel = stealer_log.get("channel")
 
-        if log.get("type") in ("c", "credential"):
-            if not email and not username:
-                return None
+        if stealer_log.get("type") in ("c", "credential"):
             val = email or username
         else:
-            if not any([email, username, domain, ip, channel]):
-                return None
             val = email or username or domain or ip or channel
+
+        if not val:
+            return None
 
         seed = f"{val}|{channel or ''}"
         return hashlib.sha256(seed.lower().encode("utf-8", "ignore")).hexdigest()
@@ -389,7 +388,7 @@ class helper_controller:
     @staticmethod
     def extract_domains_from_text(text: str) -> list[str]:
         url_regex = re.compile(
-            r'(?:https?://)?(?:www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?:[/?][^\s]*)?', re.IGNORECASE)
+            r'(?:https?://)?(?:www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?:[/?]\S*)?', re.IGNORECASE)
         matches = url_regex.findall(text)
         domains = set()
         for match in matches:
@@ -546,9 +545,9 @@ class helper_controller:
         ranked_results = response.get("Result") or []
 
         ranked_results.sort(
-            key=lambda item: (
-                latest_document_timestamp(item),
-                float(item.get("_score") or 0),
+            key=lambda document: (
+                latest_document_timestamp(document),
+                float(document.get("_score") or 0),
             ),
             reverse=True,
         )

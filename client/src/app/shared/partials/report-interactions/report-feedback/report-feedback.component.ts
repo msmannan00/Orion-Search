@@ -21,6 +21,7 @@ export class ReportFeedbackComponent {
   @Output() feedbackAction = new EventEmitter<FeedbackAction>();
 
   increment(action: FeedbackAction, _key: FeedbackKey): void {
+    void _key;
     if (!this.docId || this.savingKey) {
       return;
     }

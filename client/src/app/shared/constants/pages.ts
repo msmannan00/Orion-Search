@@ -9,7 +9,6 @@ export enum Category {
     EXPLOIT = 'Exploit',
     APT_INTEL = 'APT Intel',
     FEED = 'Feed',
-    CONSOLIDATED = 'Consolidated',
     STEALERLOGS = 'Stealerlogs',
     TENANT = 'Tenant',
     PROFILE = 'Profile',
@@ -34,7 +33,8 @@ export enum ApiSubCategory {
     SOFTWARE = 'Software-Scanner',
     FILE = 'File-Scanner',
     TEXT_ANALYSIS = 'Text-Analysis',
-    CRYPTO = 'Crypto-Scanner'
+    CRYPTO = 'Crypto-Scanner',
+    PHONE_LOOKUP = 'Phone-Lookup'
 }
 export enum SocialSubCategory {
     ALL = 'All',
@@ -45,9 +45,6 @@ export enum SocialSubCategory {
     FORUM = 'Forum',
     REDDIT = 'Reddit',
     FACEBOOK = 'Facebook',
-    INSTAGRAM = 'Instagram',
-    LINKEDIN = 'LinkedIn',
-    TIKTOK = 'TikTok',
     YOUTUBE = 'YouTube',
 }
 export enum ExploitSubCategory {
@@ -86,5 +83,6 @@ export enum ProfileSubCategory {
     AUDITLOG = 'Auditlog',
     TENANT = 'Tenant',
     SYSTEM_SETTINGS = 'System-Settings',
+    BACKUP_RESTORE = 'Backup-Restore',
     CASE_MANAGEMENT = 'Case-Management'
 }

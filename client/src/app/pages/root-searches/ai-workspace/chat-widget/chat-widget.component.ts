@@ -132,7 +132,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
       this.scrollToNewMessage();
       return;
     }
-    const report = (this.report() || this.reportText() || '').trim();
+    const report = (this.report() ?? this.reportText() ?? '').trim();
     const payload = {
       session_id: this.temporarySessionId(),
       session_type: 'temporary' as const,
@@ -183,7 +183,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.detectChanges();
         }
         if (chunk.error) {
-          reply = chunk.response || chunk.delta || this.translationService.translate('Something went wrong. Try again.');
+          reply = chunk.response ?? chunk.delta ?? this.translationService.translate('Something went wrong. Try again.');
           this.chatMessages = botMessage ? this.chatMessages.filter(message => message.id !== botMessage?.id) : this.chatMessages;
           this.showErrorMessage(userMessage, reply);
           this.scrollToNewMessage();
@@ -263,8 +263,12 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isBotTyping = false;
     this.botStep = '';
     this.nexusChatService.clearNexusSession({ session_id: this.temporarySessionId() }).subscribe({
-      next: () => this.resetChatView(),
-      error: () => this.resetChatView(),
+      next: () => {
+        this.resetChatView();
+      },
+      error: () => {
+        this.resetChatView();
+      },
     });
   }
 
@@ -352,7 +356,9 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   queueComposerResize(): void {
-    requestAnimationFrame(() => this.resizeComposer());
+    requestAnimationFrame(() => {
+      this.resizeComposer();
+    });
   }
 
   private isAtBottom(threshold = 4): boolean {
@@ -364,7 +370,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private cancelActiveNexusRequest(): void {
-    if (this.activeChatRequest || this.isBotTyping) {
+    if (Boolean(this.activeChatRequest) || this.isBotTyping) {
       this.nexusChatService.cancelNexusChat();
     }
     this.activeChatRequest?.unsubscribe();
@@ -441,6 +447,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scrollToBottom(_: boolean): void {
+    void _;
     const el = this.messagesContainer?.nativeElement;
     if (!el) {
       return;
@@ -457,7 +464,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (!this.io) {
       this.io = new IntersectionObserver(entries => {
-        this.userNearBottom = entries.some(e => e.isIntersecting); 
+        this.userNearBottom = entries.some(e => e.isIntersecting);
       }, { root: rootEl, threshold: 1 });
       this.io.observe(sentinelEl);
     }

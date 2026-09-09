@@ -3,6 +3,12 @@ import { EMPTY, catchError, finalize, switchMap, takeWhile, tap, timer } from 'r
 import { ApiService } from '../../../../shared/services/api.service';
 import { AppService } from '../../../../services/core/app/app.service';
 import { Subscription } from 'rxjs';
+import { AlertSummary } from '../../../../shared/model/company-profile/node.model';
+import type { AlertScanStatus } from './model/alerts.model';
+export type { AlertScanStatus } from './model/alerts.model';
+
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,25 +31,25 @@ export class AlertService implements OnDestroy {
     this.scanStartSub?.unsubscribe();
     this.scanStatusSub?.unsubscribe();
     this.isCheckingStatus = false;
-    this.scanStartSub = this.apiService.post<any>('profile/alert/scan', null).subscribe({
+    this.scanStartSub = this.apiService.post<AlertScanStatus>('profile/alert/scan', null).subscribe({
       next: () => {
         const stream = this.autoCheckScanStatus();
         if (!stream) {
           return;
         }
         this.scanStatusSub = stream.subscribe({
-          next: (res: any) => {
+          next: (res) => {
             if (!res?.scan_running) {
               this.getLatestAlerts();
             }
           },
-          error: (_) => {
+          error: () => {
             this.isAlertScanLoading.set(false);
             this.setPendingScanFlag(false);
           }
         });
       },
-      error: (_) => {
+      error: () => {
         this.isAlertScanLoading.set(false);
         this.setPendingScanFlag(false);
       },
@@ -55,12 +61,12 @@ export class AlertService implements OnDestroy {
     this.setPendingScanFlag(false);
     this.scanStatusSub?.unsubscribe();
     this.isCheckingStatus = false;
-    this.apiService.post<any>('profile/alert/scan/cancel', null).subscribe({
-      next: (_) => {
+    this.apiService.post<unknown>('profile/alert/scan/cancel', null).subscribe({
+      next: () => {
         this.isAlertScanLoading.set(false);
         this.setPendingScanFlag(false);
       },
-      error: (_) => {
+      error: () => {
         this.isAlertScanLoading.set(false);
         this.setPendingScanFlag(false);
       },
@@ -68,7 +74,7 @@ export class AlertService implements OnDestroy {
   }
 
   getLatestAlerts() {
-    this.apiService.get<any>('get/tenant/alert/summary').subscribe({
+    this.apiService.get<AlertSummary>('get/tenant/alert/summary').subscribe({
       next: response => {
         this.appService.userSessionData.update(data => ({
           ...data,
@@ -91,7 +97,7 @@ export class AlertService implements OnDestroy {
   }
 
   getScanStatus() {
-    return this.apiService.post<any>('profile/alert/scan/status', {}).pipe(tap(res => {
+    return this.apiService.post<AlertScanStatus>('profile/alert/scan/status', {}).pipe(tap(res => {
       this.isAlertScanLoading.set(!!res?.scan_running);
       this.setPendingScanFlag(!!res?.scan_running);
       if (this.hasAutoCheckedOnce && res?.scan_running === false) {
@@ -107,7 +113,7 @@ export class AlertService implements OnDestroy {
     }
     this.isCheckingStatus = true;
     return timer(0, intervalMs).pipe(switchMap(() => this.getScanStatus()),
-      takeWhile((res: any) => res?.scan_running === true, true),
+      takeWhile((res) => res?.scan_running === true, true),
       tap((res) => {
         if (!res?.scan_running) {
           this.isAlertScanLoading.set(false);

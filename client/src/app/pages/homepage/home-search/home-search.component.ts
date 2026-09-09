@@ -7,17 +7,15 @@ import { ConsolidatedCallbackModel } from '../../../shared/model/results/consoli
 import { SearchFiltersComponent } from '../search-filters/search-filters.component';
 import { AppService } from '../../../services/core/app/app.service';
 import { HomeInsightComponent } from '../home-insight/home-insight.component';
-import { AuthService } from '../../../services/authetication/auth.service';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { HomeSearchService } from '../../../shared/partials/result/services/home.search.service';
 import { WorldHeatmapComponent } from '../world-heatmap/world-heatmap.component';
-import { DemoTourComponent } from "../../demo-tour/demo-tour/demo-tour.component";
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-home-search',
   standalone: true,
-  imports: [FormsModule, NgOptimizedImage, CommonModule, RouterLink, SearchFiltersComponent, HomeInsightComponent, WorldHeatmapComponent, DemoTourComponent, TranslatePipe],
+  imports: [FormsModule, NgOptimizedImage, CommonModule, RouterLink, SearchFiltersComponent, HomeInsightComponent, WorldHeatmapComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './home-search.component.html',
 })
@@ -33,7 +31,7 @@ export class HomeSearchComponent implements OnInit {
   protected readonly tabs = ['IOCs', 'Deep Search', 'Network Intelligence', 'Geo Fencing'];
 
   @ViewChild('filtersWrapper', { static: false }) filtersWrapperRef!: ElementRef;
-  @ViewChild('searchInput', { static: false }) searchInputRef!: ElementRef;
+  @ViewChild('searchInput', { static: false }) searchInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('matchTypeDropdown', { static: false }) matchTypeDropdownRef?: ElementRef<HTMLDetailsElement>;
   searchQuery = '';
   selectedSearchBy = 'Match any term';
@@ -47,7 +45,7 @@ export class HomeSearchComponent implements OnInit {
   readonly hideHeatmapAndAnalytics = input<boolean>(false);
   readonly compactLayout = input<boolean>(false);
 
-  constructor( public dashboardService: DashboardService, private route: ActivatedRoute, private router: Router, public app_service: AppService, protected authService: AuthService, protected licenseService: LicenseService, protected homeSearchService: HomeSearchService ) {}
+  constructor( public dashboardService: DashboardService, private route: ActivatedRoute, private router: Router, public app_service: AppService, protected licenseService: LicenseService, protected homeSearchService: HomeSearchService ) {}
 
   ngOnInit(): void {
     const cfg = this.app_service.configData();
@@ -55,7 +53,7 @@ export class HomeSearchComponent implements OnInit {
     this.onSetMatchType(matchtype);
     this.computeInsightMax();
     this.route.queryParams.subscribe(params => {
-      const tab = params['tab'];
+      const tab = params.tab;
       if (typeof tab === 'string' && this.tabs.includes(tab)) {
         this.selectedTab = tab;
       }
@@ -110,7 +108,7 @@ export class HomeSearchComponent implements OnInit {
   }
 
   getMatchType() {
-    const matchtype = this.dashboardService.selectedFilters()['matchtype'];
+    const matchtype = this.dashboardService.selectedFilters().matchtype;
     if (matchtype === 'full') {
       return 'Match full query';
     }
@@ -143,7 +141,7 @@ export class HomeSearchComponent implements OnInit {
 
   clearSearchInput(): void {
     this.searchQuery = '';
-    const inputElement = this.searchInputRef?.nativeElement as HTMLInputElement | undefined;
+    const inputElement = this.searchInputRef?.nativeElement;
     if (inputElement) {
       inputElement.value = '';
       inputElement.focus();
@@ -180,12 +178,15 @@ export class HomeSearchComponent implements OnInit {
     this.computeInsightMax();
     const max = this.insightMax;
 
-    const currentTargetElement = event.currentTarget as HTMLElement;
+    const currentTargetElement = event.currentTarget;
+    if (!(currentTargetElement instanceof HTMLElement)) {
+      return;
+    }
     try {
       currentTargetElement.setPointerCapture(event.pointerId);
     }
-    catch {
-      // Ignore pointer-capture failures on unsupported targets.
+    catch (error) {
+      void error;
     }
 
     this.insightDragging = true;
@@ -205,13 +206,13 @@ export class HomeSearchComponent implements OnInit {
     this.detachWindowPointerListeners();
 
     const move = (e: PointerEvent) => {
-      this.onInsightPointerMove(e); 
+      this.onInsightPointerMove(e);
     };
     const up = (e: PointerEvent) => {
-      this.onInsightPointerUp(e); 
+      this.onInsightPointerUp(e);
     };
     const cancel = (e: PointerEvent) => {
-      this.onInsightPointerCancel(e); 
+      this.onInsightPointerCancel(e);
     };
 
     window.addEventListener('pointermove', move, { passive: false });
@@ -219,9 +220,9 @@ export class HomeSearchComponent implements OnInit {
     window.addEventListener('pointercancel', cancel, { passive: false });
 
     this.removeWindowListeners = () => {
-      window.removeEventListener('pointermove', move as any);
-      window.removeEventListener('pointerup', up as any);
-      window.removeEventListener('pointercancel', cancel as any);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
       this.removeWindowListeners = null;
     };
   }

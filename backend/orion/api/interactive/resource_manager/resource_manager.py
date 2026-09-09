@@ -26,9 +26,9 @@ class ResourceManager:
 
     def __init__(self):
         self.BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-        self.USER_DIR = self.BASE_DIR / "static" / "resource" / "profile"
-        self.TENANT_DIR = self.BASE_DIR / "static" / "resource" / "tenant"
-        self.SYSTEM_DIR = self.BASE_DIR / "static" / "resource" / "system"
+        self.USER_DIR = self.BASE_DIR / "workspace" / "resource" / "profile"
+        self.TENANT_DIR = self.BASE_DIR / "workspace" / "resource" / "tenant"
+        self.SYSTEM_DIR = self.BASE_DIR / "workspace" / "resource" / "system"
         self.ROBOTS_FILE = self.BASE_DIR / "static" / "robots.txt"
 
         self.USER_DIR.mkdir(parents=True, exist_ok=True)
@@ -53,15 +53,15 @@ class ResourceManager:
             raise HTTPException(status_code=400, detail="File too large! Maximum allowed size is 100 KB")
         return contents
 
-    async def get_tenant_image(self, id):
+    async def get_tenant_image(self, tenant_id):
         default_path = self.TENANT_DIR / "logo_url_default.png"
-        image_path = next((path for path in self.TENANT_DIR.iterdir() if path.name == f"{id}.png" and path.is_file()), None)
+        image_path = next((path for path in self.TENANT_DIR.iterdir() if path.name == f"{tenant_id}.png" and path.is_file()), None)
         return FileResponse(image_path or default_path)
 
     async def uploadTenantImage(self, file: UploadFile, current_user):
         contents = await self._read_limited_image(file)
 
-        if not file.content_type.startswith("image/"):
+        if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=415, detail="Invalid file type")
 
         file_name = f"{current_user.tenant_uuid}.png"
@@ -155,7 +155,7 @@ class ResourceManager:
 
         contents = await self._read_limited_image(file)
 
-        if not file.content_type.startswith("image/"):
+        if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=415, detail="Invalid file type")
 
         with open(file_path, "wb") as f:

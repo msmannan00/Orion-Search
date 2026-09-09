@@ -6,9 +6,9 @@ export interface IpPortTls {
   bits?:                 number;
   cert_cn?:              string;
   cert_expires?:         string;
-  subject?:              Record<string, any>;
-  issuer?:               Record<string, any>;
-  san?:                  any[];
+  subject?:              Record<string, unknown>;
+  issuer?:               Record<string, unknown>;
+  san?:                  unknown[];
   fingerprint_sha256?:   string;
   is_self_signed?:       boolean;
   not_before?:           string;
@@ -22,7 +22,15 @@ export interface IpPortTls {
   weak_protocols?:       string[];
   supported_versions?:   string[];
   risk_flags?:           string[];
-  [key: string]: any;
+  ciphers_by_version?:   Record<string, string[]>;
+  certificate_policies?: string[];
+  ca_issuers?:           string[];
+  crl_distribution_points?: string[];
+  scts?:                 unknown[];
+  subject_key_identifier?: string;
+  authority_key_identifier?: string;
+  is_ca?:                boolean;
+  [key: string]: unknown;
 }
 
 export interface IpPortData {
@@ -31,12 +39,30 @@ export interface IpPortData {
   proto?:              string;
   service?:            string;
   banner?:             string;
-  http?:               { title?: string; server?: string; [k: string]: any } | null;
+  http?:               { title?: string; server?: string; [k: string]: unknown } | null;
   tls?:                IpPortTls | null;
   state?:              string;
   risk_flags?:         string[];
   misconfigurations?:  string[];
-  [key: string]: any;
+  is_camera?:          boolean;
+  is_iot?:             boolean;
+  device_type?:        string;
+  device_category?:    string;
+  device_vendor?:      string;
+  device_family?:      string;
+  device_model?:       string;
+  device_version?:     string;
+  device_tags?:        string[];
+  device_confidence?:  number;
+  fingerprint_source?: string;
+  fingerprint_match?: string;
+  protocol_verified?: boolean;
+  cpe?:                string;
+  product?:            string;
+  version?:            string;
+  vendor?:             string;
+  discovered_paths?:   string[];
+  [key: string]: unknown;
 }
 
 export interface CameraInfo {
@@ -63,7 +89,7 @@ export interface CameraInfo {
     camera_path?: string;
     path_status?: number;
     is_camera?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
   }[];
   ports?:           (number | IpPortData)[];
   vulnerabilities?: string[];
@@ -77,7 +103,7 @@ export interface DnsResult {
 export interface IpDetail {
   ip:                 string;
   status?:            string | null;
-  ip_info?:           Record<string, any> | null;
+  ip_info?:           Record<string, unknown> | null;
   hostnames?:         string[];
   country?:           string | null;
   city?:              string | null;
@@ -111,7 +137,7 @@ export interface IpDetail {
   is_camera?:         boolean;
   ports?:             IpPortData[];
   open_ports?:        number[];
-  [key: string]:      any;
+  [key: string]:      unknown;
 }
 
 export interface IpRowState {
@@ -152,4 +178,88 @@ export type VulnerabilityScanDepth = 'low' | 'medium' | 'high' | 'full';
 export interface VulnerabilityTargetSelection {
   target: string;
   depth: VulnerabilityScanDepth;
+}
+
+export interface VulnerabilitySummary {
+  total?: number;
+  critical?: number;
+  high?: number;
+  medium?: number;
+  low?: number;
+  informational?: number;
+}
+
+export interface VulnerabilityExtractedData {
+  host?: string;
+  url?: string;
+  status_code?: number;
+  server?: string;
+  content_type?: string;
+  content_length?: number;
+  redirect_location?: string;
+  title?: string;
+  security_headers?: Record<string, unknown>;
+  interesting_headers?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface VulnerabilityFinding {
+  title?: string;
+  header?: string;
+  category?: string;
+  risk?: string;
+  confidence?: string;
+  description?: string;
+  url?: string;
+  source?: string;
+  evidence?: string;
+  cve?: string;
+  cvss?: string | number;
+  urls?: string[];
+  references?: { url?: string; [key: string]: unknown }[];
+  url_count?: number;
+  [key: string]: unknown;
+}
+
+export interface UrlVulnerabilityScanResult {
+  status?: string;
+  step?: string;
+  progress?: number;
+  scan_created_at?: string | number | Date;
+  host?: string;
+  url?: string;
+  final_url?: string;
+  request_mode?: string;
+  elapsed_seconds?: number;
+  max_minutes?: number;
+  summary?: VulnerabilitySummary;
+  extracted?: VulnerabilityExtractedData;
+  scanned_urls?: string[];
+  findings?: VulnerabilityFinding[];
+  top_findings?: VulnerabilityFinding[];
+}
+
+
+export interface ScanTaskResponse extends UrlVulnerabilityScanResult {
+  result?: ScanTaskResponse | null;
+  message?: string;
+  error?: string;
+  domain?: string;
+  ips?: string[];
+  ip?: string;
+  count?: number;
+  subdomains?: string[];
+  live_subdomains?: string[];
+  cameras?: CameraInfo[];
+  cameras_found?: number;
+  ips_extracted?: number;
+  ips_scanned?: number;
+  query?: GeoQueryInfo;
+  snapshots?: import('../scanners/scanner.models').WaybackSnapshot[];
+  hostname?: string;
+  domains?: string[];
+}
+
+export interface ScanTaskError {
+  message: string;
 }

@@ -1,0 +1,15 @@
+@keyframes result-fade-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.result-fade-in {
+  animation: result-fade-in 400ms ease-in-out;
+}

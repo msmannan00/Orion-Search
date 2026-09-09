@@ -39,7 +39,7 @@
 .localtoc ul ul{
   margin-left: .75rem;
   padding-left: .75rem;
-  border-left: 1px solid var(--border, rgb(127 127 127 / 25%));
+  border-left: 1px solid var(--sy-c-border, rgb(127 127 127 / 25%));
 }
 
 @media (max-width: 900px){
@@ -65,55 +65,6 @@
 
 .ethical-sidebar{
   display: none;
-}
-
-.orion-shot-btn{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  font-weight: 650;
-  font-size: .98rem;
-  line-height: 1;
-
-  padding: .6rem 1rem;
-  border-radius: .75rem;
-
-  text-decoration: none;
-  border: 1px solid var(--sy-c-border, rgb(127 127 127 / 25%));
-
-  transition: background-color .15s ease, border-color .15s ease, transform .08s ease;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-.orion-shot-btn:focus-visible{
-  outline: 2px solid var(--sy-c-link, #3e7fcb);
-  outline-offset: 2px;
-}
-
-.orion-shot-btn:active{
-  transform: translateY(1px);
-}
-
-html.light .orion-shot-btn{
-  background: #111;
-  color: #fff;
-}
-
-html.light .orion-shot-btn:hover{
-  background: #000;
-}
-
-html.dark .orion-shot-btn{
-  background: #0a0a0a;
-  color: #fff;
-  border-color: rgb(255 255 255 / 14%);
-}
-
-html.dark .orion-shot-btn:hover{
-  background: #141414;
-  border-color: rgb(255 255 255 / 22%);
 }
 
 .ethical-sidebar{

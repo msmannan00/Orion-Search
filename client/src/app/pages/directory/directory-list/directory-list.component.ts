@@ -3,16 +3,15 @@ import { CommonModule, NgClass } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
 import { DirectoryCallbackModel } from '../model/directory.model';
 import { DirectoryService } from '../services/directory.service';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-directory-list',
   templateUrl: './directory-list.component.html',
+  styleUrls: ['./directory-list.component.css'],
   standalone: true,
   imports: [CommonModule, NgClass, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem]
+  changeDetection: ChangeDetectionStrategy.Eager
 })
 export class DirectoryListComponent implements AfterViewInit, OnDestroy {
   private dataSub?: Subscription;
@@ -27,11 +26,11 @@ export class DirectoryListComponent implements AfterViewInit, OnDestroy {
   constructor(public directoryService: DirectoryService) {
     this.directoryData$ = this.directoryService.directoryData$;
     this.dataSub = this.directoryData$.subscribe(data => {
-      this.totalItems = data?.mDirectoryCallbackLinks?.length || 0;
+      this.totalItems = data?.mDirectoryCallbackLinks?.length ?? 0;
     });
   }
 
-  isRecent(timestamp: any): boolean {
+  isRecent(timestamp: string | number | Date | null | undefined): boolean {
     if (!timestamp) {
       return false;
     }

@@ -25,7 +25,7 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends bash curl git ca-certificates gnupg jq docker-compose python3
           curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google.gpg
-          echo "deb [signed-by=/usr/share/keyrings/google.gpg arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          echo "deb [signed-by=/usr/share/keyrings/google.gpg arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends google-chrome-stable
 
@@ -72,18 +72,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p \
-            backend/static/resource/profile \
-            backend/static/resource/tenant \
-            backend/static/resource/system \
-            backend/static/resource/case_artifacts \
-            backend/static/.well-known/parser_files
+            backend/workspace/resource/profile \
+            backend/workspace/resource/tenant \
+            backend/workspace/resource/system \
+            backend/workspace/resource/case_artifacts \
+            backend/workspace/parser/parser_files
           chmod -R a+rwX \
-            backend/static/resource \
-            backend/static/.well-known/parser_files
+            backend/workspace/resource \
+            backend/workspace/parser/parser_files
 
       - run: |
           set -euo pipefail
           rm -f backend/static/.maintenance
+          rm -f backend/build/backups/.restore_in_progress
           chmod +x ./run.sh
 
       - run: |
@@ -103,11 +104,11 @@ jobs:
           SKIP_BACKEND_TESTS=1 ./run.sh build -t
           docker compose -p trusted-search -f docker-compose-testing.yml exec -T web sh -lc '
             for path in \
-              /app/static/resource/profile \
-              /app/static/resource/tenant \
-              /app/static/resource/system \
-              /app/static/resource/case_artifacts \
-              /app/static/.well-known/parser_files; do
+              /app/workspace/resource/profile \
+              /app/workspace/resource/tenant \
+              /app/workspace/resource/system \
+              /app/workspace/resource/case_artifacts \
+              /app/workspace/parser/parser_files; do
               if [ ! -w "$path" ]; then
                 echo "Client-test runtime path is not writable: $path" >&2
                 exit 1
@@ -164,8 +165,27 @@ jobs:
           export NODE_OPTIONS=--no-deprecation
           mkdir -p coverage cypress/downloads cypress/error cypress/screenshots cypress/videos
           npx cypress verify
-          ORION_COVERAGE=true CI=false GITHUB_ACTIONS=false npx cypress run --browser chrome --config baseUrl=https://127.0.0.1:8443
+          ORION_COVERAGE=true CI=false GITHUB_ACTIONS=false npx cypress run --browser electron --config baseUrl=https://127.0.0.1:8443
           test -s coverage/lcov.info
+
+      - name: Make client coverage paths repository relative
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+
+          report = pathlib.Path("client/coverage/lcov.info")
+          lines = report.read_text(encoding="utf-8", errors="ignore").splitlines()
+          rewritten = []
+
+          for line in lines:
+              if line.startswith("SF:") and not line.startswith("SF:client/"):
+                  line = "SF:client/" + line[3:].lstrip("./")
+              rewritten.append(line)
+
+          report.write_text("\n".join(rewritten) + "\n", encoding="utf-8")
+          print(f"Rewrote {sum(1 for l in rewritten if l.startswith('SF:'))} source paths")
+          PY
 
       - name: Capture client diagnostics on failure
         if: failure()
@@ -261,7 +281,7 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends bash curl git ca-certificates gnupg jq docker-compose python3
           curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google.gpg
-          echo "deb [signed-by=/usr/share/keyrings/google.gpg arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          echo "deb [signed-by=/usr/share/keyrings/google.gpg arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends google-chrome-stable
 
@@ -325,6 +345,7 @@ jobs:
       - run: |
           set -euo pipefail
           rm -f backend/static/.maintenance
+          rm -f backend/build/backups/.restore_in_progress
           chmod +x ./run.sh
           ./run.sh build -b
           sed -i '/^TESTING_ENABLED=/d' .env
@@ -387,6 +408,29 @@ jobs:
           set -euo pipefail
           docker cp trusted-web-main:/tmp/backend-coverage.xml backend/coverage.xml
           test -s backend/coverage.xml
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          report = pathlib.Path("backend/coverage.xml")
+          tree = ET.parse(report)
+          root = tree.getroot()
+
+          for sources in root.findall("sources"):
+              for source in list(sources):
+                  sources.remove(source)
+              ET.SubElement(sources, "source").text = "."
+
+          rewritten = 0
+          for element in root.iter("class"):
+              filename = element.get("filename")
+              if filename and not filename.startswith("backend/orion/"):
+                  element.set("filename", f"backend/orion/{filename}")
+                  rewritten += 1
+
+          tree.write(report, encoding="utf-8", xml_declaration=True)
+          print(f"Rewrote {rewritten} source paths")
+          PY
 
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -406,7 +450,7 @@ jobs:
   coverage-report:
     runs-on: ubuntu-latest
     needs: [client-tests, backend-tests]
-    if: needs.client-tests.result == 'success' && needs.backend-tests.result == 'success'
+    if: always() && !cancelled()
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -414,12 +458,14 @@ jobs:
           fetch-depth: 0
 
       - name: Download client coverage
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: client-coverage
           path: client/coverage
 
       - name: Download backend coverage
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: backend-coverage
@@ -429,9 +475,22 @@ jobs:
         id: codacy_reports
         run: |
           set -euo pipefail
-          test -s client/coverage/lcov.info
-          test -s backend/coverage.xml
-          echo "reports=client/coverage/lcov.info,backend/coverage.xml" >> "$GITHUB_OUTPUT"
+          reports=""
+          if [ -s client/coverage/lcov.info ]; then
+            reports="client/coverage/lcov.info"
+          else
+            echo "client coverage report missing"
+          fi
+          if [ -s backend/coverage.xml ]; then
+            if [ -n "$reports" ]; then
+              reports="${reports},backend/coverage.xml"
+            else
+              reports="backend/coverage.xml"
+            fi
+          else
+            echo "backend coverage report missing"
+          fi
+          echo "reports=${reports}" >> "$GITHUB_OUTPUT"
 
       - name: Upload combined coverage to Codacy
         if: steps.codacy_reports.outputs.reports != ''

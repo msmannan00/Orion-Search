@@ -15,10 +15,10 @@ export function formatKey(key: string): string {
     .replace(/_/g, ' ')
     .replace(/(?:^|\s)\S/g, (a) => a.toUpperCase());
 }
-export function isUrl(value: any): boolean {
+export function isUrl(value: unknown): boolean {
   return typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'));
 }
-export function isImageUrl(value: any): boolean {
+export function isImageUrl(value: unknown): boolean {
   if (typeof value !== 'string') {
     return false;
   }

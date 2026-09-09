@@ -1,0 +1,15 @@
+@keyframes sidebar-user-system-settings-item-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.sidebar-user-system-settings-item-in {
+  animation: sidebar-user-system-settings-item-in 400ms ease-in-out both;
+}

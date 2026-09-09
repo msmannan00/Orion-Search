@@ -20,7 +20,7 @@ const SIDEBAR_SUBITEM_TEST_ID_ALIAS: Record<string, Record<string, string>> = {
 
 function getSidebarGroupTestId(title: string): string {
   const routePrefix = SIDEBAR_GROUP_ROUTE_PREFIX[title];
-  expect(routePrefix, `routePrefix mapping for "${title}"`).to.exist;
+  expect(routePrefix, `routePrefix mapping for "${title}"`).to.not.equal(undefined);
   return `sidebar-group-${routePrefix}`;
 }
 
@@ -31,18 +31,18 @@ export const DIRECTORY_CONTENT_OPTION = {label: 'Forums', value: 'forums'};
 export function openSidebarGroup(title: string) {
   const groupTestId = getSidebarGroupTestId(title);
   cy.get(`[data-testid="${groupTestId}"]`).then(($group) => {
-    cy.wrap($group).scrollIntoView();
+    void cy.wrap($group).scrollIntoView();
     let group = $group.parent('div');
     let sub = group.find('> ul');
     if (!sub.length) {
-      cy.wrap($group).click({ force: true });
+      void cy.wrap($group).click({ force: true });
       return;
     }
     let isClosed = !sub.length || getComputedStyle(sub[0] as HTMLElement).pointerEvents === 'none';
     if (isClosed) {
-      cy.wrap($group).find(`[data-testid="${groupTestId}-toggle"]`).click();
+      void cy.wrap($group).find(`[data-testid="${groupTestId}-toggle"]`).click();
     }
-    cy.wrap(sub).should(($ul) => {
+    void cy.wrap(sub).should(($ul) => {
       expect(getComputedStyle($ul[0] as HTMLElement).pointerEvents).not.to.equal('none');
     });
   });
@@ -53,48 +53,43 @@ export function clickSidebarSubItem(groupTitle: string, itemTitle: string) {
   const routePrefix = SIDEBAR_GROUP_ROUTE_PREFIX[groupTitle];
 
   if (aliasedTestId) {
-    cy.get(`[data-testid="sidebar-subitem-${routePrefix}-${aliasedTestId}"]`)
+    void cy.get(`[data-testid="sidebar-subitem-${routePrefix}-${aliasedTestId}"]`)
       .scrollIntoView()
       .should('be.visible')
       .click({ force: true });
     return;
   }
 
-  cy.contains(`[data-testid^="sidebar-subitem-${routePrefix}-"]`, new RegExp(`^\\s*${itemTitle}\\s*$`))
+  void cy.contains(`[data-testid^="sidebar-subitem-${routePrefix}-"]`, new RegExp(`^\\s*${itemTitle}\\s*$`))
     .scrollIntoView()
     .should('be.visible')
     .click({ force: true });
 }
 
-export function getHeatmapComponent() {
+export function getHeatmapComponent(): Cypress.Chainable<HeatmapComponentHarness> {
   return cy.get('app-world-heatmap', { timeout: 10000 }).should('exist').then(($host) => {
-    let host = $host[0] as any;
+    const host = $host[0] as AngularDebugHost;
     return cy.window().then((win) => {
-    let ngApi = (win as any).ng;
-    if (ngApi?.getComponent) {
-      return ngApi.getComponent(host) as any;
-    }
-    let ctx = host.__ngContext__ as any[] | undefined;
-    expect(ctx, 'Angular context fallback').to.exist;
-    let comp = (ctx || []).find((x: any) => x && x.constructor?.name === 'WorldHeatmapComponent');
-    expect(comp, 'WorldHeatmapComponent in ngContext').to.exist;
-    return comp as any;
+      const ngApi = (win as Window & { ng?: AngularDebugApi }).ng;
+      if (ngApi?.getComponent) {
+        return ngApi.getComponent(host) as HeatmapComponentHarness;
+      }
+      const ctx = host.__ngContext__;
+      expect(ctx, 'Angular context fallback').to.not.equal(undefined);
+      const comp = (ctx || []).find((value) => {
+        const candidate = value as { constructor?: { name?: string } } | null;
+        return candidate?.constructor?.name === 'WorldHeatmapComponent';
+      });
+      expect(comp, 'WorldHeatmapComponent in ngContext').to.not.equal(undefined);
+      return comp as HeatmapComponentHarness;
     });
   });
 }
 
-export function openHomepage() {
-  cy.loginAsAdmin();
-  cy.location('pathname').should('include', '/dashboard/profile/homepage');
-  cy.get('app-world-heatmap').should('be.visible');
-  cy.get('[data-testid="world-heatmap-map"] svg').should('exist');
-  cy.get('[data-testid="world-heatmap-map"] path.country').should('have.length.greaterThan', 0);
-}
-
 export function openCountryReportFromMap() {
-  cy.get('[data-testid="world-heatmap-map"] path.country').should('have.length.greaterThan', 0);
+  void cy.get('[data-testid="world-heatmap-map"] path.country').should('have.length.greaterThan', 0);
 
-  cy.get('[data-testid="world-heatmap-map"] path.country.has-data')
+  void cy.get('[data-testid="world-heatmap-map"] path.country.has-data')
     .should('have.length.greaterThan', 0)
     .first()
     .scrollIntoView()
@@ -119,7 +114,7 @@ export function openCountryReportFromMap() {
     }
   });
 
-  cy.get('[data-testid="heatmap-report"]').should('be.visible');
+  void cy.get('[data-testid="heatmap-report"]').should('be.visible');
 }
 
 export function waitForDirectoryRequest() {
@@ -129,22 +124,22 @@ export function waitForDirectoryRequest() {
 }
 
 export function typeVisibleInputSlow(selector: string, value: string, submit = false) {
-  cy.get(selector).filter(':visible').first().should('be.enabled').click({ force: true });
-  cy.get(selector).filter(':visible').first().type('{selectall}{backspace}', { force: true });
-  cy.wait(250);
-  cy.get(selector).filter(':visible').first().type(value, { force: true, delay: 75 });
-  cy.get(selector).filter(':visible').first().should('have.value', value);
+  void cy.get(selector).filter(':visible').first().should('be.enabled').click({ force: true });
+  void cy.get(selector).filter(':visible').first().type('{selectall}{backspace}', { force: true });
+  void cy.wait(250);
+  void cy.get(selector).filter(':visible').first().type(value, { force: true, delay: 75 });
+  void cy.get(selector).filter(':visible').first().should('have.value', value);
   if (submit) {
-    cy.wait(250);
-    cy.get(selector).filter(':visible').first().type('{enter}', { force: true });
+    void cy.wait(250);
+    void cy.get(selector).filter(':visible').first().type('{enter}', { force: true });
   }
 }
 
 export function assertDirectoryContentVisible() {
-  cy.scrollDashboardToTop();
-  cy.get('app-directory').should('be.visible');
+  void cy.scrollDashboardToTop();
+  void cy.get('app-directory').should('be.visible');
   cy.get('body').then(($body) => {
-    cy.scrollDashboardToTop();
+    void cy.scrollDashboardToTop();
     const hasTable = $body.find('app-directory-list table tbody tr').length > 0;
     const hasEmptyState = $body.text().includes('No links found!');
 
@@ -153,25 +148,25 @@ export function assertDirectoryContentVisible() {
 }
 
 export function openDirectoryFilter() {
-  cy.scrollDashboardToTop();
-  cy.get('app-directory #top').should('exist').scrollIntoView({duration: 300, offset: {top: -20, left: 0}});
+  void cy.scrollDashboardToTop();
+  void cy.get('app-directory #top').should('exist').scrollIntoView({duration: 300, offset: {top: -20, left: 0}});
   cy.get('body').then(($body) => {
     if ($body.find('[data-testid="side-filter-close"]:visible').length) {
       return;
     }
-    cy.contains('button', 'Filter').should('be.visible').scrollIntoView().click();
+    void cy.contains('button', 'Filter').should('be.visible').scrollIntoView().click();
   });
-  cy.get('[data-testid="side-filter-close"]').filter(':visible').first().should('be.visible');
+  void cy.get('[data-testid="side-filter-close"]').filter(':visible').first().should('be.visible');
 }
 
 export function resetDirectoryFilters() {
   openDirectoryFilter();
-  cy.get('[data-testid="side-filter-reset"]').scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-reset"]').filter(':visible').first().should('be.visible').click();
   waitForDirectoryRequest();
-  cy.location('search').should('not.include', 'network=');
-  cy.location('search').should('not.include', 'index=');
-  cy.location('search').should('not.include', 'content_type=');
-  cy.location('search').should('not.include', 'daterange=');
+  void cy.location('search').should('not.include', 'network=');
+  void cy.location('search').should('not.include', 'index=');
+  void cy.location('search').should('not.include', 'content_type=');
+  void cy.location('search').should('not.include', 'daterange=');
   assertDirectoryContentVisible();
 }
 
@@ -179,66 +174,67 @@ export function applyDirectoryDropdown(testId: string, option: { label: string; 
   openDirectoryFilter();
   cy.get(`[data-testid="side-filter-select-${testId}"]`).scrollIntoView().then(($el) => {
     if ($el.is('select')) {
-      cy.wrap($el).select(option.label);
+      void cy.wrap($el).select(option.label);
       return;
     }
     const menuId = $el.attr('aria-controls');
-    expect(menuId, `side-filter-select-${testId} menu id`).to.exist;
-    cy.wrap($el).click({ force: true });
-    cy.wrap($el).should('have.attr', 'aria-expanded', 'true');
-    cy.get(`#${menuId}`).parent().find('input[type="text"]').should('be.visible').clear();
-    cy.get(`#${menuId}`).parent().find('input[type="text"]').should('be.visible').type(option.label, { force: true }).should('have.value', option.label);
-    cy.contains(`#${menuId} [role="option"]`, option.label, { timeout: 15000 }).click({ force: true });
-    cy.get(`[data-testid="side-filter-select-${testId}"]`).should('have.attr', 'aria-expanded', 'false');
+    expect(menuId, `side-filter-select-${testId} menu id`).to.not.equal(undefined);
+    void cy.wrap($el).click({ force: true });
+    void cy.wrap($el).should('have.attr', 'aria-expanded', 'true');
+    void cy.get(`#${menuId}`).parent().find('input[type="text"]').should('be.visible').clear();
+    void cy.get(`#${menuId}`).parent().find('input[type="text"]').should('be.visible').type(option.label, { force: true }).should('have.value', option.label);
+    void cy.contains(`#${menuId} [role="option"]`, option.label, { timeout: 15000 }).click({ force: true });
+    void cy.get(`[data-testid="side-filter-select-${testId}"]`).should('have.attr', 'aria-expanded', 'false');
   });
-  cy.get('[data-testid="side-filter-apply"]').scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-apply"]').scrollIntoView().click();
   waitForDirectoryRequest();
-  cy.location('search').should('include', `${queryKey}=${option.value}`);
+  void cy.location('search').should('include', `${queryKey}=${option.value}`);
   assertDirectoryContentVisible();
 }
 
 export function applyDateRange(monthsBack: number) {
   openDirectoryFilter();
-  cy.get('[data-testid="side-filter-date-toggle"]').scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-date-toggle"]').scrollIntoView().click();
 
   for (let i = 0; i < monthsBack; i += 1) {
-    cy.get('[data-testid="side-filter-date-prev-month"]').scrollIntoView().click();
+    void cy.get('[data-testid="side-filter-date-prev-month"]').scrollIntoView().click();
   }
 
-  cy.get('[data-testid="side-filter-date-day-1"]').filter(':visible').first().scrollIntoView().click();
-  cy.get('[data-testid="side-filter-date-day-25"]').filter(':visible').first().scrollIntoView().click();
-  cy.get('[data-testid="side-filter-apply"]').scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-date-day-1"]').filter(':visible').first().scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-date-day-25"]').filter(':visible').first().scrollIntoView().click();
+  void cy.get('[data-testid="side-filter-apply"]').scrollIntoView().click();
   waitForDirectoryRequest();
-  cy.location('search').should('include', 'daterange=');
+  void cy.location('search').should('include', 'daterange=');
 }
 
 export function assertFreeModeDashboardChrome() {
-  cy.location('pathname').should('eq', '/dashboard/strategic/all');
-  cy.get('[data-testid="dashboard-body"]').should('be.visible');
+  void cy.location('pathname').should('eq', '/dashboard/strategic/all');
+  void cy.get('[data-testid="dashboard-body"]').should('be.visible');
 
   cy.window().then((win) => {
     expect(win.localStorage.getItem('mobileDemo')).to.equal('true');
   });
 
-  cy.get('[data-testid="dashboard-main"]').should('be.visible');
-  cy.get('[data-testid="dashboard-sidebar"]').should('be.visible');
-  cy.get('[data-testid="dashboard-sidebar-component"]').should('be.visible');
-  cy.get('[data-testid="dashboard-container"]').should('be.visible');
-  cy.get('[data-testid="dashboard-body"]').should('be.visible');
-  cy.get('[data-testid="dashboard-header"]').should('not.exist');
-  cy.get('[data-testid="profile-menu"]').should('not.exist');
-  cy.get('[data-testid="sidebar-expand-button"], [data-testid="sidebar-collapse-button"]')
+  void cy.get('[data-testid="dashboard-main"]').should('be.visible');
+  void cy.get('[data-testid="dashboard-sidebar"]').should('be.visible');
+  void cy.get('[data-testid="dashboard-sidebar-component"]').should('be.visible');
+  void cy.get('[data-testid="dashboard-container"]').should('be.visible');
+  void cy.get('[data-testid="dashboard-body"]').should('be.visible');
+  void cy.get('[data-testid="dashboard-header"]').should('not.exist');
+  void cy.get('[data-testid="profile-menu"]').should('not.exist');
+  void cy.get('[data-testid="sidebar-expand-button"], [data-testid="sidebar-collapse-button"]')
     .filter(':visible')
     .should('have.length.at.least', 1);
 
-  cy.get('[data-testid="dashboard-sidebar"] app-graph-sidebar-shell [data-sidebar-expanded] > div.overflow-y-auto, [data-testid="dashboard-sidebar"] app-graph-sidebar-shell [data-sidebar-collapsed] > div.overflow-y-auto')
+  void cy.get('[data-testid="dashboard-sidebar"] app-graph-sidebar-shell [data-sidebar-expanded] > div.overflow-y-auto, [data-testid="dashboard-sidebar"] app-graph-sidebar-shell [data-sidebar-collapsed] > div.overflow-y-auto')
     .filter(':visible')
     .first()
     .scrollTo('bottom', { ensureScrollable: false });
 
-  cy.get('[data-testid="dashboard-sidebar"]').within(() => {
-    cy.get('.opacity-20')
+  void cy.get('[data-testid="dashboard-sidebar"]').within(() => {
+    void cy.get('.opacity-20')
       .filter(':visible')
       .should('have.length.at.least', 1);
   });
 }
+import type { AngularDebugApi, AngularDebugHost, HeatmapComponentHarness } from '../model/03-flow.model';

@@ -9,12 +9,11 @@ import { drawInstitutionalCover, drawInstitutionalFooter, drawInstitutionalPageH
 import { loadPdfExportFontData, registerPdfExportFonts } from '../../../../shared/services/export/pdf-export-fonts';
 import { PDF_EXPORT_THEME } from '../../../../shared/services/export/pdf-export-theme';
 import { normalizePdfText, preparePdfValue } from '../../../../shared/services/export/pdf-text.util';
+import type { CasePdfExportOptions } from './model/case-pdf-export.model';
+export type { CasePdfExportOptions } from './model/case-pdf-export.model';
 
-interface CasePdfExportOptions {
-  appName?: string;
-  filenameSuffix?: string;
-  reportLabel?: string;
-}
+
+
 
 @Injectable({ providedIn: 'root' })
 export class CasePdfExportService {
@@ -35,17 +34,17 @@ export class CasePdfExportService {
         ...options,
         appName: this.exportBranding.getTenantName()
       });
-      doc.save(`${buildExportFileStem(report.title, report.updatedAt || report.createdAt, 'case-report')}.pdf`);
+      doc.save(`${buildExportFileStem(report.title, report.updatedAt ?? report.createdAt, 'case-report')}.pdf`);
     }));
   }
 
   private buildPdf(doc: jsPDF, autoTable: typeof import('jspdf-autotable').default, report: SharedCaseReport, options: CasePdfExportOptions): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const contentWidth = pageWidth - (PDF_EXPORT_LAYOUT.margin * 2);
-    const appName = normalizePdfText(options.appName || this.exportBranding.getTenantName());
+    const appName = normalizePdfText(options.appName ?? this.exportBranding.getTenantName());
     doc.setProperties({
-      title: normalizePdfText(report.title || options.reportLabel || 'Case Report'),
-      subject: normalizePdfText(options.reportLabel || 'Case intelligence export'),
+      title: normalizePdfText(report.title ?? options.reportLabel ?? 'Case Report'),
+      subject: normalizePdfText(options.reportLabel ?? 'Case intelligence export'),
       author: appName,
       creator: appName
     });
@@ -63,56 +62,56 @@ export class CasePdfExportService {
       ['Created', this.formatDate(report.createdAt)],
       ['Updated', this.formatDate(report.updatedAt)],
       ['Expires', this.formatDate(report.expiresAt)],
-      ['Tags', (report.tags || []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
-      ['Description', report.description || 'No description provided.'],
+      ['Tags', (report.tags ?? []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
+      ['Description', report.description ?? 'No description provided.'],
     ], contentWidth);
 
     const primaryEntity = this.getPrimaryEntity(report);
     if (primaryEntity) {
       y = this.addPdfSection(doc, autoTable, y, 'Primary Entity', [
         ['Value', primaryEntity.value],
-        ['Display Name', primaryEntity.entityDescription || primaryEntity.value],
+        ['Display Name', primaryEntity.entityDescription ?? primaryEntity.value],
         ['Type', this.formatLabel(primaryEntity.type, primaryEntity.entityTypeOtherValue)],
         ['Role', this.formatLabel(primaryEntity.role)],
         ['Confidence', this.formatConfidence(primaryEntity.confidence)],
         ['Relationship', this.formatLabel(primaryEntity.relationshipToCase)],
         ['Source', this.formatLabel(primaryEntity.source, primaryEntity.entitySourceOtherValue)],
-        ['Created By', primaryEntity.createdBy || '-'],
-        ['Updated By', primaryEntity.updatedBy || '-'],
+        ['Created By', primaryEntity.createdBy ?? '-'],
+        ['Updated By', primaryEntity.updatedBy ?? '-'],
         ['Created At', this.formatDate(primaryEntity.createdAt)],
         ['Updated At', this.formatDate(primaryEntity.updatedAt)],
-        ['Tags', (primaryEntity.tags || []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
-        ['Social Profiles', (primaryEntity.socialProfiles || []).map(profile => `${this.formatLabel(profile.platform, profile.platformOtherValue)}: ${profile.username}${profile.displayName ? ` (${profile.displayName})` : ''}${profile.profileUrl ? ` - ${profile.profileUrl}` : ''}`).join('\n') || '-'],
-        ['Identifiers', (primaryEntity.identifiers || []).map(identifier => `${this.formatLabel(identifier.type, identifier.identifierTypeOtherValue)}: ${identifier.value}${identifier.issuer ? `, Issuer: ${identifier.issuer}` : ''}${identifier.verified ? ', Verified' : ''}`).join('\n') || '-'],
+        ['Tags', (primaryEntity.tags ?? []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
+        ['Social Profiles', (primaryEntity.socialProfiles ?? []).map(profile => `${this.formatLabel(profile.platform, profile.platformOtherValue)}: ${profile.username}${profile.displayName ? ` (${profile.displayName})` : ''}${profile.profileUrl ? ` - ${profile.profileUrl}` : ''}`).join('\n') || '-'],
+        ['Identifiers', (primaryEntity.identifiers ?? []).map(identifier => `${this.formatLabel(identifier.type, identifier.identifierTypeOtherValue)}: ${identifier.value}${identifier.issuer ? `, Issuer: ${identifier.issuer}` : ''}${identifier.verified ? ', Verified' : ''}`).join('\n') || '-'],
       ], contentWidth);
     }
 
-    if (report.closure || report.closedAt) {
+    if (Boolean(report.closure) || Boolean(report.closedAt)) {
       y = this.addPdfSection(doc, autoTable, y, 'Closure', [
         ['Reason', this.formatLabel(report.closure?.reason, report.closure?.closureReasonOtherValue)],
-        ['Summary', report.closure?.summary || 'No closure summary provided.'],
-        ['Resolution', report.closure?.resolution || '-'],
-        ['Closed At', this.formatDate(report.closedAt || report.closure?.closedAt)],
+        ['Summary', report.closure?.summary ?? 'No closure summary provided.'],
+        ['Resolution', report.closure?.resolution ?? '-'],
+        ['Closed At', this.formatDate(report.closedAt ?? report.closure?.closedAt)],
       ], contentWidth);
     }
 
     y = this.addPdfSection(doc, autoTable, y, 'Related Entities', this.buildRelatedEntityRows(this.getRelatedEntities(report)), contentWidth);
-    y = this.addPdfSection(doc, autoTable, y, 'Artifacts', this.buildArtifactRows(report.artifacts || []), contentWidth);
-    y = this.addPdfSection(doc, autoTable, y, 'Comments', this.buildCommentRows(report.comments || []), contentWidth);
-    y = this.addPdfSection(doc, autoTable, y, 'Tasks', this.buildTaskRows(report.tasks || []), contentWidth);
-    this.addPdfSection(doc, autoTable, y, 'Linked Cases', this.buildLinkedCaseRows(report.linkedCases || []), contentWidth);
-    this.addPdfFooters(doc, options.appName || this.exportBranding.getTenantName());
+    y = this.addPdfSection(doc, autoTable, y, 'Artifacts', this.buildArtifactRows(report.artifacts ?? []), contentWidth);
+    y = this.addPdfSection(doc, autoTable, y, 'Comments', this.buildCommentRows(report.comments ?? []), contentWidth);
+    y = this.addPdfSection(doc, autoTable, y, 'Tasks', this.buildTaskRows(report.tasks ?? []), contentWidth);
+    this.addPdfSection(doc, autoTable, y, 'Linked Cases', this.buildLinkedCaseRows(report.linkedCases ?? []), contentWidth);
+    this.addPdfFooters(doc, options.appName ?? this.exportBranding.getTenantName());
   }
 
   private getPrimaryEntity(report: SharedCaseReport): SharedCaseEntity | null {
-    const entities = report.entities || [];
+    const entities = report.entities ?? [];
     return entities.find(entity => entity.entityId === report.primaryEntityId)
-      || entities.find(entity => entity.role === 'primary')
-      || null;
+      ?? entities.find(entity => entity.role === 'primary')
+      ?? null;
   }
 
   private getRelatedEntities(report: SharedCaseReport): SharedCaseEntity[] {
-    const entities = report.entities || [];
+    const entities = report.entities ?? [];
     const primaryEntity = this.getPrimaryEntity(report);
 
     return entities.filter(entity =>
@@ -126,15 +125,15 @@ export class CasePdfExportService {
     }
 
     return entities.flatMap((entity, index) => [
-      [`Related Entity ${index + 1}`, entity.entityDescription || entity.value],
+      [`Related Entity ${index + 1}`, entity.entityDescription ?? entity.value],
       ['Value', entity.value],
       ['Type', this.formatLabel(entity.type, entity.entityTypeOtherValue)],
       ['Role', this.formatLabel(entity.role)],
       ['Confidence', this.formatLabel(entity.confidence)],
       ['Source', this.formatLabel(entity.source, entity.entitySourceOtherValue)],
-      ['Tags', (entity.tags || []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
-      ['Social Profiles', (entity.socialProfiles || []).map(profile => `${this.formatLabel(profile.platform, profile.platformOtherValue)}: ${profile.username}${profile.displayName ? ` (${profile.displayName})` : ''}${profile.profileUrl ? ` - ${profile.profileUrl}` : ''}`).join('\n') || '-'],
-      ['Identifiers', (entity.identifiers || []).map(identifier => `${this.formatLabel(identifier.type, identifier.identifierTypeOtherValue)}: ${identifier.value}${identifier.issuer ? `, Issuer: ${identifier.issuer}` : ''}${identifier.verified ? ', Verified' : ''}`).join('\n') || '-'],
+      ['Tags', (entity.tags ?? []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
+      ['Social Profiles', (entity.socialProfiles ?? []).map(profile => `${this.formatLabel(profile.platform, profile.platformOtherValue)}: ${profile.username}${profile.displayName ? ` (${profile.displayName})` : ''}${profile.profileUrl ? ` - ${profile.profileUrl}` : ''}`).join('\n') || '-'],
+      ['Identifiers', (entity.identifiers ?? []).map(identifier => `${this.formatLabel(identifier.type, identifier.identifierTypeOtherValue)}: ${identifier.value}${identifier.issuer ? `, Issuer: ${identifier.issuer}` : ''}${identifier.verified ? ', Verified' : ''}`).join('\n') || '-'],
     ]);
   }
 
@@ -145,13 +144,13 @@ export class CasePdfExportService {
 
     return comments.flatMap((comment, index) => [
       [`Comment ${index + 1}`, comment.body],
-      ['Created By / At', `${comment.createdBy || '-'} | ${this.formatDate(comment.createdAt)}`],
+      ['Created By / At', `${comment.createdBy ?? '-'} | ${this.formatDate(comment.createdAt)}`],
     ]);
   }
 
   private drawPdfCover(doc: jsPDF, report: SharedCaseReport, options: CasePdfExportOptions): void {
-    const reportLabel = options.reportLabel || 'Shared Case Report';
-    const appName = options.appName || this.exportBranding.getTenantName();
+    const reportLabel = options.reportLabel ?? 'Shared Case Report';
+    const appName = options.appName ?? this.exportBranding.getTenantName();
     drawInstitutionalCover(doc, {
       title: normalizePdfText(report.title || reportLabel),
       subtitle: `${reportLabel} | ${report.caseId} | ${this.formatLabel(report.caseType)}`,
@@ -167,6 +166,7 @@ export class CasePdfExportService {
   private addPdfSection(doc: jsPDF, autoTable: typeof import('jspdf-autotable').default, y: number, title: string, rows: RowInput[], contentWidth: number): number {
     const startY = this.resolvePdfY(doc, y, 86);
     const margin = PDF_EXPORT_LAYOUT.margin;
+    const borderThickness = this.theme.tableBorderWidth;
     drawInstitutionalSectionHeading(doc, startY, contentWidth, normalizePdfText(title));
     autoTable(doc, {
       startY: startY + 16,
@@ -181,17 +181,17 @@ export class CasePdfExportService {
         overflow: 'linebreak',
         valign: 'top',
         textColor: this.theme.textBodyRgb,
-        lineWidth: { top: 0, right: 0, bottom: this.theme.tableBorderWidth, left: 0 },
+        lineWidth: { top: 0, right: 0, bottom: borderThickness, left: 0 },
         lineColor: this.theme.tableBorderRgb,
       },
       bodyStyles: {
         fillColor: this.theme.tableRowBgRgb,
-        lineWidth: { top: 0, right: 0, bottom: this.theme.tableBorderWidth, left: 0 },
+        lineWidth: { top: 0, right: 0, bottom: borderThickness, left: 0 },
         lineColor: this.theme.tableBorderRgb,
       },
       alternateRowStyles: {
         fillColor: this.theme.tableRowBgRgb,
-        lineWidth: { top: 0, right: 0, bottom: this.theme.tableBorderWidth, left: 0 },
+        lineWidth: { top: 0, right: 0, bottom: borderThickness, left: 0 },
         lineColor: this.theme.tableBorderRgb,
       },
       columnStyles: { 0: { cellWidth: 130, fontStyle: 'bold' }, 1: { cellWidth: contentWidth - 130 } },
@@ -209,7 +209,7 @@ export class CasePdfExportService {
         }
       },
     });
-    return ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || startY) + 18;
+    return ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? startY) + 18;
   }
 
   private buildArtifactRows(artifacts: SharedCaseArtifact[]): RowInput[] {
@@ -219,12 +219,12 @@ export class CasePdfExportService {
     return artifacts.flatMap((artifact, index) => [
       [`Artifact ${index + 1}`, artifact.title || 'Untitled artifact'],
       ['Type / Source', `${this.formatLabel(artifact.type, artifact.artifactTypeOtherValue)} | ${this.formatLabel(artifact.source, artifact.artifactSourceOtherValue)}`],
-      ['Description', artifact.description || '-'],
-      ['URL', artifact.url || '-'],
-      ['File', artifact.fileName || '-'],
-      ['File Type', artifact.fileType || '-'],
+      ['Description', artifact.description ?? '-'],
+      ['URL', artifact.url ?? '-'],
+      ['File', artifact.fileName ?? '-'],
+      ['File Type', artifact.fileType ?? '-'],
       ['Captured At', this.formatDate(artifact.capturedAt)],
-      ['Tags', (artifact.tags || []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
+      ['Tags', (artifact.tags ?? []).map(tag => this.formatLabel(tag)).join(', ') || '-'],
     ]);
   }
 
@@ -234,9 +234,9 @@ export class CasePdfExportService {
     }
     return tasks.flatMap((task, index) => [
       [`Task ${index + 1}`, task.title],
-      ['Description', task.description || '-'],
+      ['Description', task.description ?? '-'],
       ['Status / Priority', `${this.formatLabel(task.status)} | ${this.formatLabel(task.priority)}`],
-      ['Assigned To', task.assignedTo || '-'],
+      ['Assigned To', task.assignedTo ?? '-'],
       ['Due', this.formatDate(task.dueAt)],
       ['Created / Updated', `${this.formatDate(task.createdAt)} | ${this.formatDate(task.updatedAt)}`],
       ['Completed', this.formatDate(task.completedAt)],
@@ -250,8 +250,8 @@ export class CasePdfExportService {
     return linkedCases.flatMap((linkedCase, index) => [
       [`Linked Case ${index + 1}`, linkedCase.targetCaseId],
       ['Relationship', this.formatLabel(linkedCase.relationship)],
-      ['Reason', linkedCase.reason || '-'],
-      ['Created By / At', `${linkedCase.createdBy || '-'} | ${this.formatDate(linkedCase.createdAt)}`],
+      ['Reason', linkedCase.reason ?? '-'],
+      ['Created By / At', `${linkedCase.createdBy ?? '-'} | ${this.formatDate(linkedCase.createdAt)}`],
     ]);
   }
 
@@ -302,7 +302,7 @@ export class CasePdfExportService {
           return { ...cell, content: preparePdfValue(cell.content) };
         }
         return cell;
-      }) as RowInput;
+      });
     });
   }
 
@@ -311,7 +311,7 @@ export class CasePdfExportService {
   }
 
   private formatConfidence(value?: string | null): string {
-    return this.formatLabel(value || 'high');
+    return this.formatLabel(value ?? 'high');
   }
 
   private formatLabel(value?: string | null, otherValue?: string | null): string {

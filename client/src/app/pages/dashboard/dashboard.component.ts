@@ -1,7 +1,6 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { dashboardGlobalAnimation } from '../../shared/animations/dashboard.global.animations';
 import { DashboardSidebarComponent } from './dashboard-sidebar/dashboard-sidebar.component';
 import { DashboardHeaderComponent } from '../../shared/partials/header/dashboard-header/dashboard-header.component';
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -11,7 +10,6 @@ import { AppService } from '../../services/core/app/app.service';
 import { AuthService } from '../../services/authetication/auth.service';
 import { filter, Observable } from 'rxjs';
 import { DemoTourComponent } from "../demo-tour/demo-tour/demo-tour.component";
-import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { SidebarService } from '../../shared/services/sidebar.service';
 import { ScanNotificationService } from '../../shared/services/scan-notification.service';
 import { ConfirmationPopupComponent } from '../../shared/partials/confirmation-popup/confirmation-popup.component';
@@ -28,17 +26,20 @@ import { ConfirmationPopupComponent } from '../../shared/partials/confirmation-p
     ScrollingModule,
     ProSubscriptionComponent,
     DemoTourComponent,
-    TranslatePipe,
     ConfirmationPopupComponent
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [dashboardGlobalAnimation]
+  styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements AfterViewInit, OnInit {
+  private routeAnimationKey: string | null = null;
+  @ViewChild('routerOutlet') private routerOutlet?: RouterOutlet;
+
   isMenuOpen = true;
   demoTourMounted = false;
   dashboardAnimationsReady = false;
+  routeFadePhase: 'a' | 'b' | null = null;
   isFilterOpen$: Observable<boolean>;
 
   constructor(protected dashboardService: DashboardService, private cdr: ChangeDetectorRef, public router: Router, public authService: AuthService, protected appService: AppService, sidebarService: SidebarService, public scanNotificationService: ScanNotificationService) {
@@ -56,7 +57,17 @@ export class DashboardComponent implements AfterViewInit, OnInit {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.redirectMobileDemoDashboardEntry(event.urlAfterRedirects);
+        this.updateRouteFadePhase();
       });
+  }
+
+  private updateRouteFadePhase(): void {
+    const animationKey = this.routerOutlet ? this.prepareRoute(this.routerOutlet) : null;
+    if (animationKey === this.routeAnimationKey) {
+      return;
+    }
+    this.routeAnimationKey = animationKey;
+    this.routeFadePhase = this.routeFadePhase === 'a' ? 'b' : 'a';
   }
 
   private redirectMobileDemoDashboardEntry(url: string): void {
@@ -83,7 +94,7 @@ export class DashboardComponent implements AfterViewInit, OnInit {
       return null;
     }
 
-    return outlet?.activatedRouteData?.['animation'] || null;
+    return outlet?.activatedRouteData?.animation ?? null;
   }
 
   isCtiGraph(): boolean {

@@ -61,9 +61,9 @@ class AlertMailHelper:
                 (db_user_account.tenant_uuid == str(tenant_id))
                 & (db_user_account.licenses == LicenseName.MAINTAINER),
             )
-        if not maintainer_user:
-            return "", ""
-        return maintainer_user.email, maintainer_user.username
+        if maintainer_user:
+            return maintainer_user.email, maintainer_user.username
+        return "", ""
 
     @staticmethod
     def _format_ioc_label(ioc_type: str) -> str:
@@ -146,7 +146,7 @@ class AlertMailHelper:
             return True
 
         module_rows = []
-        for category, count in sorted(counts_by_category.items(), key=lambda item: item[0]):
+        for category, count in sorted(counts_by_category.items(), key=lambda entry: entry[0]):
             display_name = self._display_alert_label(category)
             count = int(count or 0)
             module_rows.append({

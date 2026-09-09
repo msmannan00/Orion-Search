@@ -3,24 +3,25 @@ import { CommonModule } from '@angular/common';
 import { AppService } from '../../../services/core/app/app.service';
 import { DashboardService } from '../../../services/dashboard/dashboard.service';
 import { filter_mapping } from '../../../shared/constants/filters';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { countFilterValues } from '../../../shared/utils/filter-values.util';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-selected-filter-bar',
   imports: [CommonModule, TranslatePipe],
   templateUrl: './selected-filter-bar.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./selected-filter-bar.component.css'],
 })
 export class SelectedFilterBarComponent implements OnInit {
   protected readonly filter_mapping = filter_mapping;
 
   categories: Record<string, string[]> = {};
-  isFilterBarExpanded: boolean = false;
+  isFilterBarExpanded = false;
   maxVisibleTags = 8;
-  Object: any;
+  Object: unknown;
   readonly showSorting = input.required<boolean>();
   readonly clearAll = output<undefined>();
   readonly searchFiltersChange = output<undefined>();
@@ -47,11 +48,11 @@ export class SelectedFilterBarComponent implements OnInit {
   clearMatchType(): void {
     this.dashboardService.selectedFilters.update((filters) => {
       const updated = { ...filters };
-      delete updated["matchtype"];
+      delete updated.matchtype;
       return updated;
     });
     this.app_service.set('matchType', "or");
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.clearAll.emit(undefined);
   }
 
@@ -67,23 +68,23 @@ export class SelectedFilterBarComponent implements OnInit {
     if (scope=='all'){
       this.app_service.set('matchType', "or");
     }
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.clearAll.emit(undefined);
   }
 
   removeEntityTypeFilterTag(tagToRemoveId: string) {
     const categories = { ...this.app_service.configData().localSettings.entityfilterCategories };
     for (const key in categories) {
-      const value = categories[key];
+      const value = getOwnProperty(categories, key);
       if (Array.isArray(value)) {
-        categories[key] = value.filter(tag => tag !== tagToRemoveId);
+        setOwnProperty(categories, key, value.filter(tag => tag !== tagToRemoveId));
       }
       else if (value === tagToRemoveId) {
-        delete categories[key];
+        Reflect.deleteProperty(categories, key);
       }
     }
     this.app_service.set('entityfilterCategories', categories);
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.searchFiltersChange.emit(undefined);
   }
 
@@ -95,7 +96,7 @@ export class SelectedFilterBarComponent implements OnInit {
     return Object.keys(this.dashboardService.selectedFilters());
   }
 
-  sidebarFilterCount(all: boolean = false): number {
+  sidebarFilterCount(all = false): number {
     if (all) {
       return Object.entries(this.dashboardService.selectedFilters())
         .filter(([key, value]) => key !== 'matchtype' || value !== 'or')

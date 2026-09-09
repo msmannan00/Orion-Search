@@ -2,12 +2,12 @@
 
   @if (!twofaRequired && !autoDemoLogin) {
     <div id="content">
-      <div class="flex min-h-[750px] h-screen font-['Roboto',sans-serif]" data-testid="login-page">
+      <div class="flex h-[100dvh] min-h-[700px] font-['Roboto',sans-serif]" data-testid="login-page">
         <div class="w-[500px] min-w-[500px] max-w-[500px] flex-none bg-white p-8 flex flex-col justify-between items-stretch [body.light-theme_&]:border-r [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#fbfdff] max-[943px]:w-screen max-[943px]:min-w-0 max-[943px]:max-w-none max-[943px]:flex-[0_0_100vw] max-[943px]:[body.light-theme_&]:border-r-0">
           <div class="w-full flex justify-center gap-6">
             <a [href]="appService.getConfig().appSettings.home_header_data_sources" target="_blank" rel="noopener noreferrer" class="text-[#5a6f85] font-['Roboto',sans-serif] font-normal text-[14px] no-underline transition-colors [body.light-theme_&]:hover:text-[#1176d4]">{{ 'Data Sources' | translate }}</a>
             <a [href]="appService.getConfig().appSettings.home_header_adversaries" target="_blank" rel="noopener noreferrer" class="text-[#5a6f85] font-['Roboto',sans-serif] font-normal text-[14px] no-underline transition-colors [body.light-theme_&]:hover:text-[#1176d4]">{{ 'Adversaries' | translate }}</a>
-            <a [href]="appService.getConfig().appSettings.home_header_pricing" target="_blank" rel="noopener noreferrer" class="text-[#5a6f85] font-['Roboto',sans-serif] font-normal text-[14px] no-underline transition-colors [body.light-theme_&]:hover:text-[#1176d4]">{{ 'Pricing' | translate }}</a>
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" class="text-[#5a6f85] font-['Roboto',sans-serif] font-normal text-[14px] no-underline transition-colors [body.light-theme_&]:hover:text-[#1176d4]">Privacy Policy</a>
           </div>
           <div class="flex flex-col mt-[100px] items-center flex-grow">
             <div class="w-full max-w-[500px] flex flex-col items-center">
@@ -72,8 +72,99 @@
             <p class="text-[#5a6f85] font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.2]">{{ this.appService.getConfig().appSettings.app_name }}</p>
           </div>
         </div>
-        <div class="flex-1 relative overflow-hidden bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.15)_0,rgba(255,255,255,0.25)_1px,transparent_1px,transparent_70px),repeating-linear-gradient(90deg,rgba(255,255,255,0.15)_0,rgba(255,255,255,0.25)_1px,transparent_1px,transparent_70px),radial-gradient(circle_at_center,#172a4f_0%,#0E1626_100%)] bg-blend-overlay">
-          <img [src]="getDashboardPreviewSrc()" [alt]="'Dashboard Preview' | translate" loading="eager" fetchpriority="high" decoding="async" class="absolute inset-0 h-full w-full object-cover object-center lg:object-right" />
+        <div class="flex-1 relative overflow-hidden rounded-[25px] bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.15)_0,rgba(255,255,255,0.25)_1px,transparent_1px,transparent_70px),repeating-linear-gradient(90deg,rgba(255,255,255,0.15)_0,rgba(255,255,255,0.25)_1px,transparent_1px,transparent_70px),radial-gradient(circle_at_center,#172a4f_0%,#0E1626_100%)] bg-blend-overlay">
+          @if (isDefaultDashboardPreview()) {
+            <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+              <img src="/assets/images/shared/auth_dashboard_map.png" alt="" loading="eager" fetchpriority="high" decoding="async" class="absolute inset-[-12px] h-[calc(100%+24px)] w-[calc(100%+24px)] -translate-y-12 scale-[1.12] object-cover object-[38%_center] opacity-[0.52] blur-[4px] saturate-[0.78] contrast-[1.04]" />
+              <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,12,27,0.93)_0%,rgba(9,15,33,0.76)_42%,rgba(16,12,34,0.56)_100%),linear-gradient(180deg,rgba(4,9,20,0.10)_0%,rgba(4,9,20,0.48)_100%),radial-gradient(circle_at_82%_38%,rgba(151,34,62,0.32)_0%,transparent_52%)]"></div>
+              <div class="absolute inset-0 bg-[radial-gradient(circle_at_14%_38%,rgba(37,112,174,0.24)_0%,transparent_44%),radial-gradient(circle_at_88%_78%,rgba(98,25,56,0.18)_0%,transparent_38%)]"></div>
+            </div>
+            <section class="absolute left-[clamp(46px,4.2vw,84px)] top-[clamp(70px,12vh,132px)] z-[2] max-w-[560px] text-white max-[1699px]:max-w-[440px] max-[1279px]:hidden" aria-label="Platform overview">
+              <div class="mb-4 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8fc8f7]">
+                <span class="h-px w-8 bg-[#22d1b6] shadow-[0_0_10px_rgba(34,209,182,0.65)]"></span>
+                {{ 'Unified Intelligence Platform' | translate }}
+              </div>
+              <h2 class="text-[clamp(34px,2.35vw,46px)] font-semibold leading-[1.08] tracking-[-0.03em] text-white drop-shadow-[0_3px_18px_rgba(0,0,0,0.35)]">
+                {{ 'Unified intelligence for' | translate }}
+                <span class="block text-[#ff4f6b]">{{ 'decisive action.' | translate }}</span>
+              </h2>
+              <p class="mt-5 text-[clamp(17px,1.15vw,22px)] font-medium leading-[1.35] text-[#e8f1fa]">
+                {{ 'Investigate with the full picture.' | translate }}
+              </p>
+              <div class="mt-7 max-w-[520px] space-y-5 text-[14px] leading-[1.55] text-[#c1d1e1]">
+                <div class="flex gap-3">
+                  <span class="mt-[7px] h-[9px] w-[9px] shrink-0 rounded-full border-2 border-[#ff4f6b]"></span>
+                  <p><strong class="font-semibold text-white">{{ 'Connected intelligence' | translate }}</strong> — {{ 'Correlate identities, infrastructure, breaches, and online activity.' | translate }}</p>
+                </div>
+                <div class="flex gap-3">
+                  <span class="mt-[7px] h-[9px] w-[9px] shrink-0 rounded-full border-2 border-[#ff4f6b]"></span>
+                  <p><strong class="font-semibold text-white">{{ 'Faster investigations' | translate }}</strong> — {{ 'Move from the first signal to verified context in a single workflow.' | translate }}</p>
+                </div>
+                <div class="flex gap-3">
+                  <span class="mt-[7px] h-[9px] w-[9px] shrink-0 rounded-full border-2 border-[#ff4f6b]"></span>
+                  <p><strong class="font-semibold text-white">{{ 'Continuous visibility' | translate }}</strong> — {{ 'Monitor exposure across open, social, deep, and dark web sources.' | translate }}</p>
+                </div>
+              </div>
+            </section>
+            <div class="absolute left-[clamp(46px,4.2vw,84px)] right-[clamp(46px,4.2vw,84px)] top-[clamp(450px,53vh,570px)] z-[2] max-w-[760px] max-[1279px]:hidden" role="group" aria-label="Our partners">
+              <div class="mb-3 flex items-center gap-3">
+                <span class="h-[3px] w-6 rounded-full bg-[#24d2b7] shadow-[0_0_12px_rgba(36,210,183,0.45)]"></span>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a9c3da]">{{ 'Our partners' | translate }}</p>
+              </div>
+              <ul class="grid grid-cols-8 gap-2" role="list">
+                <li aria-label="CyberSage" class="col-span-2 flex min-h-[58px] items-center justify-center gap-2.5 rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/cybersage.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-10 w-9 shrink-0 object-contain" />
+                  <span class="text-[11px] font-bold leading-none tracking-[-0.01em] text-[#25235f]">CyberSage</span>
+                </li>
+                <li aria-label="Catalytic Security" class="col-span-2 flex min-h-[58px] items-center justify-center rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/catalyic-security.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-auto max-h-[34px] w-full max-w-[118px] object-contain" />
+                </li>
+                <li aria-label="Trillium Information Security Systems" class="col-span-2 flex min-h-[58px] items-center justify-center rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/trillium-tiss.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-auto max-h-[31px] w-full max-w-[120px] object-contain" />
+                </li>
+                <li aria-label="InvoZone" class="col-span-2 flex min-h-[58px] items-center justify-center gap-2.5 rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/invozone.svg" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-8 w-[41px] shrink-0 object-contain" />
+                  <span class="text-[11px] font-bold leading-none tracking-[-0.01em] text-[#111827]">InvoZone</span>
+                </li>
+                <li aria-label="Genesis Technologies" class="col-span-2 flex min-h-[58px] items-center justify-center rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/genesis-technologies.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-auto max-h-[30px] w-full max-w-[120px] object-contain" />
+                </li>
+                <li aria-label="Cydea Tech" class="col-span-2 flex min-h-[58px] items-center justify-center gap-2.5 rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <span aria-hidden="true" class="h-10 w-10 shrink-0 overflow-hidden">
+                    <img src="/assets/images/shared/partners/cydea-tech.png" alt="" loading="eager" decoding="async" class="h-auto w-16 max-w-none -translate-x-3 object-contain brightness-0" />
+                  </span>
+                  <span class="text-xs font-bold leading-[1.05] tracking-[-0.01em] text-[#171127]">Cydea Tech</span>
+                </li>
+                <li aria-label="Cipher Guardian" class="col-span-2 flex min-h-[58px] items-center justify-center gap-2.5 rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/cipher-guardian.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-6 w-6 shrink-0 object-contain" />
+                  <span class="text-xs font-bold leading-[1.05] tracking-[-0.01em] text-[#08152a]">Cipher Guardian</span>
+                </li>
+                <li aria-label="Whistleaks" class="col-span-2 flex min-h-[58px] items-center justify-center gap-2.5 rounded-[12px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(229,239,248,0.91))] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[12px]">
+                  <img src="/assets/images/shared/partners/whistleaks.png" alt="" aria-hidden="true" loading="eager" decoding="async" class="h-9 w-9 shrink-0 object-contain" />
+                  <span class="text-xs font-bold leading-[1.05] tracking-[-0.01em] text-[#0b4c5b]">Whistleaks</span>
+                </li>
+              </ul>
+            </div>
+            <div class="absolute bottom-[clamp(28px,4.5vh,52px)] left-[clamp(46px,4.2vw,84px)] z-[2] grid w-[min(600px,48vw)] grid-cols-3 gap-8 border-t border-[rgba(157,200,239,0.18)] pt-4 text-[#acc2d7] max-[1279px]:hidden" role="group" aria-label="Platform capabilities">
+              <div>
+                <span class="mb-2 block h-[3px] w-6 rounded-full bg-[#24d2b7]"></span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-white">{{ 'Multi-source' | translate }}</p>
+                <p class="mt-1 text-[11px] leading-[1.4]">{{ 'Open, social, and dark web' | translate }}</p>
+              </div>
+              <div>
+                <span class="mb-2 block h-[3px] w-6 rounded-full bg-[#5eb3ff]"></span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-white">{{ 'Unified context' | translate }}</p>
+                <p class="mt-1 text-[11px] leading-[1.4]">{{ 'People, assets, and infrastructure' | translate }}</p>
+              </div>
+              <div>
+                <span class="mb-2 block h-[3px] w-6 rounded-full bg-[#ff4f6b]"></span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-white">{{ 'Continuous' | translate }}</p>
+                <p class="mt-1 text-[11px] leading-[1.4]">{{ 'Exposure monitoring' | translate }}</p>
+              </div>
+            </div>
+          } @else {
+            <img [src]="getDashboardPreviewSrc()" [alt]="'Dashboard Preview' | translate" loading="eager" fetchpriority="high" decoding="async" class="absolute inset-0 h-full w-full object-cover object-center lg:object-right" />
+          }
         </div>
       </div>
     </div>

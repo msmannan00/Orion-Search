@@ -19,10 +19,6 @@ export class HomeSearchService {
     this.showFiltersOverlay = false;
   }
 
-  openOverlay() {
-    this.showFiltersOverlay = true;
-  }
-
   toggleAdvanceSettings() {
     const cfg = this.appService.configData();
     this.appService.set('advance_setting_toggle', !cfg.localSettings.advance_setting_toggle);
@@ -47,7 +43,10 @@ export class HomeSearchService {
   }
 
   handleDocumentClick(event: MouseEvent, filtersWrapper?: ElementRef, searchInput?: ElementRef) {
-    const eventTargetElement = event.target as HTMLElement;
+    const eventTargetElement = event.target;
+    if (!(eventTargetElement instanceof Node)) {
+      return;
+    }
     const clickedInsideFilter = filtersWrapper?.nativeElement.contains(eventTargetElement);
     const clickedInput = searchInput?.nativeElement.contains(eventTargetElement);
     if (!clickedInsideFilter && !clickedInput) {

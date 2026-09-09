@@ -7,11 +7,10 @@ import { ApiService } from '../../shared/services/api.service';
 import { CtiSidebarComponent } from './cti-sidebar/cti-sidebar.component';
 import { GraphContextMenuComponent } from './context-menu/context-menu.component';
 import { isPlatformBrowser } from '@angular/common';
-import { fadeInDashboardItem } from '../../shared/animations/dashboard.item.animation';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { ExpandToggleButtonComponent } from './expand-toggle-button/expand-toggle-button.component';
 import { ExportChoiceModalComponent } from '../../shared/partials/export-choice-modal/export-choice-modal.component';
-import { CtiGraphFilters, CtiGraphLegendItem, CtiGraphStats, ExtendedNode, GraphResultItem, NodeVisualState } from './model/cti-graph.model';
+import { CtiGraphFilters, CtiGraphLegendItem, CtiGraphStats, ExtendedNode, GraphResultItem, GraphVertex, NodeVisualState } from './model/cti-graph.model';
 import { ReportExportService } from '../../shared/services/report-export.service';
 import { GraphReportExportType, GraphReportPayload } from '../../shared/model/report/report-export.model';
 import { GRAPH_REPORT_EXPORT_OPTIONS } from '../../shared/model/report/export-choice.model';
@@ -24,13 +23,19 @@ import { splitCountryValues } from '../../shared/utils/country-normalization.uti
 import { GraphAdvancedBuilderPopupComponent } from './advanced-builder-popup/advanced-builder-popup.component';
 import { GraphAdvancedFilterChipModel, GraphAdvancedFilterModel, GraphBuilderLogicalOperator, GraphSearchMode, GraphSearchOptionModel, GraphSearchRequestModel } from './model/graph-builder.model';
 import { TranslationService } from '../../shared/services/translation.service';
+import type { NetworkPointerParams } from './model/graphs.model';
+import { getOwnProperty, setOwnProperty } from '../../shared/utils/type-guards.util';
+
+export type { NetworkPointerParams } from './model/graphs.model';
+
 
 type GraphNodeColor = NonNullable<ExtendedNode['color']>;
+
 @Component({
   selector: 'app-graphs',
   standalone: true,
   templateUrl: './graphs.component.html',
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./graphs.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, CtiSidebarComponent, GraphContextMenuComponent, ExpandToggleButtonComponent, ExportChoiceModalComponent, ProfileComponent, TranslatePipe, GraphAdvancedBuilderPopupComponent]
 })
@@ -52,12 +57,12 @@ export class GraphComponent implements OnInit, OnDestroy {
   private readonly clusterPalette: Record<string, { color: string; label: string; swatchClass: string; }> = { general: { color: '#38bdf8', label: 'General', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-sky-400' }, leak: { color: '#f97316', label: 'Leak', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500' }, tracking: { color: '#22c55e', label: 'Tracking', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-green-500' }, news: { color: '#eab308', label: 'News', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-500' }, defacement: { color: '#ef4444', label: 'Defacement', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-red-500' }, chat: { color: '#06b6d4', label: 'Chat', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-500' }, exploit: { color: '#fb7185', label: 'Exploit', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-rose-400' }, social: { color: '#a78bfa', label: 'Social', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-purple-400' }, apt: { color: '#f43f5e', label: 'APT', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500' }, malware: { color: '#14b8a6', label: 'Malware', swatchClass: 'h-2.5 w-2.5 shrink-0 rounded-full bg-teal-500' } };
   private readonly propertyClassPalette: Record<string, string> = { geo: '#22c55e', identity: '#38bdf8', infrastructure: '#60a5fa', indicator: '#f59e0b', vulnerability: '#fb7185', host_indicator: '#eab308', financial: '#34d399', crypto: '#f97316', organization: '#a78bfa', source: '#94a3b8' };
   private readonly iconMap: Record<string, string> = { cluster: 'diagram-3-fill', campaign: 'diagram-3-fill', document: 'file-earmark-text-fill', property: 'tags-fill', actor: 'tags-fill', encoded: 'code-slash', document_id: 'file-earmark-lock-fill', ip: 'hdd-network-fill', phone: 'telephone-fill', email: 'envelope-fill', domain: 'globe2', url: 'link-45deg', country: 'flag-fill', file: 'folder-fill', card: 'credit-card-2-front-fill', crypto: 'currency-bitcoin', bank: 'bank2', platform: 'cpu-fill', company: 'building-fill', person: 'person-fill', location: 'geo-alt-fill', language: 'translate', hashtag: 'hash', mention: 'at', xmpp: 'chat-dots-fill', tactic: 'bullseye', technique: 'tools', script: 'braces' };
-  private groupInfo: Record<string, string[]> = {};
-  private groupedSubNodesByParent: Record<string, Set<string>> = {};
-  private groupParentByGroupId: Record<string, string> = {};
-  private groupExpandedState: Record<string, boolean> = {};
+  private groupInfo = new Map<string, string[]>();
+  private groupedSubNodesByParent = new Map<string, Set<string>>();
+  private groupParentByGroupId = new Map<string, string>();
+  private groupExpandedState = new Map<string, boolean>();
   private highlightedNodeId: string | null = null;
-  private physicsTimeoutId: any = null;
+  private physicsTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private readonly minZoomScale = 0.35;
   private minZoomLockPosition: { x: number; y: number; } | null = null;
   private readonly originalNodeState = new Map<string, NodeVisualState>();
@@ -73,9 +78,9 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (!this.network) {
       return;
     }
-    const eventTargetElement = event.target as HTMLElement | null;
-    const tag = eventTargetElement?.tagName?.toLowerCase() || '';
-    const isEditable = !!eventTargetElement?.isContentEditable || tag === 'input' || tag === 'textarea' || tag === 'select';
+    const eventTargetElement = event.target;
+    const tag = eventTargetElement instanceof Element ? eventTargetElement.tagName.toLowerCase() : '';
+    const isEditable = (eventTargetElement instanceof Element && eventTargetElement.closest('[contenteditable="true"]') !== null) || tag === 'input' || tag === 'textarea' || tag === 'select';
     if (isEditable) {
       return;
     }
@@ -112,7 +117,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   private graphRequestSequence = 0;
   private themeObserver: MutationObserver | null = null;
 
-  networkContainer?: ElementRef;
+  networkContainer?: ElementRef<HTMLElement>;
   public rawNodes: ExtendedNode[] = [];
   public rawEdges: Edge[] = [];
   public nodeSet!: DataSet<ExtendedNode>;
@@ -134,7 +139,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   physicsEnabled = true;
   expandEnabled = false;
   isEmpty = false;
-  result: any[] = [];
+  result: GraphResultItem[] = [];
   contextMenuNode: ExtendedNode | null = null;
   copied = false;
   orignalColor: GraphNodeColor = '';
@@ -209,7 +214,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   @ViewChild('networkContainer')
-  set networkContainerRef(ref: ElementRef) {
+  set networkContainerRef(ref: ElementRef<HTMLElement>) {
     if (ref) {
       this.networkContainer = ref;
       this.tryApplyPendingFilters();
@@ -222,7 +227,9 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       ensureStylesheet('/assets/libs/vis-network.css', 'vis-network-styles');
       document.addEventListener('keydown', this.globalKeyDownListener, true);
-      this.themeObserver = new MutationObserver(() => this.refreshGraphTheme());
+      this.themeObserver = new MutationObserver(() => {
+        this.refreshGraphTheme();
+      });
       this.themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     }
     this.route.queryParams.subscribe(params => {
@@ -268,18 +275,18 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private buildRouteFilterOverride(params: Params): CtiGraphFilters | null {
-    const selectedType = String(params['selectedType'] ?? '').trim();
-    const singleInput = String(params['singleInput'] ?? '').trim();
-    const propertyType = String(params['propertyType'] ?? '').trim();
-    const propertyValue = String(params['propertyValue'] ?? '').trim();
+    const selectedType = String(params.selectedType ?? '').trim();
+    const singleInput = String(params.singleInput ?? '').trim();
+    const propertyType = String(params.propertyType ?? '').trim();
+    const propertyValue = String(params.propertyValue ?? '').trim();
     const hasExplicitRouteFilters = selectedType.length > 0 || singleInput.length > 0 || propertyValue.length > 0;
 
     if (!hasExplicitRouteFilters) {
       return null;
     }
 
-    const parsedMaxEdge = Number(params['maxEdge']);
-    const parsedMaxDepth = Number(params['maxDepth']);
+    const parsedMaxEdge = Number(params.maxEdge);
+    const parsedMaxDepth = Number(params.maxDepth);
 
     return {
       selectedType: selectedType || 'cluster',
@@ -447,7 +454,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   private getGraphFilterChipValue(filter: GraphAdvancedFilterModel, option: GraphSearchOptionModel): string {
     if (option.mode === GraphSearchMode.Cluster) {
       const clusterValue = this.getGraphFilterClusterValue(filter);
-      return this.graphBuilderClusterValueOptions.find(item => item.key === clusterValue)?.label || clusterValue;
+      return this.graphBuilderClusterValueOptions.find(item => item.key === clusterValue)?.label ?? clusterValue;
     }
     return filter.value.trim();
   }
@@ -475,7 +482,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (option.mode === GraphSearchMode.Cluster) {
       if (queryValue) {
         nextFilters.selectedType = 'property';
-        nextFilters.singleInput = option.clusterValue || 'all';
+        nextFilters.singleInput = option.clusterValue ?? 'all';
         nextFilters.propertyType = 'all';
         nextFilters.propertyValue = queryValue;
         this.applyFilterValues(nextFilters);
@@ -484,7 +491,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         return;
       }
       nextFilters.selectedType = 'cluster';
-      nextFilters.singleInput = option.clusterValue || 'all';
+      nextFilters.singleInput = option.clusterValue ?? 'all';
       nextFilters.propertyType = 'all';
       nextFilters.propertyValue = '';
     }
@@ -494,7 +501,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       nextFilters.selectedType = 'property';
       nextFilters.singleInput = '';
-      nextFilters.propertyType = option.propertyType || 'all';
+      nextFilters.propertyType = option.propertyType ?? 'all';
       nextFilters.propertyValue = queryValue;
     }
     else if (queryValue) {
@@ -537,7 +544,7 @@ export class GraphComponent implements OnInit, OnDestroy {
 
   private syncBasicSearchControlsFromRoute(params: Params, filters: CtiGraphFilters): void {
     this.graphSearchAdvancedMode = false;
-    const requestedKey = String(params['graphSearchKey'] ?? '').trim();
+    const requestedKey = String(params.graphSearchKey ?? '').trim();
     const requestedOption = requestedKey ? this.graphSearchOptions.find(option => option.key === requestedKey) : null;
     if (requestedOption) {
       this.activeGraphSearchKey = requestedOption.key;
@@ -548,13 +555,13 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (filters.selectedType === 'property') {
       const propertyOption = this.graphSearchOptions.find(option => option.mode === GraphSearchMode.Property && option.propertyType === filters.propertyType);
       const scopedClusterOption = this.graphSearchOptions.find(option => option.mode === GraphSearchMode.Cluster && option.clusterValue === filters.singleInput);
-      this.activeGraphSearchKey = propertyOption?.key || scopedClusterOption?.key || 'all';
+      this.activeGraphSearchKey = propertyOption?.key ?? scopedClusterOption?.key ?? 'all';
       this.graphSearchText = filters.propertyValue || '';
       return;
     }
 
     const clusterOption = this.graphSearchOptions.find(option => option.mode === GraphSearchMode.Cluster && option.clusterValue === filters.singleInput);
-    this.activeGraphSearchKey = clusterOption?.key || 'all';
+    this.activeGraphSearchKey = clusterOption?.key ?? 'all';
     this.graphSearchText = '';
   }
 
@@ -591,11 +598,11 @@ export class GraphComponent implements OnInit, OnDestroy {
 
   private buildGraphSearchRequest(option: GraphSearchOptionModel, queryValue: string, operator?: GraphSearchRequestModel['operator']): GraphSearchRequestModel | null {
     if (option.mode === GraphSearchMode.Cluster) {
-      return new GraphSearchRequestModel({ dataPointType: 'cluster', modelType: 'cluster', queryValues: [queryValue || option.clusterValue || this.defaultGraphBuilderClusterValue], operator });
+      return new GraphSearchRequestModel({ dataPointType: 'cluster', modelType: 'cluster', queryValues: [queryValue ?? option.clusterValue ?? this.defaultGraphBuilderClusterValue], operator });
     }
     if (option.mode === GraphSearchMode.Property) {
       const queryValues = this.parseGraphBuilderValues(option, queryValue);
-      return queryValues.length ? new GraphSearchRequestModel({ dataPointType: 'property', modelType: option.propertyType || 'all', queryValues, operator }) : null;
+      return queryValues.length ? new GraphSearchRequestModel({ dataPointType: 'property', modelType: option.propertyType ?? 'all', queryValues, operator }) : null;
     }
     return null;
   }
@@ -699,9 +706,9 @@ export class GraphComponent implements OnInit, OnDestroy {
       summary: {
         totalNodes: nodes.length,
         totalEdges: edges.length,
-        clusters: byType['cluster'] ?? 0,
-        documents: byType['document'] ?? 0,
-        properties: byType['property'] ?? 0
+        clusters: byType.cluster ?? 0,
+        documents: byType.document ?? 0,
+        properties: byType.property ?? 0
       }
     };
   }
@@ -722,7 +729,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       if (!ext.isGroup || !nodeId || (ext.subNodes?.length ?? 0) === 0) {
         return;
       }
-      if (!this.groupExpandedState[nodeId]) {
+      if (!this.groupExpandedState.get(nodeId)) {
         groupsToExpand.push({ id: nodeId, subNodes: ext.subNodes ?? [] });
       }
     });
@@ -739,7 +746,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       animation: false
     });
     this.network.redraw();
-    const canvasElements = this.networkContainer.nativeElement.querySelectorAll('canvas') as NodeListOf<HTMLCanvasElement>;
+    const canvasElements = this.networkContainer.nativeElement.querySelectorAll('canvas');
     let snapshot: string | undefined;
     if (canvasElements.length > 0) {
       const width = canvasElements[0].width;
@@ -818,7 +825,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   resetGraph(): void {
     if (this.network) {
       this.network.destroy();
-      this.network = null!;
+      Reflect.deleteProperty(this, 'network');
     }
     if (this.nodeSet) {
       this.nodeSet.clear();
@@ -830,10 +837,10 @@ export class GraphComponent implements OnInit, OnDestroy {
     this.edgeSet = new DataSet<Edge>();
     this.rawNodes = [];
     this.rawEdges = [];
-    this.groupInfo = {};
-    this.groupedSubNodesByParent = {};
-    this.groupParentByGroupId = {};
-    this.groupExpandedState = {};
+    this.groupInfo.clear();
+    this.groupedSubNodesByParent.clear();
+    this.groupParentByGroupId.clear();
+    this.groupExpandedState.clear();
     this.highlightedNodeId = null;
     this.contextMenuNode = null;
     this.contextMenuNodeId = '';
@@ -864,7 +871,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     const payload = this.buildGraphPayload(data_point_type, type, value, '', maxEdge, maxDepth);
     this.resetGraph();
     this.api.post<{
-      results: any[];
+      results: GraphResultItem[];
   }>('graph', payload).subscribe({
     next: response => {
       if (!this.isCurrentGraphRequest(requestId)) {
@@ -874,12 +881,12 @@ export class GraphComponent implements OnInit, OnDestroy {
       this.result = results;
       this.renderGraph(this.result);
       if (data_point_type === 'document') {
-        this.focusGraphNode(this.pendingFocusNodeId || `cti_vertices/${value}`);
+        this.focusGraphNode(this.pendingFocusNodeId ?? `cti_vertices/${value}`);
         this.pendingFocusNodeId = null;
       }
       this.loading = true;
     },
-    error: _ => {
+    error: () => {
       if (!this.isCurrentGraphRequest(requestId)) {
         return;
       }
@@ -913,7 +920,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         this.renderGraph(this.result);
         this.loading = true;
       },
-      error: _ => {
+      error: () => {
         if (!this.isCurrentGraphRequest(requestId)) {
           return;
         }
@@ -932,7 +939,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       depth: String(depthOverride ?? this.maxDepth)
     };
     if (scopeCluster && scopeCluster !== 'all') {
-      payload['scope_cluster'] = scopeCluster;
+      payload.scope_cluster = scopeCluster;
     }
     return payload;
   }
@@ -969,7 +976,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         this.renderGraph(this.result);
         this.loading = true;
       },
-      error: _ => {
+      error: () => {
         if (!this.isCurrentGraphRequest(requestId)) {
           return;
         }
@@ -1035,8 +1042,8 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (node && typeof node.id === 'string') {
       const nodeId = node.id;
       const containerRect = this.networkContainer?.nativeElement?.getBoundingClientRect();
-      let left = 0;
-      let top = 0;
+      let left: number;
+      let top: number;
       if (pointerDom && containerRect) {
         left = containerRect.left + pointerDom.x;
         top = containerRect.top + pointerDom.y;
@@ -1118,7 +1125,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private getEdgeIdsToRemove(fromId: string, toIds: string[]): string[] {
-    const sourceId = this.groupParentByGroupId[fromId] ?? fromId;
+    const sourceId = this.groupParentByGroupId.get(fromId) ?? fromId;
     return this.rawEdges
       .filter(e => (e.from === sourceId && toIds.includes(e.to as string)) ||
   (e.to === sourceId && toIds.includes(e.from as string)) ||
@@ -1157,7 +1164,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private createGroupNodeSvg(count: number, isExpanded = false, clusterLabel = 'CTI Cluster', clusterKey = ''): string {
-    const paletteColor = this.clusterPalette[clusterKey]?.color ?? '#7dd3fc';
+    const paletteColor = getOwnProperty(this.clusterPalette, clusterKey)?.color ?? '#7dd3fc';
     const borderColor = isExpanded ? '#facc15' : paletteColor;
     const subtitle = clusterLabel.replace(/&/g, '&amp;').slice(0, 20);
     const initials = subtitle
@@ -1188,7 +1195,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     const clusterKey = this.getClusterKeyFromNodeId(nodeId);
     const clusterLabel = groupNode?.title
       ? String(groupNode.title).split('(')[0].trim()
-      : `${this.clusterPalette[clusterKey]?.label ?? this.toTitleCase(String(nodeId).split('/').pop() ?? 'CTI')} Cluster`;
+      : `${getOwnProperty(this.clusterPalette, clusterKey)?.label ?? this.toTitleCase(String(nodeId).split('/').pop() ?? 'CTI')} Cluster`;
     this.nodeSet.update({
       id: nodeId,
       shape: 'circularImage',
@@ -1196,12 +1203,12 @@ export class GraphComponent implements OnInit, OnDestroy {
       size: 40,
       borderWidth: 0,
       label: ''
-    } as any);
+    });
   }
 
   private getClusterDocumentIds(nodeId: string): string[] {
     const resultDocIds = (this.result ?? [])
-      .filter((item: any) => {
+      .filter((item) => {
         const vertexId = String(item?.vertex?._id ?? '');
         const vertexType = String(item?.vertex?.type ?? '').toLowerCase();
         if (vertexType !== 'document' || !vertexId) {
@@ -1211,7 +1218,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         const to = String(item?.edge?._to ?? '');
         return from === nodeId || to === nodeId;
       })
-      .map((item: any) => String(item?.vertex?._id ?? ''))
+      .map((item) => String(item?.vertex?._id ?? ''))
       .filter(Boolean);
     if (resultDocIds.length > 0) {
       return Array.from(new Set(resultDocIds));
@@ -1245,13 +1252,13 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private expandGroupFromNodeId(nodeId: string, subNodes: string[], radius: number): void {
-    const isExpanded = this.groupExpandedState[nodeId] || false;
+    const isExpanded = this.groupExpandedState.get(nodeId) ?? false;
     if (isExpanded) {
       return;
     }
     const uniqueSubNodes = Array.from(new Set(subNodes));
-    const sourceId = this.groupParentByGroupId[nodeId] ?? nodeId;
-    const centerPos = this.network.getPositions([nodeId])[nodeId] ?? { x: 0, y: 0 };
+    const sourceId = this.groupParentByGroupId.get(nodeId) ?? nodeId;
+    const centerPos = getOwnProperty(this.network.getPositions([nodeId]), nodeId) ?? { x: 0, y: 0 };
     const existingEdgeIds = new Set(this.edgeSet.getIds().map(id => String(id)));
     const uniqueEdgesById = new Map<string, Edge>();
     this.rawEdges.forEach(e => {
@@ -1285,7 +1292,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (newNodes.length > 0) {
       this.nodeSet.add(newNodes);
     }
-    this.groupExpandedState[nodeId] = true;
+    this.groupExpandedState.set(nodeId, true);
     this.updateGroupNodeVisual(nodeId, uniqueSubNodes.length, true);
   }
 
@@ -1305,7 +1312,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       const hasVisibleSubNode = subNodes.some(subNodeId => !!this.nodeSet.get(subNodeId));
       if (!hasVisibleSubNode) {
-        this.groupExpandedState[nodeId] = false;
+        this.groupExpandedState.set(nodeId, false);
       }
       this.expandGroupFromNodeId(nodeId, subNodes, 200);
       this.captureOriginalNodeColors([nodeId, ...subNodes]);
@@ -1313,18 +1320,21 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private collapseGroupFromNodeId(nodeId: string, subNodes: string[], force = false): void {
-    const isExpanded = this.groupExpandedState[nodeId] || false;
+    const isExpanded = this.groupExpandedState.get(nodeId) ?? false;
     if (!isExpanded && !force) {
       return;
     }
     this.removeSubNodesAndEdges(nodeId, subNodes);
-    this.groupExpandedState[nodeId] = false;
+    this.groupExpandedState.set(nodeId, false);
     this.updateGroupNodeVisual(nodeId, subNodes.length, false);
   }
 
   expandGroupNode(): void {
     this.hideContextMenu();
-    const node = this.contextMenuNode!;
+    const node = this.contextMenuNode;
+    if (!node) {
+      return;
+    }
     const nodeId = node.id as string;
     const subNodes = this.getContextSubNodes(nodeId, node);
     if (!nodeId || subNodes.length === 0) {
@@ -1336,7 +1346,10 @@ export class GraphComponent implements OnInit, OnDestroy {
 
   collapseGroupNode(): void {
     this.hideContextMenu();
-    const node = this.contextMenuNode!;
+    const node = this.contextMenuNode;
+    if (!node) {
+      return;
+    }
     const nodeId = node.id as string;
     const subNodes = this.getContextSubNodes(nodeId, node);
     if (this.isClusterRootNode(nodeId)) {
@@ -1364,7 +1377,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (subNodes.length === 0) {
       return false;
     }
-    return !this.groupExpandedState[nodeId];
+    return !this.groupExpandedState.get(nodeId);
   }
 
   canContextCollapse(): boolean {
@@ -1380,7 +1393,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (subNodes.length === 0) {
       return false;
     }
-    return !!this.groupExpandedState[nodeId];
+    return this.groupExpandedState.get(nodeId) ?? false;
   }
 
   showContextOpenCti(): boolean {
@@ -1408,8 +1421,8 @@ export class GraphComponent implements OnInit, OnDestroy {
       return false;
     }
     const nodeId = String(node.id);
-    const nodeType = String(node.nodeType || this.nodeTypeById[nodeId] || '').toLowerCase();
-    const nodeClass = String(node.nodeClass || '').toLowerCase();
+    const nodeType = String(node.nodeType ?? getOwnProperty(this.nodeTypeById, nodeId) ?? '').toLowerCase();
+    const nodeClass = String(node.nodeClass ?? '').toLowerCase();
     return nodeType === 'document' || nodeType === 'report' || nodeClass === 'report';
   }
 
@@ -1472,12 +1485,12 @@ export class GraphComponent implements OnInit, OnDestroy {
       telegram: 'chat',
       chats: 'chat'
     };
-    return aliases[normalized] || normalized;
+    return getOwnProperty(aliases, normalized) || normalized;
   }
 
   private getReportCategory(nodeId: string): string {
-    const nodeClusterId = this.normalizeReportCategory(String(this.contextMenuNode?.clusterId || ''));
-    if (nodeClusterId && this.clusterPalette[nodeClusterId]) {
+    const nodeClusterId = this.normalizeReportCategory(String(this.contextMenuNode?.clusterId ?? ''));
+    if (nodeClusterId && getOwnProperty(this.clusterPalette, nodeClusterId)) {
       return nodeClusterId;
     }
 
@@ -1531,7 +1544,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   viewReport() {
     const nodeId = this.contextMenuNodeId;
     const parts = nodeId.split('/');
-    const singleInput = this.contextMenuNode?.docId || parts[parts.length - 1];
+    const singleInput = this.contextMenuNode?.docId ?? parts[parts.length - 1];
     const category = this.getReportCategory(nodeId);
     const reportPath = this.getReportPathForCategory(category);
     if (!singleInput || !reportPath) {
@@ -1623,10 +1636,10 @@ export class GraphComponent implements OnInit, OnDestroy {
     this.isEmpty = data.length === 0;
     this.rawNodes = [];
     this.rawEdges = [];
-    this.groupInfo = {};
-    this.groupedSubNodesByParent = {};
-    this.groupParentByGroupId = {};
-    this.groupExpandedState = {};
+    this.groupInfo.clear();
+    this.groupedSubNodesByParent.clear();
+    this.groupParentByGroupId.clear();
+    this.groupExpandedState.clear();
     const edgeMap = this.buildEdgesAndEdgeMap(data);
     const rawNodeMap = this.buildRawNodeMap(data);
     const nodeTypeMap = this.buildNodeTypeMap(data);
@@ -1678,7 +1691,7 @@ export class GraphComponent implements OnInit, OnDestroy {
           duration: 250,
           easingFunction: 'easeInOutQuad'
         }
-      } as any);
+      });
     });
   }
 
@@ -1691,7 +1704,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       const edgeTitle = this.getEdgeTitle(e);
       this.rawEdges.push({
-        id: e._id || `${e._from}->${e._to}`,
+        id: e._id ?? `${e._from}->${e._to}`,
         from: e._from,
         to: e._to,
         arrows: 'to',
@@ -1706,38 +1719,38 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private getEdgeTitle(edge: GraphResultItem['edge']): string {
-    const label = edge?.label || edge?.edge_type || edge?.relationship_type || edge?.type || 'Connection';
+    const label = edge?.label ?? edge?.edge_type ?? edge?.relationship_type ?? edge?.type ?? 'Connection';
     const confidence = typeof edge?.confidence === 'number' ? ` (${Math.round(edge.confidence * 100)}%)` : '';
     return `${String(label).replace(/_/g, ' ')}${confidence}`;
   }
 
-  private getNodeTitle(vertex: any): string {
+  private getNodeTitleAsHtml(vertex: GraphVertex): string {
     const lines: string[] = [];
-    const type = String(vertex?.type || '').toLowerCase();
+    const type = String(vertex?.type ?? '').toLowerCase();
     const add = (label: string, value: unknown) => {
       const text = this.formatTooltipValue(value);
       if (text) {
         lines.push(`<strong>${this.escapeHtml(label)}:</strong> ${this.escapeHtml(text)}`);
       }
     };
-    const title = this.formatTooltipValue(vertex?.display_value || vertex?.label || vertex?.title || vertex?.value);
+    const title = this.formatTooltipValue(vertex?.display_value ?? vertex?.label ?? vertex?.title ?? vertex?.value);
     if (title) {
       lines.push(`<strong>${this.escapeHtml(this.truncateTooltipText(title, 90))}</strong>`);
     }
 
     if (type === 'document') {
       add('Type', 'Report');
-      add('Cluster', this.formatTooltipLabel(vertex?.cluster_id || vertex?.module));
+      add('Cluster', this.formatTooltipLabel(vertex?.cluster_id ?? vertex?.module));
       add('Published', vertex?.published);
       add('Summary', this.truncateTooltipText(vertex?.summary, 180));
       add('Reliability', this.formatTooltipPercent(vertex?.source_reliability));
-      add('ID', this.shortenTooltipId(vertex?.doc_id || vertex?.m_document_id || vertex?._key));
+      add('ID', this.shortenTooltipId(vertex?.doc_id ?? vertex?.m_document_id ?? vertex?._key));
     }
     else if (type === 'cluster') {
       add('Type', 'Cluster');
     }
     else {
-      add('Type', this.formatTooltipLabel(vertex?.type || vertex?.node_class));
+      add('Type', this.formatTooltipLabel(vertex?.type ?? vertex?.node_class));
       add('Role', this.formatTooltipLabel(vertex?.entity_role));
       add('Confidence', this.formatTooltipPercent(vertex?.confidence));
       add('Evidence', vertex?.evidence_count);
@@ -1818,9 +1831,9 @@ export class GraphComponent implements OnInit, OnDestroy {
     return this.truncateLabel(`${key}: ${value}`);
   }
 
-  private normalizeFullLabel(v: any): string {
-    if (this.selectedType === 'document' && String(v?.type || '').toLowerCase() === 'document') {
-      const docLabel = v?.doc_id || v?.m_document_id || v?._key || v?._id;
+  private normalizeFullLabel(v: GraphVertex): string {
+    if (this.selectedType === 'document' && String(v?.type ?? '').toLowerCase() === 'document') {
+      const docLabel = v?.doc_id ?? v?.m_document_id ?? v?._key ?? v?._id;
       if (docLabel) {
         return String(docLabel).trim();
       }
@@ -1834,14 +1847,17 @@ export class GraphComponent implements OnInit, OnDestroy {
     return base.replace(/^m_/, '').replace(/_/g, ' ').trim();
   }
 
-  private normalizeLabel(v: any): string {
+  private normalizeLabel(v: GraphVertex): string {
     const fullLabel = this.normalizeFullLabel(v);
     if (fullLabel) {
       const propertyLabel = this.formatTooltipLabel(this.extractPropertyKey(v));
       if (propertyLabel) {
-        const existingKeyPattern = new RegExp(`^${propertyLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
-        const displayLabel = existingKeyPattern.test(fullLabel)
-          ? fullLabel.replace(existingKeyPattern, `${propertyLabel}:`)
+        const labelRemainder = fullLabel.slice(propertyLabel.length);
+        const existingSeparator = /^\s*:/.exec(labelRemainder);
+        const hasExistingKey = existingSeparator !== null
+          && fullLabel.slice(0, propertyLabel.length).toLowerCase() === propertyLabel.toLowerCase();
+        const displayLabel = hasExistingKey
+          ? `${propertyLabel}:${labelRemainder.slice(existingSeparator[0].length)}`
           : `${propertyLabel}: ${fullLabel}`;
         return this.truncateLabel(displayLabel);
       }
@@ -1850,9 +1866,9 @@ export class GraphComponent implements OnInit, OnDestroy {
     return this.prettifyLabel(String(v?._key ?? v?._id ?? ''));
   }
 
-  private extractPropertyKey(vertex: any): string | null {
+  private extractPropertyKey(vertex: GraphVertex): string | null {
     const key = String(vertex?._key ?? '').toLowerCase();
-    const match = key.match(/m_[a-z0-9_]+/);
+    const match = /m_[a-z0-9_]+/.exec(key);
     return match ? match[0] : null;
   }
 
@@ -1861,7 +1877,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       return null;
     }
     const normalized = label.toLowerCase().replace(/\s+/g, '_');
-    const match = normalized.match(/m_[a-z0-9_]+/);
+    const match = /m_[a-z0-9_]+/.exec(normalized);
     if (match) {
       return match[0];
     }
@@ -1869,7 +1885,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private getVisualNodeCategory(node: ExtendedNode): string {
-    const type = String(node.nodeType || '').toLowerCase();
+    const type = String(node.nodeType ?? '').toLowerCase();
     if (type === 'cluster' || this.isClusterRootNode(String(node.id ?? ''))) {
       return 'cluster';
     }
@@ -1937,7 +1953,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   private getNodeAccentColor(node: ExtendedNode, type: string): string {
     if (type === 'cluster') {
       const clusterKey = this.getClusterKeyFromNodeId(String(node.id ?? ''));
-      return this.clusterPalette[clusterKey]?.color ?? this.nodeClusterBorder;
+      return getOwnProperty(this.clusterPalette, clusterKey)?.color ?? this.nodeClusterBorder;
     }
     if (type === 'document') {
       if (this.isFocusedDocumentNode(node)) {
@@ -1945,8 +1961,8 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       return this.nodeDocumentBorder;
     }
-    const classKey = String(node.nodeClass || '').toLowerCase();
-    return this.propertyClassPalette[classKey] ?? this.nodePropertyBorder;
+    const classKey = String(node.nodeClass ?? '').toLowerCase();
+    return getOwnProperty(this.propertyClassPalette, classKey) ?? this.nodePropertyBorder;
   }
 
   private getNodeSize(type: string, degree: number): number {
@@ -1972,13 +1988,13 @@ export class GraphComponent implements OnInit, OnDestroy {
 
   private getIconNameForNode(node: ExtendedNode, type: string): string {
     if (node.isGroup) {
-      return this.iconMap['cluster'];
+      return this.iconMap.cluster;
     }
     if (type === 'cluster') {
-      return this.iconMap['cluster'];
+      return this.iconMap.cluster;
     }
     if (type === 'document') {
-      return this.iconMap['document'];
+      return this.iconMap.document;
     }
     const rawKey = (node.propertyKey ?? '').toLowerCase();
     const labelKey = this.extractPropertyKeyFromLabel(node.label?.toString()) ?? '';
@@ -1997,13 +2013,13 @@ export class GraphComponent implements OnInit, OnDestroy {
         }
       }
     }
-    return this.iconMap['property'];
+    return this.iconMap.property;
   }
 
   private getNodeAcronym(node: ExtendedNode): string {
     const clusterKey = this.getClusterKeyFromNodeId(String(node.id ?? ''));
     if (clusterKey) {
-      const label = this.clusterPalette[clusterKey]?.label ?? clusterKey;
+      const label = getOwnProperty(this.clusterPalette, clusterKey)?.label ?? clusterKey;
       return label
         .split(/\s+/)
         .map(part => part.charAt(0))
@@ -2011,7 +2027,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         .slice(0, 3)
         .toUpperCase();
     }
-    const source = String(node.propertyKey || node.nodeClass || node.rawLabel || node.label || '');
+    const source = String(node.propertyKey ?? node.nodeClass ?? node.rawLabel ?? node.label ?? '');
     const cleaned = source.replace(/^m_/, '').replace(/[_:./-]+/g, ' ').trim();
     if (!cleaned) {
       return '?';
@@ -2024,7 +2040,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private buildIconSvg(iconName: string, borderColor: string, node?: ExtendedNode): string | null {
-    const def = BOOTSTRAP_ICON_PATHS[iconName];
+    const def = getOwnProperty(BOOTSTRAP_ICON_PATHS, iconName);
     const iconContent = def
       ? `<g transform="translate(4 4) scale(0.5)">${def.paths.map(d => `<path d="${d}" fill="#f8fafc"/>`).join('')}</g>`
       : `<text x="8" y="9" dominant-baseline="middle" font-family="'Inter', sans-serif" text-anchor="middle" font-size="5.3" font-weight="800" fill="#f8fafc">${this.escapeHtml(node ? this.getNodeAcronym(node) : '?')}</text>`;
@@ -2038,7 +2054,7 @@ export class GraphComponent implements OnInit, OnDestroy {
 
   private buildRawNodeMap(data: GraphResultItem[]): Map<string, ExtendedNode> {
     const rawNodeMap = new Map<string, ExtendedNode>();
-    const put = (vertex: any, color: string) => {
+    const put = (vertex: GraphVertex, color: string) => {
       const id = vertex?._id;
       if (!id) {
         return;
@@ -2046,22 +2062,22 @@ export class GraphComponent implements OnInit, OnDestroy {
       const rawLabel = this.normalizeFullLabel(vertex);
       const existingNode = rawNodeMap.get(id);
       if (existingNode) {
-        existingNode.nodeClass = existingNode.nodeClass || vertex?.node_class;
-        existingNode.clusterId = existingNode.clusterId || vertex?.cluster_id;
-        existingNode.docId = existingNode.docId || vertex?.doc_id || vertex?.m_document_id || vertex?._key;
-        existingNode.rawLabel = existingNode.rawLabel || rawLabel;
-        existingNode.hiddenByDefault = existingNode.hiddenByDefault || !!vertex?.hidden_by_default;
-        existingNode.nodeInfoHtml = existingNode.nodeInfoHtml || this.getNodeTitle(vertex);
+        existingNode.nodeClass = existingNode.nodeClass ?? vertex?.node_class;
+        existingNode.clusterId = existingNode.clusterId ?? vertex?.cluster_id;
+        existingNode.docId = existingNode.docId ?? vertex?.doc_id ?? vertex?.m_document_id ?? vertex?._key;
+        existingNode.rawLabel = existingNode.rawLabel ?? rawLabel;
+        existingNode.hiddenByDefault = [existingNode.hiddenByDefault, vertex?.hidden_by_default].some(Boolean);
+        existingNode.nodeInfoHtml = existingNode.nodeInfoHtml ?? this.getNodeTitleAsHtml(vertex);
         return;
       }
       rawNodeMap.set(id, {
         id,
         label: this.normalizeLabel(vertex),
-        nodeInfoHtml: this.getNodeTitle(vertex),
+        nodeInfoHtml: this.getNodeTitleAsHtml(vertex),
         rawLabel,
         nodeClass: vertex?.node_class,
         clusterId: vertex?.cluster_id,
-        docId: vertex?.doc_id || vertex?.m_document_id || vertex?._key,
+        docId: vertex?.doc_id ?? vertex?.m_document_id ?? vertex?._key,
         propertyKey: this.extractPropertyKey(vertex),
         hiddenByDefault: !!vertex?.hidden_by_default,
         color: {
@@ -2088,7 +2104,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     const nodeTypeMap: Record<string, string> = {};
     data.forEach(item => {
       if (item?.vertex?._id) {
-        nodeTypeMap[item.vertex._id] = item.vertex.type || '';
+        nodeTypeMap[item.vertex._id] = item.vertex.type ?? '';
       }
       (item.path?.vertices ?? []).forEach(pv => {
         if (pv?._id && pv?.type) {
@@ -2103,25 +2119,23 @@ export class GraphComponent implements OnInit, OnDestroy {
     const nodes: ExtendedNode[] = [];
     rawNodeMap.forEach(node => {
       const nodeId = node.id as string;
-      const nodeType = nodeTypeMap[nodeId] || '';
+      const nodeType = getOwnProperty(nodeTypeMap, nodeId) || '';
       const isClusterNode = nodeType === 'cluster';
       const isClusterRootNode = this.isClusterRootNode(nodeId);
       const clusterKey = this.getClusterKeyFromNodeId(nodeId);
       const clusterDocumentIds = isClusterRootNode ? this.getClusterDocumentIds(nodeId) : [];
       node.nodeType = nodeType;
-      if (!node.propertyKey) {
-        node.propertyKey = this.extractPropertyKeyFromLabel(node.label?.toString());
-      }
-      let degree = edgeMap[nodeId] || 0;
+      node.propertyKey ??= this.extractPropertyKeyFromLabel(node.label?.toString());
+      let degree = getOwnProperty(edgeMap, nodeId) || 0;
       if (this.expandEnabled) {
         degree = 0;
       }
       const isGroupable = degree > 2 && isClusterRootNode && clusterDocumentIds.length > 5;
       if (isGroupable) {
         const subNodes = this.getClusterCollapseTargets(nodeId);
-        const clusterLabel = `${this.clusterPalette[clusterKey]?.label ?? this.toTitleCase(String(nodeId).split('/').pop() ?? 'CTI')} Cluster`;
-        this.groupInfo[nodeId] = subNodes;
-        this.groupParentByGroupId[nodeId] = nodeId;
+        const clusterLabel = `${getOwnProperty(this.clusterPalette, clusterKey)?.label ?? this.toTitleCase(String(nodeId).split('/').pop() ?? 'CTI')} Cluster`;
+        this.groupInfo.set(nodeId, subNodes);
+        this.groupParentByGroupId.set(nodeId, nodeId);
         nodes.push({
           id: node.id,
           label: '',
@@ -2139,7 +2153,7 @@ export class GraphComponent implements OnInit, OnDestroy {
           image: this.createGroupNodeSvg(clusterDocumentIds.length, false, clusterLabel, clusterKey),
           borderWidth: 0
         });
-        this.groupedSubNodesByParent[nodeId] = new Set(subNodes);
+        this.groupedSubNodesByParent.set(nodeId, new Set(subNodes));
         return;
       }
       this.applyNonGroupNodeColor(node, isClusterNode, edgeMap);
@@ -2233,11 +2247,11 @@ export class GraphComponent implements OnInit, OnDestroy {
   visibleNodes: ExtendedNode[];
   visibleEdges: Edge[];
   } {
-    const groupedSubNodeIds = new Set(Object.values(this.groupInfo).flat());
-    const visibleNodes = this.rawNodes.filter(node => node.isGroup || !groupedSubNodeIds.has(node.id as string));
+    const groupedSubNodeIds = new Set([...this.groupInfo.values()].flat());
+    const visibleNodes = this.rawNodes.filter(node => [node.isGroup, !groupedSubNodeIds.has(node.id as string)].some(Boolean));
     const visibleNodeIds = new Set(visibleNodes.map(node => String(node.id)));
     const hiddenToParent = new Map<string, string>();
-    Object.entries(this.groupedSubNodesByParent).forEach(([parentId, subSet]) => {
+    this.groupedSubNodesByParent.forEach((subSet, parentId) => {
       if (!visibleNodeIds.has(parentId)) {
         return;
       }
@@ -2283,23 +2297,23 @@ export class GraphComponent implements OnInit, OnDestroy {
 
     visibleNodes.forEach(node => {
       const category = this.getVisualNodeCategory(node);
-      counts[category] = (counts[category] ?? 0) + 1;
+      setOwnProperty(counts, category, (getOwnProperty(counts, category) ?? 0) + 1);
       if (category === 'cluster') {
         const clusterKey = this.getClusterKeyFromNodeId(String(node.id ?? ''));
         if (clusterKey) {
-          clusterCounts[clusterKey] = (clusterCounts[clusterKey] ?? 0) + 1;
+          setOwnProperty(clusterCounts, clusterKey, (getOwnProperty(clusterCounts, clusterKey) ?? 0) + 1);
         }
         return;
       }
       this.getConnectedClusterKeys(String(node.id ?? '')).forEach(clusterKey => {
-        clusterCounts[clusterKey] = (clusterCounts[clusterKey] ?? 0) + 1;
+        setOwnProperty(clusterCounts, clusterKey, (getOwnProperty(clusterCounts, clusterKey) ?? 0) + 1);
       });
     });
 
     this.legendItems = [
-      { key: 'cluster', label: 'Clusters', color: this.nodeClusterBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-amber-500 bg-[var(--color-blue-720)]', count: counts['cluster'] ?? 0 },
-      { key: 'document', label: 'Documents', color: this.nodeDocumentBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-orange-500 bg-[var(--color-blue-720)]', count: counts['document'] ?? 0 },
-      { key: 'property', label: 'Entities', color: this.nodePropertyBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-sky-400 bg-[var(--color-blue-720)]', count: counts['property'] ?? 0 }
+      { key: 'cluster', label: 'Clusters', color: this.nodeClusterBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-amber-500 bg-[var(--color-blue-720)]', count: counts.cluster ?? 0 },
+      { key: 'document', label: 'Documents', color: this.nodeDocumentBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-orange-500 bg-[var(--color-blue-720)]', count: counts.document ?? 0 },
+      { key: 'property', label: 'Entities', color: this.nodePropertyBorder, swatchClass: 'h-3.5 w-3.5 shrink-0 rounded-full border-2 border-sky-400 bg-[var(--color-blue-720)]', count: counts.property ?? 0 }
     ];
 
     this.clusterLegendItems = Object.entries(this.clusterPalette)
@@ -2308,7 +2322,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         label: value.label,
         color: value.color,
         swatchClass: value.swatchClass,
-        count: clusterCounts[key] ?? 0
+        count: getOwnProperty(clusterCounts, key) ?? 0
       }))
       .filter(item => item.count > 0);
 
@@ -2387,7 +2401,9 @@ export class GraphComponent implements OnInit, OnDestroy {
         improvedLayout: true
       }
     });
-    container.addEventListener('contextmenu', ( e: { preventDefault: () => any; } ) => e.preventDefault());
+    container.addEventListener('contextmenu', (event: MouseEvent) => {
+      event.preventDefault();
+    });
   }
 
   private applyPhysicsAutoDisableIfNeeded(): void {
@@ -2429,7 +2445,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     this.network.on('dragStart', () => {
       this.hideNodeInfoPanel();
     });
-    this.network.on('zoom', (properties: any) => {
+    this.network.on('zoom', (properties: { direction?: string }) => {
       this.hideNodeInfoPanel();
       const currentScale = this.network.getScale();
       const currentPosition = this.network.getViewPosition();
@@ -2449,7 +2465,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleContextMenu(params: any): void {
+  private handleContextMenu(params: NetworkPointerParams): void {
     this.hideContextMenu();
     const pointer = params.pointer.DOM;
     const rawNodeId = this.network.getNodeAt(pointer);
@@ -2476,8 +2492,8 @@ export class GraphComponent implements OnInit, OnDestroy {
     if ((node.subNodes?.length ?? 0) > 0) {
       return node.subNodes ?? [];
     }
-    if ((this.groupInfo[nodeId]?.length ?? 0) > 0) {
-      return this.groupInfo[nodeId] ?? [];
+    if ((this.groupInfo.get(nodeId)?.length ?? 0) > 0) {
+      return this.groupInfo.get(nodeId) ?? [];
     }
     if (this.isClusterRootNode(nodeId)) {
       const visibleResolved = this.getVisibleClusterAttachedNodeIds(nodeId);
@@ -2540,7 +2556,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       .map(edge => edge.id as string)
       .filter(Boolean);
     this.edgeSet.remove(residualEdgesToRemove);
-    this.groupExpandedState[clusterNodeId] = false;
+    this.groupExpandedState.set(clusterNodeId, false);
     this.updateGroupNodeVisual(clusterNodeId, this.getClusterDocumentIds(clusterNodeId).length, false);
   }
 
@@ -2579,7 +2595,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     return Array.from(neighbors);
   }
 
-  private handleClick(params: any): void {
+  private handleClick(params: NetworkPointerParams): void {
     this.hideContextMenu();
     const pointer = params.pointer.DOM;
     const nodeIdRaw = this.network.getNodeAt(pointer);
@@ -2616,7 +2632,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       },
       borderWidth: 2,
       borderWidthSelected: 3
-    } as any);
+    });
   }
 
   private handleNodeBlur(nodeId: string): void {
@@ -2628,7 +2644,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         borderWidth: original.borderWidth,
         borderWidthSelected: original.borderWidthSelected,
         image: original.image
-      } as any);
+      });
     }
     if (this.hoveredNodeId === nodeId) {
       this.hoveredNodeId = null;
@@ -2636,7 +2652,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private showNodeInfoPanel(node: ExtendedNode, pointerDom?: { x: number; y: number; }): void {
-    const html = node.nodeInfoHtml || this.getFallbackNodeInfoHtml(node);
+    const html = node.nodeInfoHtml ?? this.getFallbackNodeInfoHtml(node);
     if (!html) {
       this.hideNodeInfoPanel();
       return;
@@ -2654,13 +2670,13 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private positionNodeInfoPanel(pointerDom?: { x: number; y: number; }): void {
-    const container = this.networkContainer?.nativeElement as HTMLElement | undefined;
+    const container = this.networkContainer?.nativeElement;
     const width = 292;
     const height = 260;
     const padding = 12;
     const offset = 14;
-    const containerWidth = container?.clientWidth || window.innerWidth;
-    const containerHeight = container?.clientHeight || window.innerHeight;
+    const containerWidth = container?.clientWidth ?? window.innerWidth;
+    const containerHeight = container?.clientHeight ?? window.innerHeight;
     const maxLeft = Math.max(padding, containerWidth - width - padding);
     const maxTop = Math.max(padding, containerHeight - height - padding);
     const x = pointerDom?.x ?? padding;
@@ -2684,8 +2700,8 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private getFallbackNodeInfoHtml(node: ExtendedNode): string {
-    const label = this.formatTooltipValue(node.rawLabel || node.label || node.id);
-    const type = this.formatTooltipLabel(node.nodeType || node.nodeClass || 'Node');
+    const label = this.formatTooltipValue(node.rawLabel ?? node.label ?? node.id);
+    const type = this.formatTooltipLabel(node.nodeType ?? node.nodeClass ?? 'Node');
     const lines = [
       label ? `<strong>${this.escapeHtml(this.truncateTooltipText(label, 90))}</strong>` : '',
       type ? `<strong>${this.escapeHtml(this.translationService.translate('Type'))}:</strong> ${this.escapeHtml(type)}` : '',
@@ -2694,7 +2710,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     return lines.join('<br>');
   }
 
-  private handleDoubleClick(params: any): void {
+  private handleDoubleClick(params: NetworkPointerParams): void {
     this.hideContextMenu();
     const pointer = params.pointer.DOM;
     const nodeIdRaw = this.network.getNodeAt(pointer);
@@ -2710,7 +2726,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     if (subNodes.length === 0) {
       return;
     }
-    const isExpanded = this.groupExpandedState[nodeId] || false;
+    const isExpanded = this.groupExpandedState.get(nodeId) ?? false;
     if (isExpanded) {
       this.collapseGroupFromNodeId(nodeId, subNodes);
     }
@@ -2723,9 +2739,9 @@ export class GraphComponent implements OnInit, OnDestroy {
     const isSameNodeClicked = this.highlightedNodeId === nodeId;
     const allEdges = this.edgeSet.get();
     const resetEdges = allEdges
-      .filter(e => e.id)
+      .filter((e): e is { id: string | number } => e.id !== undefined)
       .map(e => ({
-        id: e.id!,
+        id: e.id,
         color: { color: this.edgeBaseColor },
         width: 1.5
       }));
@@ -2738,9 +2754,9 @@ export class GraphComponent implements OnInit, OnDestroy {
       filter: edge => edge.from === nodeId || edge.to === nodeId
     });
     const highlightEdges = connectedEdges
-      .filter(e => e.id)
+      .filter((e): e is { id: string | number } => e.id !== undefined)
       .map(e => ({
-        id: e.id!,
+        id: e.id,
         color: { color: this.edgeHighlightColor },
         width: 2.5
       }));
@@ -2755,7 +2771,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     }
     const matchedNodeIds: string[] = [];
     this.nodeSet.get().forEach(node => {
-      const label = (node.label || '').toString().toLowerCase();
+      const label = (node.label ?? '').toString().toLowerCase();
       if (!label.includes(needle)) {
         return;
       }
@@ -2773,13 +2789,15 @@ export class GraphComponent implements OnInit, OnDestroy {
     const matchedEdges = this.edgeSet.get({
       filter: edge => matchedNodeIds.includes(edge.from as string) || matchedNodeIds.includes(edge.to as string)
     });
-    this.edgeSet.update(matchedEdges.map(edge => ({
-      id: edge.id!,
-      color: { color: this.edgeHighlightColor },
-      dashes: true,
-      width: 2.5,
-      arrows: { to: { enabled: false } }
-    })));
+    this.edgeSet.update(matchedEdges
+      .filter((edge): edge is { id: string | number } => edge.id !== undefined)
+      .map(edge => ({
+        id: edge.id,
+        color: { color: this.edgeHighlightColor },
+        dashes: true,
+        width: 2.5,
+        arrows: { to: { enabled: false } }
+      })));
   }
 
   private captureOriginalNodeColors(nodeIds?: string[]): void {
@@ -2801,9 +2819,9 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       this.originalNodeState.set(String(node.id), {
         color: node.color ?? '',
-        borderWidth: (node as any).borderWidth,
-        borderWidthSelected: (node as any).borderWidthSelected,
-        image: (node as any).image
+        borderWidth: node.borderWidth,
+        borderWidthSelected: node.borderWidthSelected,
+        image: typeof node.image === 'string' ? node.image : undefined
       });
     });
   }

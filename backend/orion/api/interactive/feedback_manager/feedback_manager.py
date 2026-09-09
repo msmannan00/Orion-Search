@@ -79,7 +79,7 @@ class FeedbackManager:
             "email": user.email,
             "role": user.role,
             "tenant_name": tenant_name,
-            "licenses": [license.value if hasattr(license, "value") else str(license) for license in (user.licenses or [])],
+            "licenses": [item.value if hasattr(item, "value") else str(item) for item in (user.licenses or [])],
         }
 
     @staticmethod
@@ -131,7 +131,7 @@ class FeedbackManager:
     @staticmethod
     def _pick_title(data: dict[str, Any]) -> str:
         for key in ("m_title", "m_name", "m_channel_name", "m_sender_name", "m_message_id", "m_url", "m_weblink", "m_web_url", "m_base_url", "m_channel_url"):
-            value = data.get(key)
+            value = data.get(key, "")
             if value:
                 return str(value)
         return ""
@@ -139,7 +139,7 @@ class FeedbackManager:
     @staticmethod
     def _pick_preview(data: dict[str, Any]) -> str:
         for key in ("m_content", "m_important_content", "m_meta_description"):
-            value = data.get(key)
+            value = data.get(key, "")
             if value:
                 return FeedbackManager._truncate(str(value))
         return ""
@@ -147,7 +147,7 @@ class FeedbackManager:
     @staticmethod
     def _pick_date(data: dict[str, Any]) -> str:
         for key in ("m_date", "m_update_date", "m_creation_date"):
-            value = data.get(key)
+            value = data.get(key, "")
             if value:
                 return str(value)
         return ""
@@ -351,14 +351,20 @@ class FeedbackManager:
             user_comments = [comment for comment in doc.comments if comment.user_id == user_id and not getattr(comment, "is_deleted", False)]
             summary = await self._resolve_doc_summary(doc.doc_id)
 
-            latest_reaction_at = user_reaction.updated_at.isoformat() if user_reaction else ""
+            latest_reaction_at = ""
+            reaction_recommended = False
+            reaction_trust_state = None
+            if user_reaction is not None:
+                latest_reaction_at = user_reaction.updated_at.isoformat()
+                reaction_recommended = bool(user_reaction.recommended)
+                reaction_trust_state = user_reaction.trust_state.value if user_reaction.trust_state else None
             latest_comment_at = user_comments[0].created_at.isoformat() if user_comments else ""
             latest_activity_at = max([value for value in (latest_reaction_at, latest_comment_at) if value], default="")
 
             activity.append({
                 "doc_id": doc.doc_id,
-                "recommended": bool(user_reaction.recommended) if user_reaction else False,
-                "trust_state": user_reaction.trust_state.value if user_reaction and user_reaction.trust_state else None,
+                "recommended": reaction_recommended,
+                "trust_state": reaction_trust_state,
                 "comments_count": len(user_comments),
                 "latest_reaction_at": latest_reaction_at,
                 "latest_comment_at": latest_comment_at,

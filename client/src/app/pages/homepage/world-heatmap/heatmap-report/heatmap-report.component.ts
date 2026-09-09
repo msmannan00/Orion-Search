@@ -1,6 +1,7 @@
 
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { CountryInsightReport } from '../../model/country-insight.model';
 
 @Component({
   selector: 'app-heatmap-report',
@@ -9,7 +10,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
   templateUrl: './heatmap-report.component.html'
 })
 export class HeatmapReportComponent {
-  readonly reports = input<any[]>([]);
+  readonly reports = input<CountryInsightReport[]>([]);
   readonly loading = input(false);
   readonly loadingMore = input(false);
   readonly hasMore = input(false);
@@ -19,7 +20,7 @@ export class HeatmapReportComponent {
   closePopup(event?: Event): void {
     event?.preventDefault();
     event?.stopPropagation();
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.close.emit(undefined);
   }
 
@@ -29,7 +30,7 @@ export class HeatmapReportComponent {
     if (this.loadingMore() || !this.hasMore()) {
       return;
     }
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.loadMore.emit(undefined);
   }
 }

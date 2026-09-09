@@ -1,6 +1,6 @@
 import hashlib
-import logging
 import threading
+import traceback
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, Depends, Request
@@ -19,8 +19,7 @@ from orion.services.mongo_manager.shared_model.db_tenant_model import db_tenant_
 from orion.services.session_manager.session_manager import session_manager
 from orion.services.mail_manager.mail_manager import mail_manager
 from orion.helper_manager.env_handler import env_handler
-
-logger = logging.getLogger(__name__)
+from orion.services.log_manager.log_controller import log
 
 
 class auth_manager:
@@ -53,7 +52,7 @@ class auth_manager:
     @staticmethod
     async def login(mail: str, password: str, free=False, tenant_id=None, client: str = "web"):
         user = await auth_manager.get_instance().authenticate_user(mail, password)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=401, detail="Invalid user or password")
         if user.status == UserStatus.DISABLE:
             raise HTTPException(status_code=401, detail="Account Blocked")
@@ -131,7 +130,7 @@ class auth_manager:
         onboarding_exists = await session_manager.get_instance().has_onboarding(str(user.tenant_uuid))
 
         session_data = {"role": role, "username": user.username, "status": user.status, "hasOnboarding": onboarding_exists, "subscription": user.subscription, "verificationDate": user.account_verify_at, "licenses": [
-            license.value for license in user.licenses], "password_reset_required": getattr(user, "password_reset_required", False), "password_reset_token": reset_token, }
+            user_license.value for user_license in user.licenses], "password_reset_required": getattr(user, "password_reset_required", False), "password_reset_token": reset_token, }
 
 
         return {"access_token": access_token, "token_type": "bearer", "session": session_data, }  # nosec B105
@@ -259,7 +258,7 @@ class auth_manager:
                     to=user.email, subject=MailSubject.ACCOUNT_RECOVERY.value,
                     body=html_content, tenant_id=str(user.tenant_uuid))
             except Exception:
-                logger.exception("Password reset email could not be sent")
+                log.g().e("Password reset email could not be sent: " + traceback.format_exc().strip())
 
         return {"message": "If the email is registered, a password reset email has been sent."}
 
@@ -273,7 +272,7 @@ class auth_manager:
             try:
                 await auth_manager.forgot_password(user.email, tenant_id, reset_twofa=True)
             except Exception:
-                logger.exception("Account recovery email could not be sent")
+                log.g().e("Account recovery email could not be sent: " + traceback.format_exc().strip())
         return {"message": "If the recovery details are valid, a password reset email has been sent."}
 
     @staticmethod

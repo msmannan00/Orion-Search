@@ -9,7 +9,7 @@ import { GeoFencingGeocodeService } from '../shared/services/geo-fencing-geocode
 import { MapRendererComponent } from './map-renderer/map-renderer.component';
 import { GeocodeModalComponent } from '../../../shared/partials/geocode-modal/geocode-modal.component';
 import { MonthCompareSectionComponent } from './ui-overlays/month-compare-section/month-compare-section.component';
-import { SatelliteLiveAircraft, SatelliteLiveShip } from './model/satellite-intel-api.models';
+import { SatelliteFacilitiesResponse, SatelliteLiveAircraft, SatelliteLiveShip } from './model/satellite-intel-api.models';
 import { ThreatLensComponent } from '../threat-lens/threat-lens';
 import { OrionSatelliteDashboardFilter, OrionSatelliteFeature, OrionSatelliteFeatureType } from '../models/geo-fencing.models';
 import { SatelliteAircraftTrackingService } from './map-entities/aircraft/aircraft-tracking.service';
@@ -78,7 +78,9 @@ export class SatelliteIntel implements OnInit, OnDestroy {
     this.isFilterOpen$ = this.sidebarService.sidebarState$;
     const loadingBridge = {
       begin: (title: string, message: string) => this.loadingState.begin(title, message),
-      end: (id: number) => this.loadingState.end(id),
+      end: (id: number) => {
+        this.loadingState.end(id);
+      },
     };
     this.entityLoader = new EntityLoader({
       aircraftService: aircraftTrackingService,
@@ -94,8 +96,8 @@ export class SatelliteIntel implements OnInit, OnDestroy {
     this.satelliteService.resetState();
     this.initialMapLoadingId = this.loadingState.begin('Loading Satellite Map', 'Rendering satellite map...');
     const section = this.route.snapshot.queryParamMap.get('section');
-    const q = this.route.snapshot.queryParamMap.get('q')?.trim() || '';
-    const requestedView = this.route.snapshot.queryParamMap.get('view') || this.route.snapshot.data['view'];
+    const q = this.route.snapshot.queryParamMap.get('q')?.trim() ?? '';
+    const requestedView = this.route.snapshot.queryParamMap.get('view') ?? this.route.snapshot.data.view;
     this.setPanel(this.isPanelId(section) ? section : SatelliteIntelPanelEnum.Dashboard);
     this.isPanelPopupOpen = true;
     if (requestedView === 'threat') {
@@ -106,7 +108,7 @@ export class SatelliteIntel implements OnInit, OnDestroy {
     }
     this.initialMapEntityLoadTimer = setTimeout(() => {
       this.initialMapEntityLoadTimer = null;
-      this.loadMapEntities();
+      void this.loadMapEntities();
     }, 0);
   }
 
@@ -197,7 +199,7 @@ export class SatelliteIntel implements OnInit, OnDestroy {
     return this.entityLoader.facilitiesVisible;
   }
 
-  get facilitiesData(): any | null {
+  get facilitiesData(): SatelliteFacilitiesResponse['result'] | null {
     return this.entityLoader.facilitiesData;
   }
 
@@ -399,16 +401,18 @@ export class SatelliteIntel implements OnInit, OnDestroy {
     this.selectedFeature = null;
     this.mapEntityDashboard.setViewport(null);
     this.mapEntityDashboard.clearMapEntities();
-    this.entityLoader.clearFacilities(() => this.refreshMergedData());
+    this.entityLoader.clearFacilities(() => {
+      this.refreshMergedData();
+    });
     this.entityLoader.clearTracking();
     this.mapRenderer?.clearLocation();
   }
 
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event): void {
-    const target = event.target as HTMLElement;
+    const target = event.target;
 
-    if (!target.closest('.map-overlay-menu')) {
+    if (target instanceof HTMLElement && !target.closest('.map-overlay-menu')) {
       this.isPanelMenuOpen = false;
     }
   }
@@ -515,7 +519,9 @@ export class SatelliteIntel implements OnInit, OnDestroy {
   private loadFacilities(showLoading = true): void {
     this.locationState.syncAppliedViewport();
     this.scanState.markSearched();
-    this.entityLoader.loadFacilities(this.locationState.getTrackingViewport(), () => this.refreshMergedData(), showLoading);
+    this.entityLoader.loadFacilities(this.locationState.getTrackingViewport(), () => {
+      this.refreshMergedData();
+    }, showLoading);
   }
 
   private refreshMergedData(): void {

@@ -1,9 +1,12 @@
 import { ThreatLensMapUtils } from '../map-utils/threat-lens-map.utils';
+import { EsriConstructor, EsriFeatureLayer, EsriGraphicsLayer, EsriLayerView, EsriSceneView, ThreatLensMapGraphic } from '../models/threat-lens-map.types';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 export class ThreatLensCountryLayerRenderer {
   private static readonly COUNTRY_LAYER_URL = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/World_Countries_(Generalized)/FeatureServer/0';
-  private layerView: any | null = null;
-  private fillGraphicsLayer: any | null = null;
+  private layerView: EsriLayerView | null = null;
+  private fillGraphicsLayer: EsriGraphicsLayer | null = null;
   private highlightHandle: { remove: () => void } | null = null;
   private hoverHighlightHandle: { remove: () => void } | null = null;
   private readonly countryNameFields = ['COUNTRY', 'COUNTRYAFF', 'NAME', 'ADMIN', 'SOVEREIGNT'];
@@ -11,10 +14,10 @@ export class ThreatLensCountryLayerRenderer {
   private readonly connectedCountryKeys = new Set<string>();
   private selectedCountryKey = '';
 
-  layer: any | null = null;
-  featureIndex = new Map<string, any>();
+  layer: EsriFeatureLayer | null = null;
+  featureIndex = new Map<string, ThreatLensMapGraphic>();
 
-  createLayer(FeatureLayer: any): any {
+  createLayer(FeatureLayer: EsriConstructor<EsriFeatureLayer>): EsriFeatureLayer {
     this.layer = new FeatureLayer({
       url: ThreatLensCountryLayerRenderer.COUNTRY_LAYER_URL,
       outFields: ['*'],
@@ -37,12 +40,12 @@ export class ThreatLensCountryLayerRenderer {
     return this.layer;
   }
 
-  setFillGraphicsLayer(fillGraphicsLayer: any): void {
+  setFillGraphicsLayer(fillGraphicsLayer: EsriGraphicsLayer): void {
     this.fillGraphicsLayer = fillGraphicsLayer;
     this.refreshCountryFills();
   }
 
-  async init(view: any, normalizeCountryLabel: (value: string) => string, toCountryKey: (value: string) => string): Promise<void> {
+  async init(view: EsriSceneView, normalizeCountryLabel: (value: string) => string, toCountryKey: (value: string) => string): Promise<void> {
     if (!this.layer) {
       return;
     }
@@ -55,8 +58,8 @@ export class ThreatLensCountryLayerRenderer {
     return Boolean(countryKey && this.featureIndex.has(countryKey));
   }
 
-  getFeature(countryKey: string): any | null {
-    return this.featureIndex.get(countryKey) || null;
+  getFeature(countryKey: string): ThreatLensMapGraphic | null {
+    return this.featureIndex.get(countryKey) ?? null;
   }
 
   getCountryName(countryKey: string): string {
@@ -67,7 +70,7 @@ export class ThreatLensCountryLayerRenderer {
     return this.extractCountryIsoCode(this.getFeature(countryKey)?.attributes);
   }
 
-  getCountryDebugInfo(countryKey: string, feature?: any): { key: string; name: string; isoCode: string } {
+  getCountryDebugInfo(countryKey: string, feature?: ThreatLensMapGraphic): { key: string; name: string; isoCode: string } {
     const targetFeature = feature ?? this.getFeature(countryKey);
     const attributes = targetFeature?.attributes;
     return {
@@ -106,7 +109,7 @@ export class ThreatLensCountryLayerRenderer {
     }
 
     for (const fieldName of this.countryNameFields) {
-      const value = attributes[fieldName];
+      const value = getOwnProperty(attributes, fieldName);
       if (typeof value === 'string' && value.trim()) {
         return value;
       }
@@ -121,7 +124,7 @@ export class ThreatLensCountryLayerRenderer {
     }
 
     for (const fieldName of this.countryCodeFields) {
-      const value = attributes[fieldName];
+      const value = getOwnProperty(attributes, fieldName);
       if (typeof value === 'string') {
         const normalized = value.trim().toUpperCase();
         if (normalized && normalized !== '-99' && normalized !== '99' && normalized !== 'NULL') {
@@ -133,7 +136,7 @@ export class ThreatLensCountryLayerRenderer {
     return '';
   }
 
-  applyHighlight(graphic: any): void {
+  applyHighlight(graphic: ThreatLensMapGraphic): void {
     if (!this.layerView) {
       return;
     }
@@ -147,7 +150,7 @@ export class ThreatLensCountryLayerRenderer {
     this.highlightHandle = null;
   }
 
-  applyHoverHighlight(graphic: any): void {
+  applyHoverHighlight(graphic: ThreatLensMapGraphic): void {
     if (!this.layerView) {
       return;
     }
@@ -203,7 +206,7 @@ export class ThreatLensCountryLayerRenderer {
 
     const fillGraphics = Array.from(fillCountryKeys)
       .map((countryKey) => this.buildCountryFillGraphic(countryKey, countryKey === this.selectedCountryKey))
-      .filter((graphic): graphic is Record<string, unknown> => Boolean(graphic));
+      .filter((graphic): graphic is ThreatLensMapGraphic => Boolean(graphic));
 
     this.fillGraphicsLayer.removeAll();
     if (fillGraphics.length) {
@@ -211,7 +214,7 @@ export class ThreatLensCountryLayerRenderer {
     }
   }
 
-  private buildCountryFillGraphic(countryKey: string, selected: boolean): Record<string, unknown> | null {
+  private buildCountryFillGraphic(countryKey: string, selected: boolean): ThreatLensMapGraphic | null {
     const feature = this.getFeature(countryKey);
     if (!feature?.geometry) {
       return null;

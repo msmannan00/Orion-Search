@@ -8,7 +8,7 @@ from configs.auth_cookie import sync_session_marker
 interface = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent
-ANGULAR_BUILD_DIR = (BASE_DIR / "build").resolve()
+ANGULAR_BUILD_DIR = (BASE_DIR / "workspace" / "build").resolve()
 CSP_NONCE_PLACEHOLDER = "__CSP_NONCE__"
 
 

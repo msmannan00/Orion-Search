@@ -5,7 +5,6 @@ from pydantic import BaseModel
 class SocialTarget(BaseModel):
     usernames: List[str]
     platform: str
-    max_following: int
     max_followers: int
 
 
@@ -13,7 +12,6 @@ class SocialScrapeRequest(BaseModel):
     usernames: Optional[List[str]] = None
     platform: Optional[str] = None
     max_followers: Optional[int] = 50
-    max_following: Optional[int] = 50
     targets: Optional[List[SocialTarget]] = None
 
     # model_config = ConfigDict(
@@ -22,7 +20,6 @@ class SocialScrapeRequest(BaseModel):
     #             "usernames": ["john_doe"],
     #             "platform": "instagram",
     #             "max_followers": 50,
-    #             "max_following": 50,
     #
     #         }
     #     }

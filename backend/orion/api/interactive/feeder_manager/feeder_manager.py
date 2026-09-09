@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from orion.api.interactive.feeder_manager.models.feeder_models import (
     FeederUploadResponse,
 )
 from orion.constants import constant
+from orion.services.log_manager.log_controller import log
 from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_auth_models import LicenseName, UserStatus, db_user_account, user_role
 from orion.services.mongo_manager.shared_model.db_feeder_script_model import osint_feeder
@@ -28,8 +30,7 @@ class FeederManager:
 
     def __init__(self):
         engine = mongo_controller.get_instance().get_engine()
-        static_root = Path(__file__).resolve().parent.parent.parent.parent.parent / "static" / ".well-known"
-        parser_root = static_root / "parser_files"
+        parser_root = Path(__file__).resolve().parents[4] / "workspace" / "parser" / "parser_files"
         self._engine = engine
         self._helper = FeederHelper(engine, parser_root)
         if FeederManager.__instance is not None:
@@ -44,7 +45,8 @@ class FeederManager:
 
     async def _read_limited_session_file(self, session_file: UploadFile) -> bytes:
         max_size = self._helper.MAX_FILE_SIZE
-        if getattr(session_file, "size", None) is not None and session_file.size > max_size:
+        declared_size = getattr(session_file, "size", None)
+        if declared_size is not None and declared_size > max_size:
             raise HTTPException(status_code=400, detail="Session file size must be 1 MB or less")
         content = await session_file.read(max_size + 1)
         if len(content) > max_size:
@@ -216,6 +218,24 @@ class FeederManager:
         )
         return {"message": "Value deleted successfully"}
 
+    async def delete_all_values(self, script_id: str, current_user):
+        record = await self._helper.get_script_record(script_id, current_user)
+        if not (record.values or []):
+            raise HTTPException(status_code=400, detail="Only value entries support value deletion")
+
+        if record.entry_kind == "values":
+            await self._engine.delete(record)
+        else:
+            record.values = []
+            await self._engine.save(record)
+
+        await AuditLogManager.get_instance().register(
+            str(current_user.tenant_uuid),
+            str(current_user.id),
+            "feeder_rule_value_deleted",
+        )
+        return {"message": "All values deleted successfully"}
+
     async def clear_scripts(self, rule_key: str, current_user):
         if not rule_key:
             raise HTTPException(status_code=400, detail="Rule is required")
@@ -370,11 +390,11 @@ class FeederManager:
                 if not candidate_record:
                     continue
                 rule = constant.url_rules.get(candidate_record.rule_key or "") or {}
-                if str(rule.get("rule_type") or "") in {"unique", "generic"}:
+                if str(rule.get("rule_type") or "") in {"unique", "generic", "shared"}:
                     record = candidate_record
                     break
         if not record and lookup_url:
-            value_records = await self._engine.find(self._helper.model, self._helper.model.rule_key != None)
+            value_records = await self._engine.find(self._helper.model, self._helper.model.rule_key.ne(None))
             for candidate_record in value_records:
                 if lookup_url not in [str(value.get("url") or "") for value in (candidate_record.values or [])]:
                     continue
@@ -401,11 +421,13 @@ class FeederManager:
                 seen_ids.add(str(candidate_record.id))
 
         if not records:
+            log.g().w(f"FEEDER STATUS 404 unregistered script: name='{lookup_name}' url='{lookup_url}'")
             raise HTTPException(status_code=404, detail="Script not found")
 
         now = datetime.now(timezone.utc)
         status = data.status.strip().lower()
         message = (data.message or "").strip()
+        message = self._strip_embedding_from_message(message)
         if len(message) > 5826:
             message = message[:5826]
         message = message or None
@@ -469,3 +491,19 @@ class FeederManager:
             await self._engine.save(record)
             seen_ids.add(str(record.id))
         return {"message": f"Feeder script marked as {status} successfully"}
+
+    def _strip_embedding_from_message(self, message):
+        if not message:
+            return message
+        try:
+            parsed = json.loads(message)
+        except (ValueError, TypeError):
+            return message
+        return json.dumps(self._strip_embedding_field(parsed), ensure_ascii=False)
+
+    def _strip_embedding_field(self, value):
+        if isinstance(value, list):
+            return [self._strip_embedding_field(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self._strip_embedding_field(item) for key, item in value.items() if key != "m_embedding"}
+        return value

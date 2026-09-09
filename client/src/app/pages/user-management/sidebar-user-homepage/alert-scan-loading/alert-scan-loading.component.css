@@ -1,0 +1,25 @@
+.ui-scan-overlay-in {
+  animation: ui-scan-overlay-in 180ms ease-out;
+}
+
+.ui-scan-card-in {
+  animation: ui-scan-card-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ui-scan-overlay-in {
+  from { opacity: 0%; }
+
+  to { opacity: 100%; }
+}
+
+@keyframes ui-scan-card-in {
+  from {
+    opacity: 0%;
+    translate: 0 14px;
+  }
+
+  to {
+    opacity: 100%;
+    translate: 0 0;
+  }
+}

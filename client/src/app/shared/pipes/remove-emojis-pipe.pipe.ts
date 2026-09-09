@@ -5,6 +5,6 @@ export class RemoveEmojisPipe implements PipeTransform {
     if (!value) {
       return '';
     }
-    return value.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, '').trim();
+    return value.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/gu, '').trim();
   }
 }

@@ -7,7 +7,7 @@ export class ResultRowHelperService {
     return copiedKey === key;
   }
 
-  normalizeToArray(value: any): string[] {
+  normalizeToArray(value: unknown): string[] {
     if (value == null) {
       return [];
     }
@@ -18,7 +18,7 @@ export class ResultRowHelperService {
   }
 
   prettyLabel(key: string): string {
-    const cleaned = String(key).replace(/^m_/, '').replace(/[_\-]+/g, ' ').replace(/[^a-zA-Z0-9 ]/g, ' ').trim();
+    const cleaned = String(key).replace(/^m_/, '').replace(/[_-]+/g, ' ').replace(/[^a-zA-Z0-9 ]/g, ' ').trim();
     if (!cleaned) {
       return String(key);
     }
@@ -28,14 +28,14 @@ export class ResultRowHelperService {
     return cleaned.toLowerCase().replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
   }
 
-  valueOrDash(value: any): string {
+  valueOrDash(value: unknown): string {
     if (value == null || value === '') {
       return '-';
     }
     return String(value);
   }
 
-  arrayOrDash(value: any, joinBy: string = ', '): string {
+  arrayOrDash(value: unknown, joinBy = ', '): string {
     const values = this.normalizeToArray(value);
     if (values.length === 0) {
       return '-';
@@ -43,7 +43,7 @@ export class ResultRowHelperService {
     return values.join(joinBy);
   }
 
-  truncate(value: any, max: number = 30): string {
+  truncate(value: unknown, max = 30): string {
     const text = value == null ? '' : String(value);
     if (!text) {
       return '-';
@@ -69,7 +69,7 @@ export class ResultRowHelperService {
     return of(this.copyWithExecCommand(value));
   }
 
-  copyText(text: any, key: string, setCopied: (key: string) => void, e?: MouseEvent): void {
+  copyText(text: unknown, key: string, setCopied: (key: string) => void, e?: MouseEvent): void {
     if (e) {
       e.stopPropagation();
     }
@@ -85,12 +85,14 @@ export class ResultRowHelperService {
     });
   }
 
-  setCopiedState(key: string, copiedTimer: any, setCopiedKey: (value: string | null) => void): any {
+  setCopiedState(key: string, copiedTimer: ReturnType<typeof setTimeout> | null, setCopiedKey: (value: string | null) => void): ReturnType<typeof setTimeout> {
     setCopiedKey(key);
     if (copiedTimer) {
       clearTimeout(copiedTimer);
     }
-    return setTimeout(() => setCopiedKey(null), 1200);
+    return setTimeout(() => {
+      setCopiedKey(null);
+    }, 1200);
   }
 
   private copyWithExecCommand(value: string): boolean {

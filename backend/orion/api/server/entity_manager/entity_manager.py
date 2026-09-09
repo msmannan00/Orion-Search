@@ -59,10 +59,11 @@ class entity_manager:
 
     @staticmethod
     def get_instance():
-        if entity_manager.__instance is None:
-            entity_manager()
-        entity_manager.__instance._refresh_arango_handles()
-        return entity_manager.__instance
+        instance = entity_manager.__instance
+        if instance is None:
+            instance = entity_manager()
+        instance._refresh_arango_handles()
+        return instance
 
     def __init__(self):
         if entity_manager.__instance is not None:
@@ -817,14 +818,14 @@ class entity_manager:
         vertex_collection = self.__db.collection("cti_vertices")
         for cluster_key, cluster_label in self.CLUSTER_LABELS.items():
             await run_in_threadpool(
-                lambda cluster_key=cluster_key, cluster_label=cluster_label: vertex_collection.insert(
+                lambda key=cluster_key, label=cluster_label: vertex_collection.insert(
                     {
-                        "_key": cluster_key,
+                        "_key": key,
                         "type": "cluster",
                         "node_class": "cluster",
                         "stix_type": "grouping",
-                        "label": cluster_label,
-                        "display_value": cluster_label,
+                        "label": label,
+                        "display_value": label,
                         "schema_version": self.GRAPH_SCHEMA_VERSION,
                     },
                     overwrite=True,
@@ -842,7 +843,6 @@ class entity_manager:
             if requested_depth > 5:
                 requested_depth = 5
             depth_level = requested_depth
-            secondary_depth_level = requested_depth + 1
             document_limit = int(query.edge)
             if document_limit < 20:
                 document_limit = 20
@@ -860,16 +860,15 @@ class entity_manager:
 
             if query.data_point_type == "cluster" and normalized_type == "cluster":
                 queried_id, query_str, bind_vars = EntityRequestGenerator.get_cluster_documents_query(
-                    normalized_value=normalized_value, depth_level=1, document_limit=document_limit)
+                    normalized_value=normalized_value, document_limit=document_limit)
             elif query.data_point_type == "property" and normalized_type == "all":
                 queried_id, query_str, bind_vars = EntityRequestGenerator.build_property_search_query(
-                    normalized_value, depth_level, document_limit, scope_cluster)
+                    normalized_value, document_limit, scope_cluster)
             else:
                 queried_id, query_str, bind_vars = EntityRequestGenerator.get_document_or_property_query(
                     normalized_value=normalized_value,
                     normalized_type=normalized_type,
                     depth_level=depth_level,
-                    secondary_depth_level=secondary_depth_level,
                     document_limit=document_limit,
                     data_point_type=query.data_point_type)
 
@@ -952,17 +951,17 @@ class entity_manager:
 
             if data_point_type == "property" and model_type in cls.GRAPH_BATCH_LIST_KEYS:
                 previous = normalized_items[-1] if normalized_items else None
-                can_merge_with_previous = (
-                    operator != "&&"
-                    and previous is not None
-                    and previous["data_point_type"] == data_point_type
-                    and previous["model_type"] == model_type
-                    and previous["scope_cluster"] == scope_cluster
-                    and previous["operator"] != "&&"
-                )
-                if can_merge_with_previous:
-                    previous["query_values"] = cls._merge_graph_query_values(previous["query_values"], values)
-                    continue
+                if previous is not None:
+                    can_merge_with_previous = (
+                        operator != "&&"
+                        and previous["data_point_type"] == data_point_type
+                        and previous["model_type"] == model_type
+                        and previous["scope_cluster"] == scope_cluster
+                        and previous["operator"] != "&&"
+                    )
+                    if can_merge_with_previous:
+                        previous["query_values"] = cls._merge_graph_query_values(previous["query_values"], values)
+                        continue
 
             normalized_items.append(normalized_item)
 
@@ -1001,6 +1000,7 @@ class entity_manager:
             model_type = item["model_type"]
             group: list[str] = []
             seen_group_ids: set[str] = set()
+            edge_type = ""
 
             if data_point_type == "cluster" and model_type == "cluster":
                 for value in item["query_values"]:
@@ -1071,20 +1071,20 @@ class entity_manager:
                 return
             ids.add(doc_id)
 
-        def inspect_edge(edge: Any):
-            if not isinstance(edge, dict):
+        def inspect_edge(edge_item: Any):
+            if not isinstance(edge_item, dict):
                 return
-            edge_type = cls._clean_text(edge.get("type"))
+            edge_type = cls._clean_text(edge_item.get("type"))
             if edge_type == "cluster_to_doc":
-                add_document_id(edge.get("_to"))
+                add_document_id(edge_item.get("_to"))
             elif edge_type.startswith("has_"):
-                add_document_id(edge.get("_from"))
+                add_document_id(edge_item.get("_from"))
 
-        def inspect_vertex(vertex: Any):
-            if not isinstance(vertex, dict):
+        def inspect_vertex(vertex_item: Any):
+            if not isinstance(vertex_item, dict):
                 return
-            if cls._clean_text(vertex.get("type")).lower() == "document":
-                add_document_id(vertex.get("_id"))
+            if cls._clean_text(vertex_item.get("type")).lower() == "document":
+                add_document_id(vertex_item.get("_id"))
 
         inspect_vertex(item.get("vertex"))
         inspect_edge(item.get("edge"))
@@ -1132,7 +1132,6 @@ class entity_manager:
             current_document_ids = cls._extract_document_ids_from_graph_results(current)
             if not aggregate_document_ids or not current_document_ids:
                 aggregate = []
-                aggregate_document_ids = set()
                 break
 
             shared_document_ids = cls._intersect_sets(aggregate_document_ids, current_document_ids)
@@ -1301,10 +1300,12 @@ class entity_manager:
             "queried_ids": conjunctive_groups["queried_ids"],
             "scope_cluster_id": scope_cluster,
         }
+        return await self._execute_conjunctive_graph_query(query_str, bind_vars, conjunctive_groups["queried_ids"])
+
+    async def _execute_conjunctive_graph_query(self, query_str: str, bind_vars: dict, queried_ids: list):
         result_obj = await run_in_threadpool(lambda: list(self.__db.aql.execute(query_str, bind_vars=bind_vars)))
         result_obj = result_obj[0] if result_obj else {}
         results = self._dedupe_graph_results(result_obj.get("depth1", []) or [])
-        queried_ids = conjunctive_groups["queried_ids"]
         return {
             "results": results,
             "limit_reached": bool(result_obj.get("limit_hit_depth1")),
@@ -1472,17 +1473,7 @@ class entity_manager:
             "scope_cluster_id": scope_cluster,
             "seed_probe_limit": min(document_limit * 20, 1000),
         }
-        result_obj = await run_in_threadpool(lambda: list(self.__db.aql.execute(query_str, bind_vars=bind_vars)))
-        result_obj = result_obj[0] if result_obj else {}
-        results = self._dedupe_graph_results(result_obj.get("depth1", []) or [])
-        queried_ids = conjunctive_groups["queried_ids"]
-        return {
-            "results": results,
-            "limit_reached": bool(result_obj.get("limit_hit_depth1")),
-            "queried_id": queried_ids[0] if queried_ids else None,
-            "queried_ids": queried_ids,
-            "matched_vertex_ids": result_obj.get("matched_ids", []) or [],
-        }
+        return await self._execute_conjunctive_graph_query(query_str, bind_vars, conjunctive_groups["queried_ids"])
 
     async def get_entity_relations_batch(self, query: EntityGraphBatchQueryModel):
         try:
@@ -1575,8 +1566,8 @@ class entity_manager:
                     property_value_key, property_display_value, alias = self._canonical_entity_value(graph_key, item)
                     if graph_key == "m_attacker":
                         resolved_item, resolved_display, resolved_alias = await run_in_threadpool(
-                            lambda property_value_key=property_value_key, property_display_value=property_display_value:
-                            self._resolve_existing_actor_variant_sync(property_value_key, property_display_value)
+                            lambda actor_value_key=property_value_key, actor_display_value=property_display_value:
+                            self._resolve_existing_actor_variant_sync(actor_value_key, actor_display_value)
                         )
                         property_value_key = resolved_item
                         property_display_value = resolved_display
@@ -1676,6 +1667,7 @@ class entity_manager:
                         hidden_by_default = graph_key in self.DEFAULT_HIDDEN_KEYS
                         entity_role = self._entity_role_for_key(graph_key, normalized_cluster_id)
                         edge_type = self._edge_type_for_context(graph_key, entity_role)
+                        property_edge_type = f"has_{graph_key}"
                         observation_record = {
                             "key": graph_key,
                             "normalized_value": property_value_key,
@@ -1717,7 +1709,7 @@ class entity_manager:
                                     "_key": edge_key,
                                     "_from": doc_vertex,
                                     "_to": prop_vertex,
-                                    "type": f"has_{graph_key}",
+                                    "type": property_edge_type,
                                     "edge_type": edge_type,
                                     "relationship_type": self._relationship_type_for_role(entity_role),
                                     "entity_role": entity_role,

@@ -1,12 +1,7 @@
-export interface ManagedUser {
-  username: string;
-  email: string;
-  password: string;
-  role: 'Member' | 'Analyst' | 'Demo';
-  licenses: string[];
-  permissions?: string[];
-  alertAllowedTenants?: string[] | 'all';
-}
+
+import type { ManagedUser, ManagedUsers, UserManagementTestData } from '../model/05-user-management.model';
+export type { ManagedUser, ManagedUsers, UserManagementTestData } from '../model/05-user-management.model';
+
 
 const SIDEBAR_GROUP_ROUTE_PREFIX: Record<string, string> = {
   'General Intelligence': 'strategic',
@@ -22,7 +17,7 @@ const SIDEBAR_GROUP_ROUTE_PREFIX: Record<string, string> = {
 
 function getSidebarGroupTestId(itemName: string): string {
   const routePrefix = SIDEBAR_GROUP_ROUTE_PREFIX[itemName];
-  expect(routePrefix, `routePrefix mapping for "${itemName}"`).to.exist;
+  assert.exists(routePrefix, `routePrefix mapping for "${itemName}"`);
   return `sidebar-group-${routePrefix}`;
 }
 
@@ -39,12 +34,12 @@ function resolveOptionLabel(labels: string[], optionText: string, fallback?: (la
   return fallback?.(labels) || labels[0] || optionText;
 }
 
-function selectDropdownOption($trigger: JQuery<HTMLElement>, optionText: string, description: string, fallback?: (labels: string[]) => string) {
+function selectDropdownOption($trigger: JQuery, optionText: string, description: string, fallback?: (labels: string[]) => string) {
   const menuId = $trigger.attr('aria-controls');
-  expect(menuId, `${description} menu id`).to.exist;
+  assert.exists(menuId, `${description} menu id`);
 
-  cy.wrap($trigger).click({force: true});
-  cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
+  void cy.wrap($trigger).click({force: true});
+  void cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
   cy.get(`#${menuId} [role="option"]`, {timeout: 10000})
     .should(($options) => {
       expect($options.length, `${description} option count`).to.be.greaterThan(0);
@@ -56,8 +51,8 @@ function selectDropdownOption($trigger: JQuery<HTMLElement>, optionText: string,
       const labels = [...$options].map((option) => cleanText(option.textContent || '')).filter(Boolean);
       const resolved = resolveOptionLabel(labels, optionText, fallback);
       const option = [...$options].find((el) => cleanText(el.textContent || '').toLowerCase() === resolved.toLowerCase());
-      expect(option, `${description} option ${resolved}`).to.exist;
-      cy.wrap(option as HTMLElement).click({force: true});
+      assert.exists(option, `${description} option ${resolved}`);
+      void cy.wrap(option as HTMLElement).click({force: true});
     });
 }
 
@@ -71,11 +66,11 @@ function selectAddUserDropdown(triggerSelector: string, optionText: string, fall
 
 export function openSidebarGroup(itemName: string) {
   const sidebarGroupTestId = getSidebarGroupTestId(itemName);
-  cy.get(`[data-testid="${sidebarGroupTestId}"]`).first().scrollIntoView().should('be.visible').click();
+  void cy.get(`[data-testid="${sidebarGroupTestId}"]`).first().scrollIntoView().should('be.visible').click();
 }
 
 export function openSidebarSubItem(routePrefix: string, itemSlug: string) {
-  cy.get(`[data-testid="sidebar-subitem-${routePrefix}-${itemSlug}"]`).first().scrollIntoView().should('be.visible').click();
+  void cy.get(`[data-testid="sidebar-subitem-${routePrefix}-${itemSlug}"]`).first().scrollIntoView().should('be.visible').click();
 }
 
 export function setSelect(name: 'role' | 'status', optionText: string) {
@@ -104,7 +99,7 @@ export function setSelect(name: 'role' | 'status', optionText: string) {
         resolved = optionLabels[0];
       }
     }
-    cy.wrap($select).select(resolved);
+    void cy.wrap($select).select(resolved);
   });
 }
 
@@ -112,13 +107,13 @@ function setAddUserLicenses(wanted: string[]) {
   cy.get('@addUserModal').then(($modal) => {
     const $cards = $modal.find('.license-grid .license-card, .license-card, .license-btn');
     if ($cards.length) {
-      cy.wrap($cards).each(($card) => {
+      void cy.wrap($cards).each(($card) => {
         const label = cleanText($card.find('.license-label').text()).toLowerCase();
         const $checkbox = $card.find('input[type="checkbox"]');
         const shouldBeChecked = wanted.includes(label);
         const isChecked = $checkbox.is(':checked');
         if (shouldBeChecked !== isChecked) {
-          cy.wrap($card).click();
+          void cy.wrap($card).click();
         }
       });
       return;
@@ -127,10 +122,10 @@ function setAddUserLicenses(wanted: string[]) {
     const $trigger = $modal.find('[data-testid="tenant-add-user-license"]').first();
     expect($trigger.length, 'tenant-add-user-license trigger').to.be.greaterThan(0);
     const menuId = $trigger.attr('aria-controls');
-    expect(menuId, 'tenant-add-user-license menu id').to.exist;
+    assert.exists(menuId, 'tenant-add-user-license menu id');
 
-    cy.wrap($trigger).click({force: true});
-    cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
+    void cy.wrap($trigger).click({force: true});
+    void cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
     cy.get(`#${menuId} [role="option"]`, {timeout: 10000})
       .should('have.length.greaterThan', 0)
       .each(($option) => {
@@ -138,11 +133,11 @@ function setAddUserLicenses(wanted: string[]) {
         const shouldBeSelected = wanted.includes(label);
         const isSelected = $option.attr('aria-selected') === 'true';
         if (shouldBeSelected !== isSelected) {
-          cy.wrap($option).click({force: true});
+          void cy.wrap($option).click({force: true});
         }
       })
       .then(() => {
-        cy.wrap($trigger).click({force: true});
+        void cy.wrap($trigger).click({force: true});
       });
   });
 }
@@ -160,11 +155,11 @@ function setAddUserPermissions(wanted: string[]) {
     const $trigger = $modal.find('[data-testid="tenant-add-user-permission"]').first();
     expect($trigger.length, 'tenant-add-user-permission trigger').to.be.greaterThan(0);
     const menuId = $trigger.attr('aria-controls');
-    expect(menuId, 'tenant-add-user-permission menu id').to.exist;
+    assert.exists(menuId, 'tenant-add-user-permission menu id');
     const normalizedWanted = wanted.map(normalizeDropdownValue);
 
-    cy.wrap($trigger).click({force: true});
-    cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
+    void cy.wrap($trigger).click({force: true});
+    void cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
     cy.get(`#${menuId} [role="option"]`, {timeout: 10000})
       .should('have.length.greaterThan', 0)
       .each(($option) => {
@@ -172,11 +167,11 @@ function setAddUserPermissions(wanted: string[]) {
         const shouldBeSelected = normalizedWanted.includes(label);
         const isSelected = $option.attr('aria-selected') === 'true';
         if (shouldBeSelected !== isSelected) {
-          cy.wrap($option).click({force: true});
+          void cy.wrap($option).click({force: true});
         }
       })
       .then(() => {
-        cy.wrap($trigger).click({force: true});
+        void cy.wrap($trigger).click({force: true});
       });
   });
 }
@@ -190,13 +185,13 @@ function setAddUserAlertAllowedTenants(wanted?: string[] | 'all') {
     const $trigger = $modal.find('[data-testid="tenant-add-user-alerts-allowed"]').first();
     expect($trigger.length, 'tenant-add-user-alerts-allowed trigger').to.be.greaterThan(0);
     const menuId = $trigger.attr('aria-controls');
-    expect(menuId, 'tenant-add-user-alerts-allowed menu id').to.exist;
+    assert.exists(menuId, 'tenant-add-user-alerts-allowed menu id');
     const normalizedWanted = wanted === 'all'
       ? ['all']
       : wanted.map(normalizeDropdownValue);
 
-    cy.wrap($trigger).click({force: true});
-    cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
+    void cy.wrap($trigger).click({force: true});
+    void cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
     cy.get(`#${menuId} [role="option"]`, {timeout: 10000})
       .should('have.length.greaterThan', 0)
       .each(($option) => {
@@ -204,41 +199,41 @@ function setAddUserAlertAllowedTenants(wanted?: string[] | 'all') {
         const shouldBeSelected = normalizedWanted.includes(label);
         const isSelected = $option.attr('aria-selected') === 'true';
         if (shouldBeSelected !== isSelected) {
-          cy.wrap($option).click({force: true});
+          void cy.wrap($option).click({force: true});
         }
       })
       .then(() => {
-        cy.wrap($trigger).click({force: true});
+        void cy.wrap($trigger).click({force: true});
       });
   });
 }
 
 export function addUser(user: ManagedUser) {
-  cy.url().should('include', '/dashboard/profile/users');
-  cy.get('[data-testid="tenant-add-user-button"]').should('be.visible').scrollIntoView().click();
-  cy.get('[data-testid="tenant-add-user-modal"]').should('be.visible').as('addUserModal');
-  cy.get('@addUserModal').find('input[name="username"]').should('be.visible').clear().type(user.username);
-  cy.get('@addUserModal').find('input[name="email"]').should('be.visible').clear().type(user.email);
-  cy.get('@addUserModal').find('input[name="password"]').should('be.visible').clear().type(user.password);
-  cy.get('@addUserModal').find('[data-testid="tenant-add-user-confirm-password"]').should('be.visible').clear().type(user.password);
+  void cy.url().should('include', '/dashboard/profile/users');
+  void cy.get('[data-testid="tenant-add-user-button"]').should('be.visible').scrollIntoView().click();
+  void cy.get('[data-testid="tenant-add-user-modal"]').should('be.visible').as('addUserModal');
+  void cy.get('@addUserModal').find('input[name="username"]').should('be.visible').clear().type(user.username);
+  void cy.get('@addUserModal').find('input[name="email"]').should('be.visible').clear().type(user.email);
+  void cy.get('@addUserModal').find('input[name="password"]').should('be.visible').clear().type(user.password);
+  void cy.get('@addUserModal').find('[data-testid="tenant-add-user-confirm-password"]').should('be.visible').clear().type(user.password);
   setSelect('role', user.role);
   setSelect('status', 'Active');
   const wanted = user.licenses.map((x) => x.trim().toLowerCase());
   setAddUserLicenses(wanted);
   setAddUserPermissions(user.permissions || []);
   setAddUserAlertAllowedTenants(user.alertAllowedTenants);
-  cy.get('@addUserModal').find('[data-testid="tenant-add-user-submit"]').click({force: true});
-  cy.get('[data-testid="tenant-add-user-modal"]').should('not.exist');
-  cy.contains(user.username).should('exist');
+  void cy.get('@addUserModal').find('[data-testid="tenant-add-user-submit"]').click({force: true});
+  void cy.get('[data-testid="tenant-add-user-modal"]').should('not.exist');
+  void cy.contains(user.username).should('exist');
 }
 
 export function openUserEditor(username: string) {
-  cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
+  void cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
     .scrollIntoView()
     .should('be.visible')
     .click();
 
-  cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
+  void cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
     .next()
     .as('expandedUserEditor')
     .should('contain.text', 'Edit User');
@@ -246,7 +241,7 @@ export function openUserEditor(username: string) {
 
 export function setPasswordResetRequired(username: string, required: boolean) {
   openUserEditor(username);
-  cy.scrollDashboardToBottom();
+  void cy.scrollDashboardToBottom();
 
   cy.get('@expandedUserEditor').then(($editor) => {
     const $control = $editor.find('[data-testid="tenant-password-reset-required-toggle"]').first();
@@ -254,58 +249,58 @@ export function setPasswordResetRequired(username: string, required: boolean) {
     const $checkbox = $control.find('input[type="checkbox"]').first();
     if ($checkbox.length) {
       if ($checkbox.is(':checked') !== required) {
-        cy.wrap($checkbox).click({force: true});
+        void cy.wrap($checkbox).click({force: true});
       }
       return;
     }
 
     const menuId = $control.attr('aria-controls');
-    expect(menuId, 'password reset dropdown menu id').to.exist;
+    assert.exists(menuId, 'password reset dropdown menu id');
     selectDropdownOption($control, required ? 'Require password reset' : 'No password reset', 'password reset dropdown');
   });
 
-  cy.intercept('POST', '**/api/update/user', (req) => {
+  void cy.intercept('POST', '**/api/update/user', (req) => {
     console.log('[cypress] updateUser request', req.body);
     req.continue((res) => {
       console.log('[cypress] updateUser response', res.statusCode);
     });
   });
 
-  cy.get('@expandedUserEditor').within(() => {
-    cy.get('[data-testid="tenant-save-user-changes"]').scrollIntoView().should('be.visible').and('not.be.disabled').click();
+  void cy.get('@expandedUserEditor').within(() => {
+    void cy.get('[data-testid="tenant-save-user-changes"]').scrollIntoView().should('be.visible').and('not.be.disabled').click();
   });
 }
 
 export function loginAsUser(username: string, password: string) {
-  cy.intercept({ method: 'POST', pathname: '**/api/token' }).as('loginRequest');
-  cy.visitLoginWithCleanAuthState();
-  cy.get('[data-testid="login-user"]').should('be.visible').clear().type(username);
-  cy.get('[data-testid="login-pass"]').should('be.visible').clear().type(password, {log: false});
-  cy.get('[data-testid="login-button"]').filter(':visible').first().should('be.visible').click({ force: true });
-  cy.waitForLoginRequest();
+  void cy.intercept({ method: 'POST', pathname: '**/api/token' }).as('loginRequest');
+  void cy.visitLoginWithCleanAuthState();
+  void cy.get('[data-testid="login-user"]').should('be.visible').clear().type(username);
+  void cy.get('[data-testid="login-pass"]').should('be.visible').clear().type(password, {log: false});
+  void cy.get('[data-testid="login-button"]').filter(':visible').first().should('be.visible').click({ force: true });
+  void cy.waitForLoginRequest();
 
-  cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
+  void cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
     .filter(':visible')
     .should('have.length.greaterThan', 0);
-  cy.scrollDashboardToBottom();
+  void cy.scrollDashboardToBottom();
 }
 
 export function openFirstStrategicReportFromSearch(searchTerm = 'data') {
-  cy.visit('/dashboard/strategic/all?page=1');
-  cy.scrollDashboardToTop();
-  cy.location('pathname').should('eq', '/dashboard/strategic/all');
-  cy.get('[data-testid="dashboard-body"]').should('be.visible');
-  cy.scrollDashboardToTop();
-  cy.get('[data-testid="dashboard-general-input"]').should('be.visible').clear().type(searchTerm);
-  cy.get('[data-testid="dashboard-search-submit"]').click();
-  cy.get('[data-testid="result-card"]').should('have.length.greaterThan', 0);
-  cy.get('[data-testid="open-report"]').filter(':visible').first().click();
-  cy.url().should('match', /\/dashboard\/strategic\/all\/[^/?]+/);
-  cy.get('#report-detail').should('be.visible');
+  void cy.visit('/dashboard/strategic/all?page=1');
+  void cy.scrollDashboardToTop();
+  void cy.location('pathname').should('eq', '/dashboard/strategic/all');
+  void cy.get('[data-testid="dashboard-body"]').should('be.visible');
+  void cy.scrollDashboardToTop();
+  void cy.get('[data-testid="dashboard-general-input"]').should('be.visible').clear().type(searchTerm);
+  void cy.get('[data-testid="dashboard-search-submit"]').click();
+  void cy.get('[data-testid="result-card"]').should('have.length.greaterThan', 0);
+  void cy.get('[data-testid="open-report"]').filter(':visible').first().click();
+  void cy.url().should('match', /\/dashboard\/strategic\/all\/[^/?]+/);
+  void cy.get('#report-detail').should('be.visible');
 }
 
-export function loginAndClickSidebar(username: string, sidebarItems: string[], testUsers: any, testData: any) {
-  const selectedUser = Object.values(testUsers).find((u: any) => u?.username === username) as ManagedUser | undefined;
+export function loginAndClickSidebar(username: string, sidebarItems: string[], testUsers: ManagedUsers, testData: UserManagementTestData) {
+  const selectedUser = Object.values(testUsers).find((user) => user.username === username);
   if (!selectedUser?.password) {
     throw new Error(`Missing user/password in Cypress env for username: ${username}`);
   }
@@ -316,22 +311,22 @@ export function loginAndClickSidebar(username: string, sidebarItems: string[], t
     if (username === 'testing5' && itemName === 'Stealer logs') {
       cy.get('body').then(($b) => {
         if ($b.find('[data-testid="pro-subscription-overlay"]').length) {
-          cy.get('[data-testid="pro-subscription-overlay"]').should('be.visible');
-          cy.get('[data-testid="pro-subscription-options"] input[type="radio"][value="annual"]').check();
-          cy.get('input#name').clear().type(testData.stealer_upgrade_name);
-          cy.get('input#phone').clear().type('03001234567');
-          cy.get('input#email').clear().type(testData.stealer_upgrade_email);
-          cy.get('[data-testid="pro-subscription-payment-form"]').submit();
-          cy.get('[data-testid="pro-subscription-close"]').should('be.visible').click();
+          void cy.get('[data-testid="pro-subscription-overlay"]').should('be.visible');
+          void cy.get('[data-testid="pro-subscription-options"] input[type="radio"][value="annual"]').check();
+          void cy.get('input#name').clear().type(testData.stealer_upgrade_name);
+          void cy.get('input#phone').clear().type('03001234567');
+          void cy.get('input#email').clear().type(testData.stealer_upgrade_email);
+          void cy.get('[data-testid="pro-subscription-payment-form"]').submit();
+          void cy.get('[data-testid="pro-subscription-close"]').should('be.visible').click();
         }
       });
     }
   });
-  cy.logout();
+  void cy.logout();
 }
 
-export function completeSubscriptionPopupFlow(testData: any, reopenPopup: () => void) {
-  cy.intercept('POST', '**/api/subscription/request', (req) => {
+export function completeSubscriptionPopupFlow(testData: UserManagementTestData, _reopenPopup: () => void) {
+  void cy.intercept('POST', '**/api/subscription/request', (req) => {
     console.log('[cypress] subscription request', req.body);
     req.reply({
       statusCode: 200,
@@ -340,48 +335,48 @@ export function completeSubscriptionPopupFlow(testData: any, reopenPopup: () => 
   });
   const subscriptionPopupSelector = '[data-testid="pro-subscription-overlay"]';
 
-  cy.get(subscriptionPopupSelector).should('be.visible');
-  cy.contains('h2', 'Upgrade to Dark Web Shield Pro').should('be.visible');
-  cy.contains('button', 'Proceed to Payment').should('be.disabled');
-  cy.docsScreenshot('subscription-upgrade-modal');
+  void cy.get(subscriptionPopupSelector).should('be.visible');
+  void cy.contains('h2', 'Upgrade to Dark Web Shield Pro').should('be.visible');
+  void cy.contains('button', 'Proceed to Payment').should('be.disabled');
+  void cy.docsScreenshot('subscription-upgrade-modal');
 
-  cy.get('input#name').focus().blur().should('have.attr', 'aria-invalid', 'true');
-  cy.get('input#phone').focus().blur().should('have.attr', 'aria-invalid', 'true');
-  cy.get('input#email').focus().blur().should('have.attr', 'aria-invalid', 'true');
-  cy.get('span')
+  void cy.get('input#name').focus().blur().should('have.attr', 'aria-invalid', 'true');
+  void cy.get('input#phone').focus().blur().should('have.attr', 'aria-invalid', 'true');
+  void cy.get('input#email').focus().blur().should('have.attr', 'aria-invalid', 'true');
+  void cy.get('span')
     .filter((_, el) => (el.textContent || '').trim() === 'Required')
     .should('have.length.at.least', 3);
 
-  cy.get('input#name').clear().type('A').blur();
-  cy.contains('span', 'Too short').should('be.visible');
+  void cy.get('input#name').clear().type('A').blur();
+  void cy.contains('span', 'Too short').should('be.visible');
 
-  cy.get('input#phone').clear().type('abc').blur();
-  cy.contains('span', 'Invalid').should('exist');
+  void cy.get('input#phone').clear().type('abc').blur();
+  void cy.contains('span', 'Invalid').should('exist');
 
-  cy.get('input#email').clear().type('invalid-email').blur();
-  cy.contains('span', 'Invalid').should('exist');
+  void cy.get('input#email').clear().type('invalid-email').blur();
+  void cy.contains('span', 'Invalid').should('exist');
 
-  cy.get('input[type="radio"][name="subscription"][value="monthly"]').check().should('be.checked');
-  cy.get('input[type="radio"][name="subscription"][value="annual"]').check().should('be.checked');
+  void cy.get('input[type="radio"][name="subscription"][value="monthly"]').check().should('be.checked');
+  void cy.get('input[type="radio"][name="subscription"][value="annual"]').check().should('be.checked');
 
-  cy.get('input#name').should('be.visible').clear().type(testData.stealer_upgrade_name);
-  cy.get('input#phone').should('be.visible').clear().type('03001234567');
-  cy.get('input#email').should('be.visible').clear().type(testData.stealer_upgrade_email);
-  cy.contains('button', 'Proceed to Payment').should('not.be.disabled').click();
+  void cy.get('input#name').should('be.visible').clear().type(testData.stealer_upgrade_name);
+  void cy.get('input#phone').should('be.visible').clear().type('03001234567');
+  void cy.get('input#email').should('be.visible').clear().type(testData.stealer_upgrade_email);
+  void cy.contains('button', 'Proceed to Payment').should('not.be.disabled').click();
 
-  cy.url().should('include', '/notification');
-  cy.contains('div', 'Subscription Request Sent').should('be.visible');
-  cy.contains('p', 'Our team has received your subscription request').should('be.visible');
-  cy.docsScreenshot('subscription-request-notification');
-  cy.contains('button', 'Homepage').should('be.visible').click();
+  void cy.url().should('include', '/notification');
+  void cy.contains('div', 'Subscription Request Sent').should('be.visible');
+  void cy.contains('p', 'Our team has received your subscription request').should('be.visible');
+  void cy.docsScreenshot('subscription-request-notification');
+  void cy.contains('button', 'Homepage').should('be.visible').click();
 
-  cy.contains('button[type="button"]', 'Close').should('be.visible').click();
-  cy.get(subscriptionPopupSelector).should('not.exist');
+  void cy.contains('button[type="button"]', 'Close').should('be.visible').click();
+  void cy.get(subscriptionPopupSelector).should('not.exist');
 }
 
 export function openUsersList(usersUrl: string) {
-  cy.intercept('POST', '**/api/users').as('usersApi');
-  cy.visit(usersUrl);
+  void cy.intercept('POST', '**/api/users').as('usersApi');
+  void cy.visit(usersUrl);
 }
 
 export function deleteUsersByUsername(usernames: string[], usersUrl = '/dashboard/profile/users?page=1') {
@@ -395,25 +390,25 @@ export function deleteUsersByUsername(usernames: string[], usersUrl = '/dashboar
     openUsersList(usersUrl);
     cy.contains('tbody tr[data-testid="tenant-user-row"]', username).then(($row) => {
       if (!$row.length) {
-        cy.log(`User ${username} not found. Skip.`);
+        void cy.log(`User ${username} not found. Skip.`);
         deleteNext(rest);
         return;
       }
 
-      cy.wrap($row).scrollIntoView().should('be.visible').click();
+      void cy.wrap($row).scrollIntoView().should('be.visible').click();
 
-      cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
+      void cy.contains('tbody tr[data-testid="tenant-user-row"]', username)
         .next()
         .within(() => {
-          cy.get('[data-testid="tenant-delete-user-button"]').first().scrollIntoView().click({force: true});
+          void cy.get('[data-testid="tenant-delete-user-button"]').first().scrollIntoView().click({force: true});
         });
 
-      cy.intercept('POST', '**/api/delete/user').as('deleteUserApi');
-      cy.get('.ui-graph-popup-panel').should('be.visible').within(() => {
-        cy.get('[data-testid="confirmation-yes-button"]').first().click({force: true});
+      void cy.intercept('POST', '**/api/delete/user').as('deleteUserApi');
+      void cy.get('.ui-graph-popup-panel').should('be.visible').within(() => {
+        void cy.get('[data-testid="confirmation-yes-button"]').first().click({force: true});
       });
-      cy.wait('@deleteUserApi');
-      cy.get('.ui-graph-popup-panel').should('not.exist');
+      void cy.wait('@deleteUserApi');
+      void cy.get('.ui-graph-popup-panel').should('not.exist');
 
       deleteNext(rest);
     });

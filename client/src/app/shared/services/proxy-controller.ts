@@ -71,7 +71,7 @@ export class ProxyController {
   }
 
   private resolveTargetUrl(url?: string | null): string {
-    const rawUrl = String(url || '').trim();
+    const rawUrl = String(url ?? '').trim();
     if (!rawUrl || typeof window === 'undefined') {
       return '';
     }

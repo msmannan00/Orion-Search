@@ -1,0 +1,15 @@
+@keyframes dashboard-result-container-item-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-result-container-item-in {
+  animation: dashboard-result-container-item-in 400ms ease-in-out both;
+}

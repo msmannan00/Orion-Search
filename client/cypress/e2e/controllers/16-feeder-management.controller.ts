@@ -1,4 +1,6 @@
-let feederValidationData: any = null;
+import type { FeederValidationCategory, FeederValidationData } from '../model/16-feeder-management.model';
+
+let feederValidationData: FeederValidationData | null = null;
 export const FEEDER_RULE_KEYS = [
   'apt',
   'defacement',
@@ -26,24 +28,24 @@ function waitForFeederPanelReady(): Cypress.Chainable {
 }
 
 export function openFeederAsAdmin() {
-  cy.loginAsAdmin();
-  cy.visit('/dashboard/profile/homepage');
-  cy.get('[data-testid="sidebar-group-profile"]').should('be.visible').scrollIntoView().click();
-  cy.get('[data-testid="sidebar-subitem-profile-feeder"]').should('be.visible').scrollIntoView().click();
-  cy.get('[data-testid="feeder-page-title"]').should('be.visible').and('contain.text', 'Feeder Scripts');
+  void cy.loginAsAdmin();
+  void cy.visit('/dashboard/profile/homepage');
+  void cy.get('[data-testid="sidebar-group-profile"]').should('be.visible').scrollIntoView().click();
+  void cy.get('[data-testid="sidebar-subitem-profile-feeder"]').should('be.visible').scrollIntoView().click();
+  void cy.get('[data-testid="feeder-page-title"]').should('be.visible').and('contain.text', 'Feeder Scripts');
 }
 
 export function openFeederAsUser(username: string, password: string) {
-  cy.intercept({ method: 'POST', pathname: '**/api/token' }).as('loginRequest');
-  cy.visit('/login');
-  cy.get('[data-testid="login-user"]').should('be.visible').clear().type(username);
-  cy.get('[data-testid="login-pass"]').should('be.visible').clear().type(password, { log: false });
-  cy.get('[data-testid="login-button"]').first().should('be.visible').click();
-  cy.waitForLoginRequest();
-  cy.get('[data-testid="dashboard-main"]').should('be.visible');
-  cy.get('[data-testid="sidebar-group-profile"]').should('be.visible').scrollIntoView().click();
-  cy.get('[data-testid="sidebar-subitem-profile-feeder"]').should('be.visible').scrollIntoView().click();
-  cy.get('[data-testid="feeder-page-title"]').should('be.visible').and('contain.text', 'Feeder Scripts');
+  void cy.intercept({ method: 'POST', pathname: '**/api/token' }).as('loginRequest');
+  void cy.visit('/login');
+  void cy.get('[data-testid="login-user"]').should('be.visible').clear().type(username);
+  void cy.get('[data-testid="login-pass"]').should('be.visible').clear().type(password, { log: false });
+  void cy.get('[data-testid="login-button"]').first().should('be.visible').click();
+  void cy.waitForLoginRequest();
+  void cy.get('[data-testid="dashboard-main"]').should('be.visible');
+  void cy.get('[data-testid="sidebar-group-profile"]').should('be.visible').scrollIntoView().click();
+  void cy.get('[data-testid="sidebar-subitem-profile-feeder"]').should('be.visible').scrollIntoView().click();
+  void cy.get('[data-testid="feeder-page-title"]').should('be.visible').and('contain.text', 'Feeder Scripts');
 }
 
 function getFixturePath(path: string) {
@@ -54,13 +56,13 @@ function getFixtureFileName(path: string) {
   return path.split('/').pop() || path;
 }
 
-function waitForScriptRowReady(category: any) {
-  const fileName = getFixtureFileName(category.fileFixture);
+function waitForScriptRowReady(category: FeederValidationCategory) {
+  const fileName = getFixtureFileName(category.fileFixture!);
   const rowSelector = `[data-testid="feeder-script-row-${fileName}"]`;
   const statusSelector = `[data-testid="feeder-script-active-status-${fileName}"]`;
 
-  cy.get(rowSelector, { timeout: FEEDER_SCRIPT_ROW_TIMEOUT }).filter(':visible').first().should('be.visible');
-  cy.get(statusSelector, { timeout: FEEDER_SCRIPT_ROW_TIMEOUT })
+  void cy.get(rowSelector, { timeout: FEEDER_SCRIPT_ROW_TIMEOUT }).filter(':visible').first().should('be.visible');
+  void cy.get(statusSelector, { timeout: FEEDER_SCRIPT_ROW_TIMEOUT })
     .filter(':visible')
     .first()
     .invoke('text')
@@ -70,6 +72,9 @@ function waitForScriptRowReady(category: any) {
 }
 
 function getWrongFileCategory(ruleKey: string) {
+  if (!feederValidationData) {
+    throw new Error('Feeder validation data is not loaded');
+  }
   const currentIndex = FILE_RULE_KEYS.indexOf(ruleKey);
   const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % FILE_RULE_KEYS.length;
   return feederValidationData.categories[FILE_RULE_KEYS[nextIndex]];
@@ -79,16 +84,16 @@ function selectFeederRule(ruleKey: string) {
   return cy.get('[data-testid="feeder-rule-select"]').should('be.visible').and('not.be.disabled').then(($select) => {
     if ($select.is('select')) {
       cy.get(`[data-testid="feeder-rule-option-${ruleKey}"]`).then(($option) => {
-        cy.wrap($select).select($option.attr('value')!);
-        cy.wrap($select).find(':selected').should('have.attr', 'data-testid', `feeder-rule-option-${ruleKey}`);
+        void cy.wrap($select).select($option.attr('value')!);
+        void cy.wrap($select).find(':selected').should('have.attr', 'data-testid', `feeder-rule-option-${ruleKey}`);
       });
-      cy.wait(250);
+      void cy.wait(250);
       return;
     }
 
-    cy.wrap($select).click();
-    cy.get(`[data-testid="feeder-rule-option-${ruleKey}"]`).click({ force: true });
-    cy.wait(250);
+    void cy.wrap($select).click();
+    void cy.get(`[data-testid="feeder-rule-option-${ruleKey}"]`).click({ force: true });
+    void cy.wait(250);
   });
 }
 
@@ -106,11 +111,11 @@ export function assertFeederRuleOptions() {
       return;
     }
 
-    cy.wrap($select).click();
+    void cy.wrap($select).click();
     cy.get('[data-testid^="feeder-rule-option-"]').then(($options) => {
       expect($options.length).to.be.greaterThan(9);
     });
-    cy.get('body').click(0, 0);
+    void cy.get('body').click(0, 0);
   });
 }
 
@@ -126,54 +131,50 @@ function openScriptTab(): Cypress.Chainable {
   return openTabIfPresent('feeder-tab-script', () => cy.wait(250));
 }
 
-export function openFeederScriptTab() {
-  return openScriptTab();
-}
-
 function openTabIfPresent(testId: string, callback: () => Cypress.Chainable): Cypress.Chainable {
   return cy.get('body').then(($body): Cypress.Chainable => {
     const tab = $body.find(`[data-testid="${testId}"]:visible`).first();
     if (!tab.length) {
       return cy.wrap(null, { log: false });
     }
-    cy.wrap(tab).click();
+    void cy.wrap(tab).click();
     return cy.then(callback);
   });
 }
 
-function uploadScript(category: any): Cypress.Chainable {
+function uploadScript(category: FeederValidationCategory): Cypress.Chainable {
   if (!category.fileFixture || !category.fileName) {
     return cy.wrap(null, { log: false });
   }
 
-  cy.get('[data-testid="feeder-select-file-button"]').filter(':visible').first().should('be.visible');
-  cy.get('[data-testid="feeder-file-input"]')
+  void cy.get('[data-testid="feeder-select-file-button"]').filter(':visible').first().should('be.visible');
+  void cy.get('[data-testid="feeder-file-input"]')
     .last()
     .selectFile(getFixturePath(category.fileFixture), { force: true });
-  cy.wait(250);
-  cy.get('[data-testid="feeder-upload-script-button"]').should('be.visible').click();
+  void cy.wait(250);
+  void cy.get('[data-testid="feeder-upload-script-button"]').should('be.visible').click();
 
   waitForScriptRowReady(category);
 
   if (category.ruleType === 'shared') {
-    openAddTab();
+    void openAddTab();
     return cy.get('[data-testid="feeder-values-input"]', { timeout: 4000 }).should('be.visible');
   }
 
   return cy.wait(250);
 }
 
-function expectWrongFileUploadError(category: any): Cypress.Chainable {
+function expectWrongFileUploadError(category: FeederValidationCategory): Cypress.Chainable {
   const wrongCategory = getWrongFileCategory(category.ruleKey);
   if (!wrongCategory?.fileFixture) {
     return cy.wrap(null, { log: false });
   }
 
-  cy.get('[data-testid="feeder-select-file-button"]').filter(':visible').first().should('be.visible');
-  cy.get('[data-testid="feeder-file-input"]')
+  void cy.get('[data-testid="feeder-select-file-button"]').filter(':visible').first().should('be.visible');
+  void cy.get('[data-testid="feeder-file-input"]')
     .last()
     .selectFile(getFixturePath(wrongCategory.fileFixture), { force: true });
-  cy.wait(250);
+  void cy.wait(250);
   return cy.get('[data-testid="feeder-upload-script-button"]').should('be.visible').click();
 }
 
@@ -188,8 +189,8 @@ function uploadFirstValue(fixturePath: string): Cypress.Chainable {
       return cy.wrap(null, { log: false });
     }
 
-    cy.get('[data-testid="feeder-values-input"]').should('be.visible').clear().type(firstValue, { delay: 0 });
-    cy.get('[data-testid="feeder-upload-values-button"]').should('be.visible').click();
+    void cy.get('[data-testid="feeder-values-input"]').should('be.visible').clear().type(firstValue, { delay: 0 });
+    void cy.get('[data-testid="feeder-upload-values-button"]').should('be.visible').click();
     return cy.wait(250);
   });
 }
@@ -205,7 +206,7 @@ function expectWrongValueUploadError(fixturePath: string): Cypress.Chainable {
       return cy.wrap(null, { log: false });
     }
 
-    cy.get('[data-testid="feeder-values-input"]').should('be.visible').clear().type(firstValue, { delay: 0 });
+    void cy.get('[data-testid="feeder-values-input"]').should('be.visible').clear().type(firstValue, { delay: 0 });
     return cy.get('[data-testid="feeder-upload-values-button"]').should('be.visible').click();
   });
 }
@@ -216,10 +217,10 @@ function clearVisibleValueRows(): Cypress.Chainable {
     if (!button.length) {
       return cy.wrap(null, { log: false });
     }
-    cy.intercept('POST', '**/api/profile/feeder/scripts/*/delete-value').as('feederValueDeleteRequest');
-    cy.intercept('GET', '**/api/profile/feeder/scripts**').as('feederScriptsQueryAfterClear');
-    cy.wrap(button).click();
-    cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click();
+    void cy.intercept('POST', '**/api/profile/feeder/scripts/*/delete-value').as('feederValueDeleteRequest');
+    void cy.intercept('GET', '**/api/profile/feeder/scripts**').as('feederScriptsQueryAfterClear');
+    void cy.wrap(button).click();
+    void cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click();
     return cy.wait('@feederValueDeleteRequest', { timeout: FEEDER_QUERY_TIMEOUT })
       .then(() => cy.wait('@feederScriptsQueryAfterClear', { timeout: FEEDER_QUERY_TIMEOUT }))
       .then(() => clearVisibleValueRows());
@@ -242,11 +243,11 @@ function clearScripts(): Cypress.Chainable {
       .then(($body) => {
         const enabledClearButton = $body.find('[data-testid="feeder-clear-all-button"]:visible:not(:disabled)').first();
         if (enabledClearButton.length) {
-          cy.intercept('POST', '**/api/profile/feeder/scripts/clear-all**').as('feederClearAllRequest');
-          cy.intercept('GET', '**/api/profile/feeder/scripts**').as('feederScriptsQueryAfterClear');
-          cy.wrap(enabledClearButton).click({ force: true });
-          cy.get('[data-testid="confirmation-popup"]').should('be.visible');
-          cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click({ force: true });
+          void cy.intercept('POST', '**/api/profile/feeder/scripts/clear-all**').as('feederClearAllRequest');
+          void cy.intercept('GET', '**/api/profile/feeder/scripts**').as('feederScriptsQueryAfterClear');
+          void cy.wrap(enabledClearButton).click({ force: true });
+          void cy.get('[data-testid="confirmation-popup"]').should('be.visible');
+          void cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click({ force: true });
           return cy.wait('@feederClearAllRequest', { timeout: FEEDER_QUERY_TIMEOUT }).then(() => {
             return cy.wait('@feederScriptsQueryAfterClear', { timeout: FEEDER_QUERY_TIMEOUT });
           }).then(() => {
@@ -266,19 +267,19 @@ function clearScripts(): Cypress.Chainable {
 }
 
 function confirmPopup() {
-  cy.get('[data-testid="confirmation-popup"]').should('be.visible');
-  cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click({ force: true });
+  void cy.get('[data-testid="confirmation-popup"]').should('be.visible');
+  void cy.get('[data-testid="confirmation-yes-button"]').should('be.visible').click({ force: true });
 }
 
 export function transferFirstVisibleScriptOwner(username: string) {
   return openScriptTab().then(() => {
-    cy.get('[data-testid^="feeder-script-owner-button-"]').filter(':visible').first().click({ force: true });
-    cy.get('[data-testid="feeder-owner-dialog"]').should('be.visible');
+    void cy.get('[data-testid^="feeder-script-owner-button-"]').filter(':visible').first().click({ force: true });
+    void cy.get('[data-testid="feeder-owner-dialog"]').should('be.visible');
     cy.get(`[data-testid="feeder-owner-option-${username}"]`).then(($option) => {
-      cy.get('[data-testid="feeder-owner-select"]').select($option.attr('value')!);
+      void cy.get('[data-testid="feeder-owner-select"]').select($option.attr('value')!);
     });
-    cy.get('[data-testid="feeder-owner-submit"]').should('be.visible').click({ force: true });
-    cy.get('[data-testid^="feeder-script-owner-label-"]')
+    void cy.get('[data-testid="feeder-owner-submit"]').should('be.visible').click({ force: true });
+    void cy.get('[data-testid^="feeder-script-owner-label-"]')
       .filter(':visible')
       .first()
       .should('contain.text', username);
@@ -287,13 +288,13 @@ export function transferFirstVisibleScriptOwner(username: string) {
 
 export function expectCurrentUserHasScriptAccess() {
   return openScriptTab().then(() => {
-    cy.get('[data-testid^="feeder-script-row-"]').filter(':visible').first().should('exist');
+    void cy.get('[data-testid^="feeder-script-row-"]').filter(':visible').first().should('exist');
   });
 }
 
 export function expectCurrentUserHasNoScriptAccess() {
   return openScriptTab().then(() => {
-    cy.get('[data-testid="feeder-empty-scripts"]').should('be.visible');
+    void cy.get('[data-testid="feeder-empty-scripts"]').should('be.visible');
   });
 }
 
@@ -317,7 +318,7 @@ function setFirstRowStatus(expected: 'enabled' | 'disabled'): Cypress.Chainable 
         return cy.wrap(null, { log: false });
       }
 
-      cy.get('[data-testid^="feeder-script-toggle-button-"]').filter(':visible').first().click({ force: true });
+      void cy.get('[data-testid^="feeder-script-toggle-button-"]').filter(':visible').first().click({ force: true });
       confirmPopup();
       return assertFirstRowStatus(expected);
     });
@@ -327,27 +328,28 @@ function toggleAllStatuses(enabled: boolean) {
   const buttonTestId = enabled ? 'feeder-enable-all-button' : 'feeder-disable-all-button';
   const expectedStatus = enabled ? 'enabled' : 'disabled';
 
-  cy.get(`[data-testid="${buttonTestId}"]`).filter(':visible').first().should('not.be.disabled').click({ force: true });
+  void cy.get(`[data-testid="${buttonTestId}"]`).filter(':visible').first().should('not.be.disabled').click({ force: true });
   confirmPopup();
-  cy.wait(250);
-  assertFirstRowStatus(expectedStatus);
+  void cy.wait(250);
+  void assertFirstRowStatus(expectedStatus);
 }
 
 export function loadFeederValidationData() {
-  return cy.fixture('feeder/collector-validation.json').then((data) => {
+  return cy.fixture<FeederValidationData>('feeder/collector-validation.json').then((data) => {
     feederValidationData = data;
     return data;
   });
 }
 
 export function clearAllFeederRecords() {
-  if (!feederValidationData) {
+  const validationData = feederValidationData;
+  if (!validationData) {
     throw new Error('Feeder validation data is not loaded');
   }
 
-  const ruleKeys: string[] = feederValidationData.ruleKeys.slice(0, FEEDER_TEST_RULE_LIMIT);
-  cy.wrap(ruleKeys).each((ruleKey: string) => {
-    const category = feederValidationData.categories[ruleKey];
+  const ruleKeys: string[] = validationData.ruleKeys.slice(0, FEEDER_TEST_RULE_LIMIT);
+  void cy.wrap(ruleKeys).each((ruleKey: string) => {
+    const category = validationData.categories[ruleKey];
 
     return cy.then(() => {
       return selectFeederRule(category.ruleKey).then(() => {
@@ -363,48 +365,21 @@ export function clearAllFeederRecords() {
   });
 }
 
-export function uploadFixtureRecordsForAllFeederRules() {
-  if (!feederValidationData) {
-    throw new Error('Feeder validation data is not loaded');
-  }
-
-  const ruleKeys: string[] = feederValidationData.ruleKeys.slice(0, FEEDER_TEST_RULE_LIMIT);
-  cy.wrap(ruleKeys).each((ruleKey: string) => {
-    const category = feederValidationData.categories[ruleKey];
-
-    return cy.then(() => {
-      return selectFeederRule(category.ruleKey).then(() => {
-        return openAddTab().then(() => {
-          if (category.ruleType === 'generic') {
-            return uploadFirstValue(category.valuesFixture);
-          }
-
-          return cy.then(() => uploadScript(category)).then(() => {
-            if (category.ruleType === 'shared' && category.valuesFixture) {
-              return uploadFirstValue(category.valuesFixture);
-            }
-            return cy.wrap(null, { log: false });
-          });
-        });
-      });
-    });
-  });
-}
-
 export function validateFixtureOperationsForAllFeederRules() {
-  if (!feederValidationData) {
+  const validationData = feederValidationData;
+  if (!validationData) {
     throw new Error('Feeder validation data is not loaded');
   }
 
-  const ruleKeys: string[] = feederValidationData.ruleKeys.slice(0, FEEDER_TEST_RULE_LIMIT);
-  cy.wrap(ruleKeys).each((ruleKey: string) => {
-    const category = feederValidationData.categories[ruleKey];
+  const ruleKeys: string[] = validationData.ruleKeys.slice(0, FEEDER_TEST_RULE_LIMIT);
+  void cy.wrap(ruleKeys).each((ruleKey: string) => {
+    const category = validationData.categories[ruleKey];
 
     return cy.then(() => {
       return selectFeederRule(category.ruleKey).then(() => {
         return openAddTab().then(() => {
           if (category.ruleType === 'generic') {
-            return uploadFirstValue(category.valuesFixture).then(() => {
+            return uploadFirstValue(category.valuesFixture!).then(() => {
               if (category.invalidValuesFixture) {
                 return expectWrongValueUploadError(category.invalidValuesFixture);
               }

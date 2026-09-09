@@ -1,5 +1,5 @@
-<div @scanOverlayAnimation class="absolute inset-0 z-[20] grid place-items-center backdrop-blur-[8px]" [ngClass]="isLightTheme ? 'bg-[rgba(226,235,246,0.5)]' : 'bg-[#020617C7]'" role="dialog" aria-modal="true">
-  <div @scanCardAnimation class="mt-[-200px] w-[calc(100%-32px)] max-w-[520px] rounded-[16px] border p-[22px_22px_18px] text-center" [ngClass]="isLightTheme ? 'border-[#c5d3e4] bg-white text-[#172235] shadow-[0_18px_44px_rgba(15,23,42,0.16)]' : 'border-[rgba(148,163,184,0.18)] bg-[rgba(15,23,42,0.92)] text-[#f8fafc] shadow-[0_24px_70px_rgba(0,0,0,0.55)]'">
+<div class="absolute inset-0 z-[20] grid place-items-center backdrop-blur-[8px] ui-scan-overlay-in" [ngClass]="isLightTheme ? 'bg-[rgba(226,235,246,0.5)]' : 'bg-[#020617C7]'" role="dialog" aria-modal="true">
+  <div class="mt-[-200px] w-[calc(100%-32px)] max-w-[520px] rounded-[16px] border p-[22px_22px_18px] text-center ui-scan-card-in" [ngClass]="isLightTheme ? 'border-[#c5d3e4] bg-white text-[#172235] shadow-[0_18px_44px_rgba(15,23,42,0.16)]' : 'border-[rgba(148,163,184,0.18)] bg-[rgba(15,23,42,0.92)] text-[#f8fafc] shadow-[0_24px_70px_rgba(0,0,0,0.55)]'">
     <div class="mb-[8px] flex items-center justify-center gap-[12px]">
       <div class="h-[38px] w-[38px] animate-spin rounded-full border-[3px] border-t-[var(--color-blue-640)]" [ngClass]="isLightTheme ? 'border-[rgba(23,35,53,0.2)]' : 'border-[rgba(248,250,252,0.18)]'"></div>
       <div class="text-[16px] font-extrabold">{{ 'Scanning data' | translate }}</div>

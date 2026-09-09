@@ -1,152 +1,10 @@
-export type BootstrapIconName =
-  | 'bi-arrow-up-right'
-  | 'bi-person-x'
-  | 'bi-box-arrow-in-down'
-  | 'bi-browser-chrome'
-  | 'bi-browser-firefox'
-  | 'bi-collection'
-  | 'bi-gear'
-  | 'bi-android2'
-  | 'bi-arrow-clockwise'
-  | 'bi-arrow-left'
-  | 'bi-arrow-repeat'
-  | 'bi-arrows-angle-contract'
-  | 'bi-arrows-angle-expand'
-  | 'bi-arrows-collapse'
-  | 'bi-arrows-expand'
-  | 'bi-at'
-  | 'bi-bar-chart-line-fill'
-  | 'bi-body-text'
-  | 'bi-box-arrow-up-right'
-  | 'bi-broadcast'
-  | 'bi-broadcast-pin'
-  | 'bi-bug-fill'
-  | 'bi-building'
-  | 'bi-bullseye'
-  | 'bi-calendar3'
-  | 'bi-card-list'
-  | 'bi-card-text'
-  | 'bi-chat-dots-fill'
-  | 'bi-chat-left-text'
-  | 'bi-check-circle'
-  | 'bi-check-circle-fill'
-  | 'bi-check-lg'
-  | 'bi-check2-circle'
-  | 'bi-chevron-down'
-  | 'bi-chevron-left'
-  | 'bi-chevron-right'
-  | 'bi-chevron-up'
-  | 'bi-circle'
-  | 'bi-clipboard'
-  | 'bi-clipboard-check-fill'
-  | 'bi-clipboard-fill'
-  | 'bi-copy'
-  | 'bi-clock-history'
-  | 'bi-code-slash'
-  | 'bi-collection-fill'
-  | 'bi-cpu-fill'
-  | 'bi-credit-card-2-front-fill'
-  | 'bi-crosshair'
-  | 'bi-currency-bitcoin'
-  | 'bi-dash-circle'
-  | 'bi-diagram-3'
-  | 'bi-diagram-3-fill'
-  | 'bi-download'
-  | 'bi-envelope'
-  | 'bi-envelope-at'
-  | 'bi-envelope-fill'
-  | 'bi-exclamation-circle-fill'
-  | 'bi-exclamation-diamond-fill'
-  | 'bi-exclamation-octagon-fill'
-  | 'bi-exclamation-triangle-fill'
-  | 'bi-file-earmark-arrow-down'
-  | 'bi-file-earmark-code'
-  | 'bi-file-earmark-fill'
-  | 'bi-file-earmark-text'
-  | 'bi-file-post'
-  | 'bi-fingerprint'
-  | 'bi-flag-fill'
-  | 'bi-folder-fill'
-  | 'bi-geo-alt-fill'
-  | 'bi-globe'
-  | 'bi-globe-americas'
-  | 'bi-globe2'
-  | 'bi-google-play'
-  | 'bi-hash'
-  | 'bi-heart-fill'
-  | 'bi-hourglass-split'
-  | 'bi-image'
-  | 'bi-image-alt'
-  | 'bi-images'
-  | 'bi-info-circle-fill'
-  | 'bi-key-fill'
-  | 'bi-keyboard'
-  | 'bi-lightbulb-fill'
-  | 'bi-link-45deg'
-  | 'bi-linkedin'
-  | 'bi-list'
-  | 'bi-list-ol'
-  | 'bi-list-ul'
-  | 'bi-lock-fill'
-  | 'bi-node-minus'
-  | 'bi-pause-fill'
-  | 'bi-pencil'
-  | 'bi-pencil-fill'
-  | 'bi-pencil-square'
-  | 'bi-people'
-  | 'bi-people-fill'
-  | 'bi-person-badge'
-  | 'bi-person-badge-fill'
-  | 'bi-person-check'
-  | 'bi-person-circle'
-  | 'bi-person-exclamation'
-  | 'bi-person-fill'
-  | 'bi-person-lines-fill'
-  | 'bi-person-plus'
-  | 'bi-pin-angle'
-  | 'bi-pin-angle-fill'
-  | 'bi-play-fill'
-  | 'bi-plus-lg'
-  | 'bi-plus-square'
-  | 'bi-record-circle'
-  | 'bi-reddit'
-  | 'bi-router-fill'
-  | 'bi-search'
-  | 'bi-share'
-  | 'bi-share-fill'
-  | 'bi-shield-check'
-  | 'bi-shield-exclamation'
-  | 'bi-shield-lock-fill'
-  | 'bi-sliders2-vertical'
-  | 'bi-stack'
-  | 'bi-stars'
-  | 'bi-stop-fill'
-  | 'bi-tag-fill'
-  | 'bi-tags'
-  | 'bi-tags-fill'
-  | 'bi-telegram'
-  | 'bi-telephone'
-  | 'bi-telephone-fill'
-  | 'bi-terminal-fill'
-  | 'bi-three-dots'
-  | 'bi-three-dots-vertical'
-  | 'bi-translate'
-  | 'bi-trash3'
-  | 'bi-trash3-fill'
-  | 'bi-twitter-x'
-  | 'bi-upload'
-  | 'bi-wallet2'
-  | 'bi-window'
-  | 'bi-x'
-  | 'bi-x-circle'
-  | 'bi-x-circle-fill'
-  | 'bi-x-lg'
-  | 'bi-x-octagon'
-;
 
-export interface BootstrapIconDefinition { viewBox: string; markup: string; }
+import type { BootstrapIconDefinition } from './model/bootstrap-icon-registry.model';
+export type { BootstrapIconDefinition } from './model/bootstrap-icon-registry.model';
 
-export const bootstrapIconRegistry: Record<BootstrapIconName, BootstrapIconDefinition> = {
+
+
+export const bootstrapIconRegistry = {
   'bi-arrow-up-right': { viewBox: '0 0 16 16', markup: `<path fill-rule="evenodd" d="M14 2.5a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0 0 1h4.793L2.146 13.146a.5.5 0 0 0 .708.708L13 3.707V8.5a.5.5 0 0 0 1 0z"/>` },
   'bi-person-x': { viewBox: '0 0 16 16', markup: `<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z"/>
 <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m-.646-4.854.646.647.646-.647a.5.5 0 0 1 .708.708l-.647.646.647.646a.5.5 0 0 1-.708.708l-.646-.647-.646.647a.5.5 0 0 1-.708-.708l.647-.646-.647-.646a.5.5 0 0 1 .708-.708"/>` },
@@ -220,6 +78,19 @@ export const bootstrapIconRegistry: Record<BootstrapIconName, BootstrapIconDefin
   'bi-currency-bitcoin': { viewBox: '0 0 16 16', markup: `<path d="M5.5 13v1.25c0 .138.112.25.25.25h1a.25.25 0 0 0 .25-.25V13h.5v1.25c0 .138.112.25.25.25h1a.25.25 0 0 0 .25-.25V13h.084c1.992 0 3.416-1.033 3.416-2.82 0-1.502-1.007-2.323-2.186-2.44v-.088c.97-.242 1.683-.974 1.683-2.19C11.997 3.93 10.847 3 9.092 3H9V1.75a.25.25 0 0 0-.25-.25h-1a.25.25 0 0 0-.25.25V3h-.573V1.75a.25.25 0 0 0-.25-.25H5.75a.25.25 0 0 0-.25.25V3l-1.998.011a.25.25 0 0 0-.25.25v.989c0 .137.11.25.248.25l.755-.005a.75.75 0 0 1 .745.75v5.505a.75.75 0 0 1-.75.75l-.748.011a.25.25 0 0 0-.25.25v1c0 .138.112.25.25.25zm1.427-8.513h1.719c.906 0 1.438.498 1.438 1.312 0 .871-.575 1.362-1.877 1.362h-1.28zm0 4.051h1.84c1.137 0 1.756.58 1.756 1.524 0 .953-.626 1.45-2.158 1.45H6.927z"/>` },
   'bi-dash-circle': { viewBox: '0 0 16 16', markup: `<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
   <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8"/>` },
+  'bi-tag': { viewBox: '0 0 16 16', markup: `<path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0"/>
+  <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1m0 5.586 7 7L13.586 9l-7-7H2z"/>` },
+  'bi-patch-check-fill': { viewBox: '0 0 16 16', markup: `<path d="M10.067.87a2.89 2.89 0 0 0-4.134 0l-.622.638-.89-.011a2.89 2.89 0 0 0-2.924 2.924l.01.89-.636.622a2.89 2.89 0 0 0 0 4.134l.637.622-.011.89a2.89 2.89 0 0 0 2.924 2.924l.89-.01.622.636a2.89 2.89 0 0 0 4.134 0l.622-.637.89.011a2.89 2.89 0 0 0 2.924-2.924l-.01-.89.636-.622a2.89 2.89 0 0 0 0-4.134l-.637-.622.011-.89a2.89 2.89 0 0 0-2.924-2.924l-.89.01zm.287 5.984-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7 8.793l2.646-2.647a.5.5 0 0 1 .708.708"/>` },
+  'bi-bookmark-fill': { viewBox: '0 0 16 16', markup: `<path d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2"/>` },
+  'bi-chat-dots': { viewBox: '0 0 16 16', markup: `<path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+  <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362M8 14c-.53 0-1.045-.068-1.539-.196l-.362-.093-.343.147c-.396.17-1.182.484-2.398.796.116-.316.185-.579.219-.784l.058-.354-.256-.253A5.9 5.9 0 0 1 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6"/>` },
+  'bi-star-fill': { viewBox: '0 0 16 16', markup: `<path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>` },
+  'bi-eye': { viewBox: '0 0 16 16', markup: `<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>` },
+  'bi-exclamation-circle': { viewBox: '0 0 16 16', markup: `<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+  <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>` },
+  'bi-cloud-arrow-down': { viewBox: '0 0 16 16', markup: `<path d="M7.646 10.854a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 9.293V5.5a.5.5 0 0 0-1 0v3.793L6.354 8.146a.5.5 0 1 0-.708.708z"/>
+  <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383m.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"/>` },
   'bi-diagram-3': { viewBox: '0 0 16 16', markup: `<path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/>` },
   'bi-diagram-3-fill': { viewBox: '0 0 16 16', markup: `<path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5z"/>` },
   'bi-download': { viewBox: '0 0 16 16', markup: `<path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
@@ -282,6 +153,7 @@ export const bootstrapIconRegistry: Record<BootstrapIconName, BootstrapIconDefin
   <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>` },
   'bi-people': { viewBox: '0 0 16 16', markup: `<path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>` },
   'bi-people-fill': { viewBox: '0 0 16 16', markup: `<path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>` },
+  'bi-person': { viewBox: '0 0 16 16', markup: `<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>` },
   'bi-person-badge': { viewBox: '0 0 16 16', markup: `<path d="M6.5 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
   <path d="M4.5 0A2.5 2.5 0 0 0 2 2.5V14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2.5A2.5 2.5 0 0 0 11.5 0zM3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5v10.795a4.2 4.2 0 0 0-.776-.492C11.392 12.387 10.063 12 8 12s-3.392.387-4.224.803a4.2 4.2 0 0 0-.776.492z"/>` },
   'bi-person-badge-fill': { viewBox: '0 0 16 16', markup: `<path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm4.5 0a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6m5 2.755C12.146 12.825 10.623 12 8 12s-4.146.826-5 1.755V14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1z"/>` },
@@ -351,4 +223,6 @@ export const bootstrapIconRegistry: Record<BootstrapIconName, BootstrapIconDefin
   'bi-x-lg': { viewBox: '0 0 16 16', markup: `<path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>` },
   'bi-x-octagon': { viewBox: '0 0 16 16', markup: `<path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1z"/>
   <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>` },
-};
+} satisfies Record<string, BootstrapIconDefinition>;
+
+export type BootstrapIconName = keyof typeof bootstrapIconRegistry;

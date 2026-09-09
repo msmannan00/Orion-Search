@@ -1,0 +1,78 @@
+.satellite-map-shell .leaflet-control-zoom {
+  margin: 12px;
+  overflow: hidden;
+  background: rgb(8 16 27 / 88%);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgb(2 6 23 / 28%);
+  backdrop-filter: blur(10px);
+}
+
+.satellite-map-shell .leaflet-control-zoom a {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 78%);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.satellite-map-shell .leaflet-control-zoom a + a {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.satellite-map-shell .leaflet-control-zoom a:hover,
+.satellite-map-shell .leaflet-control-zoom a:focus-visible {
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+}
+
+.satellite-map-shell .leaflet-control-zoom a.leaflet-disabled {
+  color: rgb(255 255 255 / 28%);
+  cursor: default;
+  background: transparent;
+}
+
+body.light-theme .satellite-map-shell .leaflet-control-zoom {
+  background: rgb(247 251 255 / 92%);
+  border-color: #d2deec;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 12%);
+}
+
+body.light-theme .satellite-map-shell .leaflet-control-zoom a {
+  color: #4b6380;
+}
+
+body.light-theme .satellite-map-shell .leaflet-control-zoom a + a {
+  border-top-color: #d8e3f0;
+}
+
+body.light-theme .satellite-map-shell .leaflet-control-zoom a:hover,
+body.light-theme .satellite-map-shell .leaflet-control-zoom a:focus-visible {
+  color: #0f5fa8;
+  background: #eef6ff;
+}
+
+body.light-theme .satellite-map-shell .leaflet-control-zoom a.leaflet-disabled {
+  color: rgb(75 99 128 / 32%);
+  background: transparent;
+}
+
+@media (width <= 640px) {
+  .satellite-map-shell .leaflet-control-zoom {
+    margin: 8px;
+  }
+
+  .satellite-map-shell .leaflet-control-zoom a {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+}

@@ -1,5 +1,7 @@
 import { effect, Injectable, WritableSignal } from '@angular/core';
 import { AppSettingsModel, ConfigSettings, LocalSettingsModel } from '../../../shared/model/app/config';
+import { getOwnProperty } from '../../../shared/utils/type-guards.util';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,12 +30,12 @@ export class AppStorageService {
   getLocalSettings(): Partial<LocalSettingsModel> {
     return {
       enable_advanced_tools: this.getFromStorage<boolean>('enable_advanced_tools'),
-      advance_setting_toggle: this.getFromStorage<boolean>('advance_setting_toggle') || true,
-      iocExpanded: this.getFromStorage<boolean>('iocExpanded') || true,
-      entityFilterCondition: this.getFromStorage<boolean>('entityFilterCondition') || true,
-      entityfilterCategories: this.getFromStorage('entityfilterCategories', true) || {},
+      advance_setting_toggle: this.getFromStorage<boolean>('advance_setting_toggle') ?? true,
+      iocExpanded: this.getFromStorage<boolean>('iocExpanded') ?? true,
+      entityFilterCondition: this.getFromStorage<boolean>('entityFilterCondition') ?? true,
+      entityfilterCategories: this.getFromStorage('entityfilterCategories', true) ?? {},
       isSidebarOpen: this.getFromStorage('isSidebarOpen', true),
-      matchType: this.getFromStorage<string>('matchType') || 'or',
+      matchType: this.getFromStorage<string>('matchType') ?? 'or',
       sortType: this.getFromStorage<string>('sortType'),
     };
   }
@@ -53,7 +55,7 @@ export class AppStorageService {
     effect(() => {
       const settings = configData().localSettings;
       this.watchList.forEach(key => {
-        const value = settings[key];
+        const value = getOwnProperty(settings, key);
         if (value !== undefined) {
           const storeValue = typeof value === 'boolean' ? String(value)
             : typeof value === 'object' ? JSON.stringify(value)

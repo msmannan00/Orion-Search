@@ -9,7 +9,7 @@
         </div>
         <h2 class="text-[20px] font-semibold text-[var(--color-text1)]">{{ title | translate }}</h2>
         <p class="mt-[6px] text-[14px] text-[var(--color-text4)]">{{ description | translate }}</p>
-        <button type="button" class="inline-flex appearance-none items-center justify-center border-0 text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] mt-[16px] inline-flex items-center justify-center [--ui-btn-radius:8px] [--ui-btn-px:16px] [--ui-btn-py:10px] text-[14px] [--ui-btn-transition-properties:all] [--ui-btn-transition-duration:150ms] active:scale-[0.97] active:brightness-110 active:shadow-none" (click)="triggerFileInput()">
+        <button type="button" class="inline-flex appearance-none items-center justify-center border-0 text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] mt-[16px] [--ui-btn-radius:8px] [--ui-btn-px:16px] [--ui-btn-py:10px] text-[14px] [--ui-btn-transition-properties:all] [--ui-btn-transition-duration:150ms] active:scale-[0.97] active:brightness-110 active:shadow-none" (click)="triggerFileInput()">
           <img ngSrc="../../../../assets/images/shared/theme/ai.svg" alt="" aria-hidden="true" width="24" height="24" class="mr-[10px]" />
           {{ 'Choose File' | translate }}
         </button>
@@ -34,7 +34,7 @@
         <div class="mb-[6px] text-[12px] font-medium text-[var(--color-text1)]">
           {{ (currentStep || 'Processing file...') | translate }}
         </div>
-        <div class="relative overflow-hidden h-[10px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+        <div class="relative overflow-hidden h-[10px] w-full rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
           <div class="absolute inset-0 overflow-hidden after:absolute after:bottom-0 after:top-0 after:w-[40%] after:rounded-full after:bg-[linear-gradient(90deg,#4ea2f1_0%,#2c7ac5_50%,#7cc2ff_100%)] after:shadow-[0_0_3px_rgb(78_162_241/18%)] after:content-[''] after:[animation:ui-progress-sweep-primary_1.3s_linear_infinite]"></div>
         </div>
       </div>

@@ -178,7 +178,7 @@
             </div>
           </div>
           @if (activeTab === 'm_content' || activeTab === 'm_summary') {
-            <app-result-section @fadeInDashboardItem
+            <app-result-section class="ui-fade-in-dashboard-item"
             [listItems]="[activeTab === 'm_content' ? content : summary]"></app-result-section>
           }
           @if (activeTab === 'm_org' || activeTab === 'm_person') {
@@ -187,7 +187,7 @@
             </div>
           }
           @if (activeTab !== 'm_content' && activeTab !== 'm_summary') {
-            <app-result-list @fadeInDashboardItem
+            <app-result-list class="ui-fade-in-dashboard-item"
             [activeTab]="activeTab" [listItems]="listItems"></app-result-list>
           }
         }

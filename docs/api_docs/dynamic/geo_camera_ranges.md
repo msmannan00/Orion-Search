@@ -217,12 +217,12 @@ If IPs are extracted and scanned but no cameras detected:
 
 ## IP Range Formats
 
-| Format | Example | Notes |
-|--------|---------|-------|
-| CIDR | `119.152.0.0/13` | Most efficient — large ranges are sampled |
-| Start–End | `39.32.0.0-39.63.255.255` | Inclusive on both ends |
-| Single IP | `203.0.113.5` | Always included in full |
-| Mixed | All three in one request | Fully supported |
+| Format    | Example                   | Notes                                     |
+|-----------|---------------------------|-------------------------------------------|
+| CIDR      | `119.152.0.0/13`          | Most efficient — large ranges are sampled |
+| Start–End | `39.32.0.0-39.63.255.255` | Inclusive on both ends                    |
+| Single IP | `203.0.113.5`             | Always included in full                   |
+| Mixed     | All three in one request  | Fully supported                           |
 
 **Sampling behaviour for large CIDRs:** A `/8` block contains 16 million IPs. The scanner samples them proportionally so the total across all ranges never exceeds `max_ips`. A `/24` (256 IPs) or smaller is always scanned in full if budget allows.
 

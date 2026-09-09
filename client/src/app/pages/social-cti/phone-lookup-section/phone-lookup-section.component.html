@@ -1,0 +1,86 @@
+<div data-testid="social-phone-lookup-section" class="w-full min-w-[220px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] px-3 py-3 shadow-[0_8px_18px_var(--color-shadow-light)] md:w-[238px]">
+  <div class="mb-2 flex items-start gap-2">
+    <div class="min-w-0 flex-1">
+      <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text2)]">{{ 'Phone Lookup' | translate }}</div>
+      <div class="mt-1 truncate text-[10px] leading-4 text-[var(--color-text4)]">{{ 'Search associated phone intelligence.' | translate }}</div>
+    </div>
+    @if ((hasSavedLookup() || isClearing()) && !isLoading()) {
+      <button data-testid="social-phone-clear-button" type="button" (click)="clearSavedLookup($event)" [disabled]="isClearing()" class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] text-[var(--color-text4)] outline-none transition-colors hover:bg-red-500/10 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-red-400/30 disabled:cursor-wait disabled:opacity-60" [title]="'Clear saved lookup' | translate" [attr.aria-label]="'Clear saved phone lookup' | translate">
+        @if (isClearing()) {
+          <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+        } @else {
+          <i class="bi bi-trash3 text-[12px] leading-none"></i>
+        }
+      </button>
+    }
+  </div>
+  <div class="flex min-w-0 items-center gap-2">
+    <input data-testid="social-phone-search-input" type="tel" [value]="query()" (input)="onQueryInput($event)" (keydown.enter)="search($event)" [placeholder]="'Phone number' | translate" class="h-8 min-w-0 flex-1 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-mono text-xs text-[var(--color-text1)] outline-none placeholder:font-sans placeholder:text-[var(--color-text4)] focus:border-sky-400/35">
+    <button data-testid="social-phone-search-button" type="button" (click)="search($event)" [disabled]="isLoading() || isClearing() || !query().trim()" class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] text-[var(--color-text3)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)] disabled:cursor-not-allowed disabled:opacity-50" [title]="'Search phone intelligence' | translate" [attr.aria-label]="'Search phone intelligence' | translate">
+      @if (isLoading()) {
+        <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+      } @else {
+        <i class="bi bi-search text-[12px] leading-none"></i>
+      }
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div data-testid="social-phone-loading" class="mt-3 flex items-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-[rgba(87,165,235,0.045)] px-3 py-2 text-xs text-[var(--color-text3)]">
+      <span class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+      {{ 'Checking phone' | translate }}
+    </div>
+  } @else if (hasEntityIdentification() || hasOpenSourceFootprints()) {
+    @if (hasEntityIdentification()) {
+      <div data-testid="social-phone-entity" class="mt-3 border-t border-[var(--color-border)] pt-3">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text4)]">{{ 'Entity Identification' | translate }}</div>
+        <div class="mt-2 space-y-2">
+          @if (displayedResult().name) {
+            <div><div class="text-[9px] font-semibold uppercase text-[var(--color-text4)]">{{ 'Name' | translate }}</div><div class="mt-0.5 break-words text-[11px] font-semibold text-[var(--color-text2)]">{{ displayedResult().name }}</div></div>
+          }
+          @if (displayedResult().formatted_address) {
+            <div><div class="text-[9px] font-semibold uppercase text-[var(--color-text4)]">{{ 'Physical Location' | translate }}</div><div class="mt-0.5 break-words text-[11px] leading-4 text-[var(--color-text3)]">{{ displayedResult().formatted_address }}</div></div>
+          }
+          @if (displayedResult().rating) {
+            <div><div class="text-[9px] font-semibold uppercase text-[var(--color-text4)]">{{ 'Public Rating' | translate }}</div><div class="mt-0.5 text-[11px] text-[var(--color-text3)]">⭐ {{ displayedResult().rating }} ({{ displayedResult().user_ratings_total }} {{ 'User Reviews' | translate }})</div></div>
+          }
+          @if (displayedResult().website) {
+            <div><div class="text-[9px] font-semibold uppercase text-[var(--color-text4)]">{{ 'Official Portal' | translate }}</div><a [href]="displayedResult().website" target="_blank" rel="noopener" class="mt-0.5 block truncate font-mono text-[10px] text-sky-400 hover:underline" [title]="displayedResult().website">{{ displayedResult().website }}</a></div>
+          }
+          @if (displayedResult().phone_numbers?.length) {
+            <div><div class="text-[9px] font-semibold uppercase text-[var(--color-text4)]">{{ 'Associated Numbers' | translate }}</div><div class="mt-1 space-y-1">@for (phone of displayedResult().phone_numbers; track phone) { <div class="truncate font-mono text-[10px] text-[var(--color-text3)]">{{ phone }}</div> }</div></div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (hasOpenSourceFootprints()) {
+      <div data-testid="social-phone-footprints" class="mt-3 border-t border-[var(--color-border)] pt-3">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text4)]">{{ 'Open Source Footprints' | translate }}</div>
+        <div class="mt-2 space-y-2">
+          @if (hasKnowledgeGraph()) {
+            <div class="text-[11px] leading-4 text-[var(--color-text3)]">{{ displayedResult().knowledge_graph?.description || displayedResult().knowledge_graph?.detailed_desc }}</div>
+          }
+          @if (displayedResult().emails?.length) {
+            <div class="space-y-1">@for (email of displayedResult().emails; track email) { <div class="truncate font-mono text-[10px] text-amber-300" [title]="email">{{ email }}</div> }</div>
+          }
+          @if (displayedWebFootprints().length) {
+            <div class="space-y-1.5">@for (footprint of displayedWebFootprints().slice(0, 3); track $index) { <a [href]="footprint.link" target="_blank" rel="noopener" class="block truncate text-[11px] font-semibold text-sky-400 hover:underline" [title]="footprint.title">{{ footprint.title }}</a> }</div>
+          }
+        </div>
+      </div>
+    }
+  } @else if (!errorMessage()) {
+    <div class="mt-3 border-t border-[var(--color-border)] pt-3">
+      <div data-testid="social-phone-empty" class="flex items-center gap-2">
+        <span class="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-300 shadow-[0_0_0_3px_rgba(16,185,129,0.14)]"></span>
+        <span class="text-[12px] font-semibold text-[var(--color-text2)]">{{ 'No record found' | translate }}</span>
+      </div>
+      <div class="mt-1 text-[11px] leading-4 text-[var(--color-text4)]">{{ 'No phone intelligence match for this search.' | translate }}</div>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="mt-2 rounded-[8px] border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300 [.light-theme_&]:!text-[#b45309]">{{ errorMessage() | translate }}</div>
+  }
+</div>

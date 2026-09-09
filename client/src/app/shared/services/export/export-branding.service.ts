@@ -27,7 +27,7 @@ export class ExportBrandingService {
     }
     if (brandedData && typeof brandedData === 'object') {
       const record = brandedData as Record<string, unknown>;
-      const metadataKey = record['type'] === 'bundle' ? 'x_tenant_name' : 'tenant_name';
+      const metadataKey = record.type === 'bundle' ? 'x_tenant_name' : 'tenant_name';
       return { ...record, [metadataKey]: tenantName };
     }
     return { tenant_name: tenantName, value: brandedData };
@@ -112,8 +112,12 @@ export class ExportBrandingService {
   private blobToDataUrl(blob: Blob): Promise<string | null> {
     return new Promise(resolve => {
       const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
-      reader.onerror = () => resolve(null);
+      reader.onload = () => {
+        resolve(typeof reader.result === 'string' ? reader.result : null);
+      };
+      reader.onerror = () => {
+        resolve(null);
+      };
       reader.readAsDataURL(blob);
     });
   }

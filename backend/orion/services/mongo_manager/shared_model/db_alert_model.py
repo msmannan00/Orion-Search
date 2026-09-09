@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, List
 
@@ -38,8 +38,8 @@ class AlertModel(EmbeddedModel):
     raw_findings: dict[str, Any] = Field(default_factory=dict)
     status: alert_status = Field(default=alert_status.ACTIVE)
 
-    first_seen: datetime = Field(default_factory=datetime.utcnow)
-    last_seen: datetime = Field(default_factory=datetime.utcnow)
+    first_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("content_types", mode="before")
     @classmethod

@@ -22,6 +22,148 @@ export interface ThreatLensCoordinates {
   lon: number;
 }
 
+export interface EsriExtent {
+  xmin: number;
+  ymin: number;
+  xmax: number;
+  ymax: number;
+  center?: EsriGeometry;
+}
+
+export interface EsriGeometry {
+  type?: string;
+  longitude?: number;
+  latitude?: number;
+  x?: number;
+  y?: number;
+  lat?: number;
+  lon?: number;
+  xmin?: number;
+  ymin?: number;
+  xmax?: number;
+  ymax?: number;
+  rings?: unknown[][];
+  paths?: unknown[][];
+  extent?: EsriExtent;
+  centroid?: EsriGeometry;
+  labelPoint?: EsriGeometry;
+  spatialReference?: Record<string, unknown>;
+  clone?: () => EsriGeometry;
+  [key: string]: unknown;
+}
+
+export interface EsriSymbol {
+  size?: number | string;
+  width?: number | string;
+  height?: number | string;
+  color?: unknown;
+  outline?: EsriSymbol;
+  opacity?: number;
+  clone?: () => EsriSymbol;
+  [key: string]: unknown;
+}
+
+export interface EsriHandle {
+  remove: () => void;
+}
+
+export interface EsriCollection<T> {
+  readonly length: number;
+  toArray: () => T[];
+  forEach: (callback: (value: T, index: number) => void) => void;
+  map: <U>(callback: (value: T, index: number) => U) => U[];
+  filter: (callback: (value: T, index: number) => boolean) => T[];
+  find: (callback: (value: T, index: number) => boolean) => T | undefined;
+}
+
+export interface EsriGraphicsLayer {
+  graphics: EsriCollection<ThreatLensMapGraphic>;
+  add: (graphic: ThreatLensMapGraphic) => ThreatLensMapGraphic;
+  addMany: (graphics: ThreatLensMapGraphic[]) => ThreatLensMapGraphic[];
+  remove: (graphic: ThreatLensMapGraphic) => ThreatLensMapGraphic;
+  removeAll: () => void;
+  [key: string]: unknown;
+}
+
+export interface EsriFeatureLayer extends EsriGraphicsLayer {
+  createQuery: () => EsriQuery;
+  queryFeatures: (query: EsriQuery) => Promise<{ features: ThreatLensMapGraphic[] }>;
+}
+
+export interface EsriQuery {
+  where?: string;
+  returnGeometry?: boolean;
+  outFields?: string[];
+}
+
+export interface EsriLayerView {
+  highlight: (graphic: ThreatLensMapGraphic) => EsriHandle;
+}
+
+export interface EsriHitTestResult {
+  graphic: ThreatLensMapGraphic;
+}
+
+export interface EsriViewPointerEvent {
+  x?: number;
+  y?: number;
+  clientX?: number;
+  clientY?: number;
+  native?: MouseEvent | TouchEvent;
+  touches?: TouchList;
+  [key: string]: unknown;
+}
+
+export interface EsriMapLike {
+  basemap: string | { id?: string };
+  [key: string]: unknown;
+}
+
+export interface EsriSceneView {
+  zoom: number;
+  scale: number;
+  width: number;
+  height: number;
+  center: EsriGeometry;
+  interacting: boolean;
+  map: EsriMapLike;
+  camera?: { position?: EsriGeometry; [key: string]: unknown };
+  ui: { components: string[] };
+  highlightOptions: Record<string, unknown>;
+  destroy: () => void;
+  when: () => Promise<void>;
+  whenLayerView: (layer: EsriFeatureLayer) => Promise<EsriLayerView>;
+  goTo: (target: Record<string, unknown>, options?: Record<string, unknown>) => Promise<unknown>;
+  on: (eventName: string, callback: (event: EsriViewPointerEvent) => void | Promise<void>) => EsriHandle;
+  watch: <T = unknown>(propertyName: string, callback: (value: T) => void) => EsriHandle;
+  hitTest: (event: EsriViewPointerEvent, options?: Record<string, unknown>) => Promise<{ results: EsriHitTestResult[] }>;
+  toScreen: (geometry: EsriGeometry) => ThreatLensScreenPoint | null;
+  toMap: (point: ThreatLensScreenPoint) => EsriGeometry | null;
+  resize: () => void;
+  requestRender?: () => void;
+  environment?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface EsriGeometryEngine {
+  labelPoint?: (geometry: EsriGeometry) => EsriGeometry;
+  centroid?: (geometry: EsriGeometry) => EsriGeometry;
+  contains?: (geometry: EsriGeometry, point: EsriGeometry) => boolean;
+  intersects?: (first: EsriGeometry, second: EsriGeometry) => boolean;
+  geodesicArea?: (geometry: EsriGeometry, unit?: string) => number;
+  planarArea?: (geometry: EsriGeometry, unit?: string) => number;
+  [key: string]: unknown;
+}
+
+export interface EsriWebMercatorUtils {
+  xyToLngLat?: (x: number, y: number) => [number, number];
+  webMercatorToGeographic?: (geometry: EsriGeometry) => EsriGeometry;
+  geographicToWebMercator?: (geometry: EsriGeometry) => EsriGeometry;
+  [key: string]: unknown;
+}
+
+export type EsriConstructor<T> = new (options?: Record<string, unknown>) => T;
+
 export interface ThreatLensCountryBoundary {
   rings: ThreatLensCoordinates[][];
   extent: {
@@ -59,13 +201,18 @@ export interface ThreatLensMapGraphicAttributes {
   accuracyMin?: number;
   accuracyMax?: number;
   distanceKm?: number;
+  endpoint_color?: number[];
+  endpoint_opacity?: number;
+  endpoint_id?: string;
   [key: string]: unknown;
 }
 
 export interface ThreatLensMapGraphic {
-  geometry?: any;
+  geometry?: EsriGeometry;
   attributes?: ThreatLensMapGraphicAttributes;
-  symbol?: any;
+  symbol?: EsriSymbol;
+  layer?: EsriFeatureLayer | EsriGraphicsLayer;
+  [key: string]: unknown;
 }
 
 export interface ThreatLensIpDistributionCellRef {

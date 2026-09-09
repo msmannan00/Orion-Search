@@ -1,7 +1,7 @@
 import { SatelliteTrackingViewport } from '../../models/geo-fencing.models';
 import { SatelliteIntelViewport } from '../../enums/geo-fencing.enums';
+import { ParsedCoordinates } from '../../../../shared/utils/model/geo-coordinates.model';
 
-type ParsedCoordinates = { lat: number; lon: number };
 
 export class SatelliteLocationState {
   private readonly compareNarrowDelta = 0.015;
@@ -234,7 +234,7 @@ export class SatelliteLocationState {
     }
     const pendingCompare = {
       imageType: this.pendingCompareImageType,
-      month: this.pendingCompareMonth || '',
+      month: this.pendingCompareMonth ?? '',
     };
     this.clearPendingCompare();
     return pendingCompare;

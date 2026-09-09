@@ -34,21 +34,21 @@ export class GeoFencingGeocodeService {
     return status === 'pending' || status === 'busy';
   }
 
-  private getResponseStatus(value: any): string | undefined {
-    return value?.result?.status || value?.status;
+  private getResponseStatus(value: SatelliteGeocodeResponse): string | undefined {
+    return value.result?.status ?? value.status;
   }
 
-  private getResponseResult(value: any): any {
-    return value?.result !== undefined && value?.result !== null ? value.result : value;
+  private getResponseResult(value: SatelliteGeocodeResponse): SatelliteGeocodeResponse['result'] | SatelliteGeocodeResponse {
+    return value.result ?? value;
   }
 
-  private getResponseError(value: any): { message: string } | null {
+  private getResponseError(value: SatelliteGeocodeResponse): { message: string } | null {
     if (this.getResponseStatus(value) !== 'error') {
       return null;
     }
 
     return {
-      message: value?.result?.error_message || value?.result?.message || value?.message || 'Request failed',
+      message: value.result?.error_message ?? value.result?.message ?? value.message ?? 'Request failed',
     };
   }
 }

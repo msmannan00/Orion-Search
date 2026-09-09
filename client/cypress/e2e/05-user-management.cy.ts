@@ -1,7 +1,8 @@
-import {addUser, completeSubscriptionPopupFlow, deleteUsersByUsername, loginAndClickSidebar, loginAsUser, ManagedUser, openFirstStrategicReportFromSearch, openSidebarGroup, openSidebarSubItem, openUserEditor, setPasswordResetRequired} from './controllers/05-user-management.controller';
+import {addUser, completeSubscriptionPopupFlow, deleteUsersByUsername, loginAndClickSidebar, loginAsUser, ManagedUser, ManagedUsers, openFirstStrategicReportFromSearch, openSidebarGroup, openSidebarSubItem, openUserEditor, setPasswordResetRequired, UserManagementTestData} from './controllers/05-user-management.controller';
+import {typeInputSlow, waitForSearchReady} from './controllers/04-searching.controller';
 
-let testUsers: any = {};
-let testData: any = {};
+let testUsers = {} as ManagedUsers;
+let testData = {} as UserManagementTestData;
 let createUsers: ManagedUser[] = [];
 let profileUserId = '';
 const forcedResetUserKey = 'testing1';
@@ -10,8 +11,8 @@ const forcedResetNewPassword = '2wsx@WSX';
 describe('Orion Intelligence - User Management Creation Flow', () => {
   before(() => {
     cy.env(['TEST_USERS', 'TEST_DATA']).then(({TEST_USERS, TEST_DATA}) => {
-      testUsers = TEST_USERS || {};
-      testData = TEST_DATA || {};
+      testUsers = (TEST_USERS || {}) as ManagedUsers;
+      testData = (TEST_DATA || {}) as UserManagementTestData;
       createUsers = Object.keys(testUsers)
         .filter((key) => /^testing\d+$/.test(key))
         .map((key) => testUsers[key] as ManagedUser);
@@ -20,8 +21,8 @@ describe('Orion Intelligence - User Management Creation Flow', () => {
 
   before(() => {
     cy.env(['TEST_USERS', 'TEST_DATA']).then(({TEST_USERS, TEST_DATA}) => {
-      testUsers = TEST_USERS || {};
-      testData = TEST_DATA || {};
+      testUsers = (TEST_USERS || {}) as ManagedUsers;
+      testData = (TEST_DATA || {}) as UserManagementTestData;
       createUsers = Object.keys(testUsers)
         .filter((key) => /^testing\d+$/.test(key))
         .map((key) => testUsers[key] as ManagedUser);
@@ -187,7 +188,7 @@ describe('Orion Intelligence - User Management Creation Flow', () => {
     cy.scrollDashboardToBottom()
     cy.get('[data-testid="report-feedback-comment-input"]').filter(':visible').first().scrollIntoView().should('be.visible').type(commentText);
     cy.get('[data-testid="report-feedback-comment-save"]').filter(':visible').first().click();
-    cy.contains('p', commentText).should('be.visible');
+    cy.contains('p', commentText).scrollIntoView().should('be.visible');
     cy.docsScreenshot('report-feedback-comments');
 
     cy.contains('[data-testid="report-feedback-comment-user-name"]', currentUsername).first().click({ force: true });
@@ -259,7 +260,7 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
     cy.get('[data-testid="demo-tour-tooltip"]').should('be.visible');
     cy.get('[data-testid="demo-tour-step"]').should('be.visible').invoke('text').should(rawProgress => {
       const progress = rawProgress.match(/^\s*Step\s+(\d+)\s*\/\s*(\d+)\s*$/);
-      expect(progress, 'tour progress').to.not.be.null;
+      expect(progress, 'tour progress').to.not.equal(null);
       expect(Number(progress![1]), 'current tour step').to.eq(expectedCurrent);
       expect(Number(progress![2]), 'total tour steps').to.eq(expectedTotal);
     });
@@ -290,7 +291,7 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
         if (!settings) {
           return;
         }
-        let metaInfo: Record<string, unknown> = {};
+        let metaInfo: Record<string, unknown>;
         try {
           const parsedMetaInfo = typeof settings.meta_info === 'string' ? JSON.parse(settings.meta_info) : settings.meta_info;
           metaInfo = parsedMetaInfo && typeof parsedMetaInfo === 'object' && !Array.isArray(parsedMetaInfo)
@@ -311,7 +312,7 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
       const scroller = $scrollers[0] as HTMLElement;
       const documentation = scroller.querySelector<HTMLElement>('[data-testid="sidebar-documentation"]');
 
-      expect(documentation, 'Documentation belongs to the visible sidebar scroller').to.not.be.null;
+      expect(documentation, 'Documentation belongs to the visible sidebar scroller').to.not.equal(null);
       expect(scroller.scrollHeight, 'sidebar has scrollable content').to.be.greaterThan(scroller.clientHeight);
 
       scroller.scrollTop = 0;
@@ -330,7 +331,7 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
       const scroller = $scrollers[0] as HTMLElement;
       const documentation = scroller.querySelector<HTMLElement>('[data-testid="sidebar-documentation"]');
 
-      expect(documentation, 'Documentation remains in the visible sidebar scroller').to.not.be.null;
+      expect(documentation, 'Documentation remains in the visible sidebar scroller').to.not.equal(null);
       const scrollerRect = scroller.getBoundingClientRect();
       const documentationRect = documentation!.getBoundingClientRect();
       const viewportHeight = scroller.ownerDocument.defaultView?.innerHeight ?? scrollerRect.bottom;
@@ -347,7 +348,7 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
     waitForTourStep(visitedTitles.length + 1, expectedTotal);
     return cy.get('[data-testid="demo-tour-step"]').should('be.visible').invoke('text').then(rawProgress => {
       const progress = rawProgress.match(/^\s*Step\s+(\d+)\s*\/\s*(\d+)\s*$/);
-      expect(progress, 'tour progress').to.not.be.null;
+      expect(progress, 'tour progress').to.not.equal(null);
       const current = Number(progress![1]);
       const total = Number(progress![2]);
 
@@ -466,13 +467,13 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
       const overlay = win.document.querySelector('[data-testid="demo-tour-overlay"]') as SVGElement | null;
       const profileButton = win.document.querySelector('[data-testid="sidebar-group-profile"]') as HTMLElement | null;
 
-      expect(overlay, 'demo tour overlay').to.not.be.null;
-      expect(profileButton, 'profile sidebar button').to.not.be.null;
-      expect(win.document.querySelector('[data-testid="sidebar-documentation"]'), 'Documentation is enabled for this tour').to.not.be.null;
+      expect(overlay, 'demo tour overlay').to.not.equal(null);
+      expect(profileButton, 'profile sidebar button').to.not.equal(null);
+      expect(win.document.querySelector('[data-testid="sidebar-documentation"]'), 'Documentation is enabled for this tour').to.not.equal(null);
 
       const profileRect = profileButton!.getBoundingClientRect();
       const topmostElement = win.document.elementFromPoint(profileRect.left + (profileRect.width / 2), profileRect.top + (profileRect.height / 2));
-      expect(topmostElement?.closest('[data-testid="demo-tour-overlay"]'), 'overlay blocks the sidebar control').to.not.be.null;
+      expect(topmostElement?.closest('[data-testid="demo-tour-overlay"]'), 'overlay blocks the sidebar control').to.not.equal(null);
     });
 
     assertBackWorksDuringLoading(10);
@@ -502,6 +503,90 @@ describe('Orion Intelligence - Enterprise Demo Tour', () => {
       expect(request.body.username).to.eq(enterpriseUser.username);
     });
     cy.get('[data-testid="demo-tour-tooltip"]').should('not.exist');
+  });
+});
+
+describe('Orion Intelligence - Dismiss Result Flow', () => {
+  const stealerLogTestEmail = 'superman0011@twitter.example';
+  let dismissResultUser = {} as ManagedUser;
+
+  before(() => {
+    cy.env(['DISMISS_RESULT_USER']).then(({DISMISS_RESULT_USER}) => {
+      dismissResultUser = (DISMISS_RESULT_USER || {}) as ManagedUser;
+      if (!dismissResultUser.username) {
+        throw new Error('Missing DISMISS_RESULT_USER in cypress.config.ts');
+      }
+    });
+  });
+
+  const searchStealerLogsFor = (email: string) => {
+    openSidebarGroup('Stealer logs');
+    waitForSearchReady();
+    cy.get('input[name="searchQuery"][placeholder="Search..."]').first().as('q');
+    cy.get('@q').should('be.visible').and('not.be.disabled');
+    typeInputSlow('@q', email);
+    cy.get('[data-testid="ioc-stealer-table"]').scrollIntoView().should('be.visible');
+  };
+
+  const dismissFirstVisibleResult = () => {
+    cy.get('[data-testid="ioc-stealer-row"]').first().scrollIntoView().click();
+    cy.get('[data-testid="ioc-stealer-dismiss"]').first().should('be.visible').click();
+    cy.get('[data-testid="confirmation-popup"]').should('be.visible');
+    cy.get('[data-testid="confirmation-yes-button"]').click();
+    cy.get('[data-testid="confirmation-popup"]').should('not.exist');
+  };
+
+  after(() => {
+    cy.logout();
+  });
+
+  it('dismisses a stealer log result as admin and reveals it via the hide-dismissed toggle', () => {
+    cy.loginAsAdmin();
+    searchStealerLogsFor(stealerLogTestEmail);
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-testid="ioc-stealer-row"]').should('have.length.greaterThan', 0);
+
+    cy.get('[data-testid="ioc-stealer-row"]').then(($rows) => {
+      const initialCount = $rows.length;
+
+      dismissFirstVisibleResult();
+      cy.get('[data-testid="ioc-stealer-row"]').should('have.length', initialCount - 1);
+
+      cy.get('[data-testid="ioc-hide-dismissed-toggle"]').click();
+      cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'true');
+      cy.get('[data-testid="ioc-stealer-row"]').should('have.length', initialCount);
+      cy.get('[data-testid="ioc-stealer-dismissed"]').should('have.length.greaterThan', 0);
+    });
+
+    cy.logout();
+  });
+
+  it('creates an Enterprise user with the Dismiss Result permission', () => {
+    cy.loginAsAdmin();
+    cy.visit('/dashboard/profile/users');
+    cy.get('[data-testid="tenant-add-user-button"]').should('be.visible');
+    addUser(dismissResultUser);
+    setPasswordResetRequired(dismissResultUser.username, false);
+    cy.logout();
+  });
+
+  it('lets the Dismiss Result user reveal and undismiss the result', () => {
+    loginAsUser(dismissResultUser.username, dismissResultUser.password);
+    searchStealerLogsFor(stealerLogTestEmail);
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-testid="ioc-stealer-row"]').should('not.exist');
+
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').click();
+    cy.get('[data-testid="ioc-hide-dismissed-toggle"]').should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-testid="ioc-stealer-row"]').should('have.length.greaterThan', 0);
+    cy.get('[data-testid="ioc-stealer-dismissed"]').should('have.length.greaterThan', 0);
+
+    cy.get('[data-testid="ioc-stealer-dismissed"]').first().click();
+    cy.get('[data-testid="ioc-stealer-dismissed"]').should('not.exist');
+
+    cy.logout();
   });
 });
 

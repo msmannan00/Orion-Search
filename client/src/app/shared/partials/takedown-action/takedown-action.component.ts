@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,28 +16,28 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 export class TakedownActionComponent implements OnChanges {
   private http = inject(HttpClient);
 
-  isTakingDown: boolean = false;
-  showTakedownModal: boolean = false;
-  isReviewing: boolean = false;
+  isTakingDown = false;
+  showTakedownModal = false;
+  isReviewing = false;
   actionResult: TakedownActionResult | null = null;
-  takedownLabel: string = '';
-  takedownDisabled: boolean = false;
+  takedownLabel = '';
+  takedownDisabled = false;
   manualTargetUrl = '';
   manualUrlError = '';
   customMessage = '';
 
-  @Input() reportId: string = '';
+  @Input() reportId = '';
   @Input() targetUrl: string | null | undefined = '';
   @Input() status: string | null = null;
-  @Input() statusLabel: string = '';
-  @Input() manualUrlMode: boolean = false;
-  @Input() actionLabel: string = 'Initiate Takedown';
-  @Input() buttonClass: string = '';
-  @Input() buttonIcon: string = '';
+  @Input() statusLabel = '';
+  @Input() manualUrlMode = false;
+  @Input() actionLabel = 'Initiate Takedown';
+  @Input() buttonClass = '';
+  @Input() buttonIcon = '';
 
   @Output() requestCreated = new EventEmitter<TakedownActionResponse>();
 
-  ngOnChanges(_: SimpleChanges): void {
+  ngOnChanges(): void {
     this.applyTakedownStatus(this.status, this.statusLabel);
   }
 
@@ -160,7 +160,7 @@ export class TakedownActionComponent implements OnChanges {
   }
 
   submitTakedown(): void {
-    let target = '';
+    let target: string;
     if (this.manualUrlMode) {
       target = this.manualTargetUrl.trim();
       this.manualUrlError = '';
@@ -170,7 +170,7 @@ export class TakedownActionComponent implements OnChanges {
       }
     }
     else {
-      target = String(this.targetUrl || '');
+      target = String(this.targetUrl ?? '');
     }
 
     this.isReviewing = false;
@@ -204,29 +204,29 @@ export class TakedownActionComponent implements OnChanges {
     this.isReviewing = false;
   }
 
-  private applyTakedownStatus(status: string | null, label: string = ''): void {
+  private applyTakedownStatus(status: string | null, label = ''): void {
     this.takedownLabel = label;
     this.takedownDisabled = !!status || !!label;
   }
 
   private handleSuccess(record: TakedownActionResponse): void {
     this.isTakingDown = false;
-    const evidence = (record.evidence?.result || record.evidence || {}) as Record<string, unknown>;
+    const evidence = (record.evidence?.result ?? record.evidence ?? {});
 
-    const abuseEmail = record.abuse_email || String(evidence['abuse_email_found'] || '');
-    const takedownType = evidence['takedown_type'] as string;
-    const actionUrl = evidence['action_url'] as string;
+    const abuseEmail = record.abuse_email ?? String(evidence.abuse_email_found ?? '');
+    const takedownType = evidence.takedown_type as string;
+    const actionUrl = evidence.action_url as string;
 
     if (!this.manualUrlMode) {
-      this.applyTakedownStatus(record.public_status || null, record.status_label || '');
+      this.applyTakedownStatus(record.public_status ?? null, record.status_label ?? '');
     }
 
     this.actionResult = {
       abuse_email: abuseEmail,
-      status_label: record.status_label || this.takedownLabel || 'Takedown request created',
+      status_label: record.status_label ?? this.takedownLabel ?? 'Takedown request created',
       takedown_type: takedownType,
       action_url: actionUrl
-    } as any;
+    };
 
     this.requestCreated.emit(record);
   }

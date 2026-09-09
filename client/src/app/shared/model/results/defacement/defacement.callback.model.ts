@@ -15,6 +15,12 @@ export class DefacementResultItem {
   m_hash!: string;
   m_screenshot?: string;
   m_url!: string;
+  m_section?: unknown[];
+  _id?: string;
+  doc_id?: string;
+  m_document_id?: string;
+
+  [key: string]: unknown;
 
   constructor(init?: Partial<DefacementResultItem>) {
     Object.assign(this, init);

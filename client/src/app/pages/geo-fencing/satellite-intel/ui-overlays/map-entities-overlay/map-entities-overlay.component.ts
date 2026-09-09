@@ -6,6 +6,7 @@ import { AircraftDetailsPanelComponent } from '../../map-entities/aircraft/compo
 import { FacilityLegendComponent } from '../../map-entities/facilities/components/facility-legend/facility-legend.component';
 import { ShipDetailsPanelComponent } from '../../map-entities/ships/components/ship-details-panel/ship-details-panel.component';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
+import { UnknownRecord } from '../../../../../shared/utils/type-guards.util';
 
 @Component({
   selector:    'app-map-entities-overlay',
@@ -21,7 +22,7 @@ export class MapEntitiesOverlayComponent {
   @Input() sidebarVisible = false;
   @Input() sidebarLoading = false;
   @Input() sidebarError: string | null = null;
-  @Input() selectedEntity: { type: TrackingEntityType; data: any | null } | null = null;
+  @Input() selectedEntity: { type: TrackingEntityType; data: UnknownRecord | null } | null = null;
   @Input() isAircraftLoading = false;
   @Input() isShipsLoading = false;
   @Input() isMapEntityLoading = false;

@@ -1,6 +1,6 @@
 <div data-testid="social-list-view" class="mb-[100px] flex h-full w-full flex-col overflow-hidden bg-transparent">
   @if (showLoadingSkeleton()) {
-    <div data-testid="social-profile-query-loading" class="min-h-0 flex-1 overflow-y-auto bg-transparent" @fadeInDashboardItem>
+    <div data-testid="social-profile-query-loading" class="ui-fade-in-dashboard-item min-h-0 flex-1 overflow-y-auto bg-transparent">
       <div class="mx-auto flex w-full max-w-[1480px] animate-social-profile-overview-in items-stretch gap-4 px-4 py-3 will-change-[opacity,transform] motion-reduce:animate-none">
         <aside class="hidden w-[240px] flex-shrink-0 flex-col gap-3 pr-2 lg:flex">
           <div class="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]">
@@ -47,7 +47,7 @@
       </div>
     </div>
   } @else if (!hasResults()) {
-    <div data-testid="social-list-empty" class="min-h-0 flex-1 overflow-y-auto bg-transparent" @fadeInDashboardItem>
+    <div data-testid="social-list-empty" class="ui-fade-in-dashboard-item min-h-0 flex-1 overflow-y-auto bg-transparent">
       <div class="mx-auto flex w-full max-w-[1480px] items-stretch gap-4 px-4 py-3">
         <aside class="sticky top-4 hidden max-h-[calc(100vh-5rem)] w-[240px] flex-shrink-0 self-stretch flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar lg:flex">
           <div class="flex-shrink-0 overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]">
@@ -103,7 +103,7 @@
       </div>
     </div>
   } @else {
-    <div class="min-h-0 flex-1 overflow-hidden bg-transparent" @fadeInDashboardItem>
+    <div class="ui-fade-in-dashboard-item min-h-0 flex-1 overflow-hidden bg-transparent">
       <div class="mx-auto flex h-full min-h-0 w-full max-w-[1480px] items-start gap-4 px-4 py-3">
         <aside class="hidden max-h-[850px] min-h-0 w-[240px] flex-shrink-0 flex-col gap-3 overflow-hidden pr-2 lg:flex">
           @if (activeUser(); as user) {
@@ -171,7 +171,13 @@
         <div class="h-full min-h-0 flex-1 overflow-y-auto pr-1 [mask-image:linear-gradient(to_bottom,#000,#000_calc(100%-18px),transparent)] [mask-repeat:no-repeat] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           @if (activeUser(); as user) {
             @if (activeProfilePlatform(); as platformData) {
-              @if (extensionState() === 'ready') {
+              @if (isExtensionReady()) {
+                @if (extensionState() === 'update') {
+                  <div class="ext-state-fade mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-3 py-2">
+                    <span class="text-[11px] text-[var(--color-text2)]"><i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i>{{ 'A newer Orion extension is available.' | translate }}</span>
+                    <a data-testid="social-extension-update" [href]="extensionUpdateUrl()" class="inline-flex h-7 items-center justify-center rounded-[6px] bg-[var(--color-blue-640)] px-3 text-[11px] font-semibold text-white transition hover:brightness-110">{{ 'Update' | translate }}</a>
+                  </div>
+                }
                 <app-social-profile-tabs-section
                   [user]="user"
                   [platformData]="platformData"
@@ -179,14 +185,30 @@
                   [activeTab]="getActiveTabForPlatform(platformData)"
                   [loadingStates]="getLoadingStates(platformData)"
                   [onlinePresenceSearchTerm]="getOnlinePresenceSearchTerm(platformData)"
+                  [connectionsLoading]="connectionsLoading()"
+                  [connectionsByPost]="connectionsByPost()"
+                  (loadConnections)="onProfileTabLoadConnections(platformData, $event)"
+                  (syncAllConnections)="onProfileTabSyncAllConnections(platformData)"
+                  (connectionSearch)="onProfileConnectionSearch(platformData, $event)"
+                  [connectionSearchResults]="getConnectionSearchResults(platformData)"
                   (tabSelected)="onProfileTabSelected(platformData, $event)"
                   (refetchTab)="onProfileTabRefetch(platformData, $event)"
+                  (syncAll)="onProfileTabSyncAll(platformData, $event)"
+                  (stopSync)="onProfileTabStopSync(platformData, $event)"
                   (onlinePresenceSearchTermChanged)="onProfileOnlinePresenceTermChanged(platformData, $event)"
                   (onlinePresenceSearch)="searchOnlinePresence(platformData)"
                   [crawlResult]="crawlResultFor(platformData, getActiveTabForPlatform(platformData))">
                 </app-social-profile-tabs-section>
+              } @else if (extensionState() === 'checking') {
+                <!-- Extension state not yet known: show a neutral loader, never the profile content or the
+                     install gate, so a logged-out / no-extension open can't flash details before the gate. -->
+      <div class="ext-state-fade flex min-h-[220px] items-center justify-center rounded-[10px] bg-[var(--color-blue-820-light)] px-4 py-8">
+                  <span class="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-blue-640)] border-t-transparent" aria-hidden="true"></span>
+                </div>
               } @else {
-                <app-social-extension-manager [mode]="extensionState()"></app-social-extension-manager>
+                <div class="ext-state-fade" [attr.data-state]="extensionState()">
+                  <app-social-extension-manager [mode]="extensionState()"></app-social-extension-manager>
+                </div>
               }
             } @else {
               <app-social-default-list-section
@@ -203,8 +225,9 @@
 
         <aside class="hidden h-full min-h-0 w-[260px] flex-shrink-0 overflow-y-auto lg:block">
           @if (activeUser(); as user) {
-            <app-social-stealerlog-section class="block" [username]="user.username" [platforms]="user.platforms"></app-social-stealerlog-section>
-            <app-social-wanted-list-section class="mt-3 block" [username]="user.username"></app-social-wanted-list-section>
+            <app-social-stealerlog-section class="block" [username]="user.username" [platforms]="user.allPlatforms"></app-social-stealerlog-section>
+            <app-social-wanted-list-section class="mt-3 block" [username]="user.username" [platforms]="user.allPlatforms"></app-social-wanted-list-section>
+            <app-social-phone-lookup-section class="mt-3 block" [username]="user.username" [platforms]="user.allPlatforms"></app-social-phone-lookup-section>
           }
         </aside>
       </div>

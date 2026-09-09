@@ -1,12 +1,15 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, EMPTY, of, timer, forkJoin } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { EMPTY, forkJoin, Observable, of, timer } from 'rxjs';
 import { catchError, expand, filter, map, switchMap, takeWhile } from 'rxjs/operators';
-import { SearchDynamicEmailCallbackModel } from '../../../../shared/model/api/email/search_dynamic_email_callback_model';
-import { ConsolidatedLiveApis } from '../../../../shared/model/results/consolidated/consolidated.callback.model';
-import { ConsolidatedLiveApiResults } from '../../../../shared/model/results/consolidated/consolidated.callback.model';
-import { ConsolidatedScanResults } from '../../../../shared/model/results/consolidated/consolidated.callback.model';
+import { CardData, SearchDynamicEmailCallbackModel } from '../../../../shared/model/api/email/search_dynamic_email_callback_model';
+import { ConsolidatedLiveApiResults, ConsolidatedLiveApis, ConsolidatedScanResults } from '../../../../shared/model/results/consolidated/consolidated.callback.model';
 import { ScanNotificationService } from '../../../../shared/services/scan-notification.service';
+import type { ConsolidatedApiResponse } from './model/consolidated.api.model';
+export type { ConsolidatedApiResponse } from './model/consolidated.api.model';
+
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -16,9 +19,9 @@ export class ConsolidatedApiService {
 
   private getLiveApiDetails(input: ConsolidatedLiveApis): {
         apiEndpoint: string;
-        payload: any;
+        payload: Record<string, unknown>;
     } {
-    let payload: any;
+    let payload: Record<string, unknown>;
     let endpoint: string;
     switch (input.type) {
       case 'user':
@@ -45,26 +48,27 @@ export class ConsolidatedApiService {
     return { apiEndpoint: endpoint, payload };
   }
 
-  private fetchLiveApiResults(input: ConsolidatedLiveApis): Observable<any> {
+  private fetchLiveApiResults(input: ConsolidatedLiveApis): Observable<ConsolidatedApiResponse> {
     const { apiEndpoint, payload } = this.getLiveApiDetails(input);
-    return this.http.post<any>(apiEndpoint, payload).pipe(expand(res => {
+    return this.http.post<ConsolidatedApiResponse>(apiEndpoint, payload).pipe(expand(res => {
       return this.shouldContinueLivePolling(res)
-        ? timer(2000).pipe(switchMap(() => this.http.post<any>(apiEndpoint, payload)))
+        ? timer(2000).pipe(switchMap(() => this.http.post<ConsolidatedApiResponse>(apiEndpoint, payload)))
         : EMPTY;
     }), takeWhile(res => {
       return this.shouldContinueLivePolling(res);
     }, true), catchError(error => {
-      return new Observable(observer => {
-        observer.error(error); 
+      return new Observable<ConsolidatedApiResponse>(observer => {
+        observer.error(error);
       });
     }));
   }
 
-  private shouldContinueLivePolling(res: any): boolean {
-    const isPending = (res?.status === 'pending') || (res?.result?.status === 'busy') || (res?.result?.status === 'pending');
-    const isFailedPending = (res?.status === 'pending' || res?.result?.status === 'pending') &&
-            ((res?.result?.progress ?? res?.progress) === 0) &&
-            ((res?.result?.step ?? res?.step) === 'failed');
+  private shouldContinueLivePolling(res: ConsolidatedApiResponse): boolean {
+    const nested = this.getNestedResponse(res.result);
+    const isPending = res.status === 'pending' || nested?.status === 'busy' || nested?.status === 'pending';
+    const isFailedPending = (res.status === 'pending' || nested?.status === 'pending') &&
+            ((nested?.progress ?? res.progress) === 0) &&
+            ((nested?.step ?? res.step) === 'failed');
     return isPending && !isFailedPending;
   }
 
@@ -72,41 +76,46 @@ export class ConsolidatedApiService {
     const searchObservables = inputs.map(input =>
       this.fetchLiveApiResults(input).pipe(map(res => {
         let data: SearchDynamicEmailCallbackModel | null = null;
-        if (Array.isArray(res?.result?.result)) {
+        const nested = this.getNestedResponse(res.result);
+        const responseData = res.data;
+        if (Array.isArray(nested?.result)) {
           data = new SearchDynamicEmailCallbackModel({
-            cards_data: res.result.result
+            cards_data: nested.result
           });
         }
-        else if (Array.isArray(res?.result)) {
+        else if (Array.isArray(res.result)) {
           data = new SearchDynamicEmailCallbackModel({
             cards_data: res.result
           });
         }
-        else if (res?.success && res?.data) {
-          data = res.data;
-        }
-        else if (Array.isArray(res?.cards_data)) {
+        else if (Array.isArray(res.cards_data)) {
           data = new SearchDynamicEmailCallbackModel({
             cards_data: res.cards_data
           });
         }
-        else if (Array.isArray(res?.data?.cards_data)) {
+        else if (Array.isArray(responseData?.cards_data)) {
           data = new SearchDynamicEmailCallbackModel({
-            cards_data: res.data.cards_data
+            cards_data: responseData.cards_data,
+            base_url: responseData.base_url,
+            m_network: responseData.m_network,
           });
         }
-        else if (Array.isArray(res?.result?.cards_data)) {
+        else if (Array.isArray(nested?.cards_data)) {
           data = new SearchDynamicEmailCallbackModel({
-            cards_data: res.result.cards_data
+            cards_data: nested.cards_data
           });
         }
-        else if (Array.isArray(res?.data?.result)) {
+        else if (Array.isArray(responseData?.result)) {
           data = new SearchDynamicEmailCallbackModel({
-            cards_data: res.data.result
+            cards_data: responseData.result
           });
         }
-        else if ((res as SearchDynamicEmailCallbackModel)?.cards_data) {
-          data = res as SearchDynamicEmailCallbackModel;
+        else if (res.success && responseData) {
+          data = new SearchDynamicEmailCallbackModel({
+            cards_data: responseData.cards_data ?? [],
+            base_url: responseData.base_url,
+            m_network: responseData.m_network,
+          });
         }
         return {
           input,
@@ -115,7 +124,7 @@ export class ConsolidatedApiService {
           errorMessage: null,
         } as ConsolidatedLiveApiResults;
       }),
-      catchError(_ =>
+      catchError(() =>
         of({
           input,
           status: 'error',
@@ -130,7 +139,7 @@ export class ConsolidatedApiService {
     const payloadKey = 'domain';
     const payload = { [payloadKey]: target, scanType };
     return this.scanNotifications
-      .runApiScanAsResponse<any>({
+      .runApiScanAsResponse<ConsolidatedApiResponse>({
         apiReference: endpoint,
         payload,
         forceNew: true,
@@ -142,11 +151,12 @@ export class ConsolidatedApiService {
         pollDelayMs: 5000,
       })
       .pipe(map((res) => {
-        if (!res || res?.status === 'pending' || res?.step === 'queued') {
+        if (!res || res.status === 'pending' || res.step === 'queued') {
           return null;
         }
-        const meta = res?.result?.meta ?? null;
-        const grade = res?.result?.grade ?? res?.result?.meta?.grade ?? '—';
+        const result = this.getNestedResponse(res.result);
+        const meta = result?.meta ?? null;
+        const grade = result?.grade ?? '—';
         return {
           domain: target,
           scanType,
@@ -162,7 +172,7 @@ export class ConsolidatedApiService {
           meta: null,
           grade: '—',
           hasError: true,
-          errorMessage: err?.error?.detail || `Failed to scan ${scanType}.`,
+          errorMessage: err?.error?.detail ?? `Failed to scan ${scanType}.`,
         } as ConsolidatedScanResults);
       }));
   }
@@ -173,5 +183,9 @@ export class ConsolidatedApiService {
 
   public scanForRepo(repoPath: string, scanType: 'repo'): Observable<ConsolidatedScanResults> {
     return this.scan(repoPath, scanType);
+  }
+
+  private getNestedResponse(value: ConsolidatedApiResponse | CardData[] | undefined): ConsolidatedApiResponse | null {
+    return value && !Array.isArray(value) ? value : null;
   }
 }

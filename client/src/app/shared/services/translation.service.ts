@@ -1,6 +1,8 @@
 import { effect, Injectable, inject, signal } from '@angular/core';
 import { AppService } from '../../services/core/app/app.service';
 import { LANGUAGE_OPTIONS } from '../constants/shared-enums';
+import { getOwnProperty } from '../utils/type-guards.util';
+
 
 @Injectable({ providedIn: 'root' })
 export class TranslationService {
@@ -39,15 +41,15 @@ export class TranslationService {
   }
 
   translate(key: string | null | undefined): string {
-    const normalizedKey = (key || '').replace(/\s+/g, ' ').trim();
+    const normalizedKey = (key ?? '').replace(/\s+/g, ' ').trim();
     if (!normalizedKey) {
       return '';
     }
     const spaceKey = normalizedKey.replace(/-/g, ' ');
-    return this.translations[normalizedKey]
-      ?? this.translations[spaceKey]
-      ?? this.fallbackTranslations[normalizedKey]
-      ?? this.fallbackTranslations[spaceKey]
+    return getOwnProperty(this.translations, normalizedKey)
+      ?? getOwnProperty(this.translations, spaceKey)
+      ?? getOwnProperty(this.fallbackTranslations, normalizedKey)
+      ?? getOwnProperty(this.fallbackTranslations, spaceKey)
       ?? normalizedKey;
   }
 
@@ -69,7 +71,7 @@ export class TranslationService {
   }
 
   private getPreferredLocale(): string {
-    const userLanguage = this.appService.userSessionData()?.user?.preferences?.['language'];
+    const userLanguage = this.appService.userSessionData()?.user?.preferences?.language;
     const systemLanguage = this.appService.configData().appSettings.language_allowed;
     const language = typeof userLanguage === 'string' && userLanguage.trim() ? userLanguage : systemLanguage;
     const code = (language || this.defaultLocale).trim().toLowerCase();

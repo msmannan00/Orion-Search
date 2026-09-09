@@ -112,11 +112,11 @@ export function formatTitleUrl(url?: string | null, fallback = ''): string {
 }
 
 export function getDisplayTitle(rawTitle?: string | null, fallbackUrl?: string | null, emptyFallback = '-'): string {
-  const title = (rawTitle || '').trim();
+  const title = (rawTitle ?? '').trim();
   if (title) {
     return isLikelyUrl(title) ? formatTitleUrl(title, '') : title;
   }
-  const cleanUrl = formatTitleUrl(fallbackUrl || '', '');
+  const cleanUrl = formatTitleUrl(fallbackUrl ?? '', '');
   return cleanUrl || emptyFallback;
 }
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, File, Query, UploadFile
+from datetime import datetime, timezone
 from typing import Any
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
 from configs.app_dependency import get_current_user, license_required, role_required
@@ -10,7 +10,9 @@ from orion.api.interactive.search_manager.search_data_model.dynamic.search_dynam
 from orion.api.server.crawl_manager.class_model.domain_scan_request_model import DomainScanRequest, UrlVulnerabilityScanRequest
 from orion.api.server.crawl_manager.class_model.ip_scan_request_model import GeoCameraDetectRangesRequest, GeoCameraDetectRequest, NetIntelDeepScanRequest, ResolveIPRequest
 from orion.management.managers.service_manager import service_manager
+from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_auth_models import user_role
+from orion.services.mongo_manager.shared_model.db_backup_model import BackupType, db_backup_model
 from orion.services.mongo_manager.shared_model.db_takedown_request_model import TakedownCreateRequest
 from routes.helper.route_test_helper import TestRouteHelper
 
@@ -42,6 +44,36 @@ async def test_ready():
     if not service_manager.get_instance().check_status():
         raise HTTPException(status_code=503, detail="Test services are not ready")
     return {"ready": True}
+
+
+@test_routes.post(
+    "/api/admin/backups/{backup_id}/restore",
+    include_in_schema=False,
+    dependencies=ADMIN_DEPS,
+)
+async def test_restore_backup(backup_id: str):
+    return {"status": "restored", "filename": backup_id}
+
+
+@test_routes.post(
+    "/api/admin/backups/instant",
+    include_in_schema=False,
+    dependencies=ADMIN_DEPS,
+)
+async def test_create_instant_backup():
+    created_at = datetime.now(timezone.utc)
+    backup = db_backup_model(
+        filename=created_at.strftime("%Y_%m_%d_%H_%M_%S_%f"),
+        backup_type=BackupType.INSTANT,
+        created_at=created_at,
+    )
+    await mongo_controller.get_instance().get_engine().save(backup)
+    return {
+        "id": str(backup.id),
+        "filename": backup.filename,
+        "backup_type": backup.backup_type.value,
+        "created_at": backup.created_at,
+    }
 
 
 @test_routes.post(
@@ -110,7 +142,7 @@ async def test_list_takedown_requests(
     "/api/dynamic/user",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_email(param: search_dynamic_param_model = Body(...)):
+async def test_search_dynamic_email(_param: search_dynamic_param_model = Body(...)):
     return TestRouteHelper.pending_or_api_mock("dynamic_user", "dynamic_user_done.json")
 
 
@@ -118,7 +150,7 @@ async def test_search_dynamic_email(param: search_dynamic_param_model = Body(...
     "/api/dynamic/cracked",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_cracked(param: search_dynamic_crack_model = Body(...)):
+async def test_search_dynamic_cracked(_param: search_dynamic_crack_model = Body(...)):
     return TestRouteHelper.pending_or_api_mock("dynamic_cracked", "dynamic_cracked.json")
 
 
@@ -131,7 +163,7 @@ async def forgotPassword(data: ForgotPasswordRequest, request: Request):
     "/api/dynamic/software",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_software(param: search_dynamic_crack_model = Body(...)):
+async def test_search_dynamic_software(_param: search_dynamic_crack_model = Body(...)):
     return TestRouteHelper.pending_or_api_mock("dynamic_software", "dynamic_software.json")
 
 
@@ -143,7 +175,7 @@ async def test_search_dynamic_software(param: search_dynamic_crack_model = Body(
     "/api/urlscan/dns",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_ip_scan(param: DomainScanRequest = Body(...)):
+async def test_search_dynamic_ip_scan(_param: DomainScanRequest = Body(...)):
     return TestRouteHelper.pending_or_api_mock("urlscan_ip", "urlscan_domain_iplookup.json")
 
 
@@ -151,7 +183,7 @@ async def test_search_dynamic_ip_scan(param: DomainScanRequest = Body(...)):
     "/api/dynamic/social",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_social(param: search_dynamic_social_model = Body(...)):
+async def test_search_dynamic_social(_param: search_dynamic_social_model = Body(...)):
     return TestRouteHelper.pending_or_api_mock("dynamic_social", "dynamic_social.json")
 
 
@@ -159,7 +191,7 @@ async def test_search_dynamic_social(param: search_dynamic_social_model = Body(.
     "/api/dynamic/wanted",
     dependencies=SCAN_DEPS,
 )
-async def test_search_dynamic_wanted(param: search_dynamic_social_model = Body(...)):
+async def test_search_dynamic_wanted(_param: search_dynamic_social_model = Body(...)):
     return TestRouteHelper.load_api_mock("dynamic_wanted.json")
 
 
@@ -352,7 +384,7 @@ async def test_update_current_user_chat_history(data: dict = Body(...)):
     include_in_schema=False,
     dependencies=ANALYST_SCAN_DEPS,
 )
-async def test_cross_search(payload: search_dynamic_onion_search = Body(...)):
+async def test_cross_search(_payload: search_dynamic_onion_search = Body(...)):
     return TestRouteHelper.pending_or_api_mock("dynamic_cross_search", "dynamic_cross_search.json")
 
 
@@ -361,7 +393,7 @@ async def test_cross_search(payload: search_dynamic_onion_search = Body(...)):
     include_in_schema=False,
     dependencies=ANALYST_DEPS,
 )
-async def test_netintel_resolve_ip(payload: ResolveIPRequest = Body(...)):
+async def test_netintel_resolve_ip(_payload: ResolveIPRequest = Body(...)):
     return TestRouteHelper.pending_or_api_mock("netintel_resolve_ip", "netintel_resolve_ip.json")
 
 
@@ -370,7 +402,7 @@ async def test_netintel_resolve_ip(payload: ResolveIPRequest = Body(...)):
     include_in_schema=False,
     dependencies=ANALYST_DEPS,
 )
-async def test_netintel_ipscanner(payload: NetIntelDeepScanRequest = Body(...)):
+async def test_netintel_ipscanner(_payload: NetIntelDeepScanRequest = Body(...)):
     return TestRouteHelper.pending_or_api_mock("netintel_ipscanner", "netintel_ipscanner.json")
 
 
@@ -379,7 +411,7 @@ async def test_netintel_ipscanner(payload: NetIntelDeepScanRequest = Body(...)):
     include_in_schema=False,
     dependencies=ANALYST_DEPS,
 )
-async def test_netintel_url_vulnerability_scan(payload: UrlVulnerabilityScanRequest = Body(...)):
+async def test_netintel_url_vulnerability_scan(_payload: UrlVulnerabilityScanRequest = Body(...)):
     return TestRouteHelper.pending_or_dynamic_scan("vulnerability")
 
 
@@ -388,7 +420,7 @@ async def test_netintel_url_vulnerability_scan(payload: UrlVulnerabilityScanRequ
     include_in_schema=False,
     dependencies=ANALYST_DEPS,
 )
-async def test_netintel_camera_detect(payload: GeoCameraDetectRequest = Body(...)):
+async def test_netintel_camera_detect(_payload: GeoCameraDetectRequest = Body(...)):
     return TestRouteHelper.pending_or_api_mock("netintel_camera_detect", "netintel_camera_detect.json")
 
 
@@ -397,7 +429,7 @@ async def test_netintel_camera_detect(payload: GeoCameraDetectRequest = Body(...
     include_in_schema=False,
     dependencies=ANALYST_DEPS,
 )
-async def test_netintel_camera_detect_ranges(payload: GeoCameraDetectRangesRequest = Body(...)):
+async def test_netintel_camera_detect_ranges(_payload: GeoCameraDetectRangesRequest = Body(...)):
     return TestRouteHelper.pending_or_api_mock("netintel_camera_detect_ranges", "netintel_camera_detect_ranges.json")
 
 
@@ -405,7 +437,7 @@ async def test_netintel_camera_detect_ranges(payload: GeoCameraDetectRangesReque
     "/api/social/recon",
     dependencies=SCAN_DEPS,
 )
-async def test_social_recon(payload: dict = Body(...)):
+async def test_social_recon(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_recon", "social_recon.json")
 
 
@@ -413,7 +445,7 @@ async def test_social_recon(payload: dict = Body(...)):
     "/api/social/recon/image",
     dependencies=SCAN_DEPS,
 )
-async def test_social_recon_image(payload: dict = Body(...)):
+async def test_social_recon_image(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_recon_image", "social_recon_image.json")
 
 
@@ -421,7 +453,7 @@ async def test_social_recon_image(payload: dict = Body(...)):
     "/api/social/profile",
     dependencies=SCAN_DEPS,
 )
-async def test_social_profile(payload: dict = Body(...)):
+async def test_social_profile(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_profile", "social_profile.json")
 
 
@@ -429,7 +461,7 @@ async def test_social_profile(payload: dict = Body(...)):
     "/api/social/online/images",
     dependencies=SCAN_DEPS,
 )
-async def test_social_online_images(payload: dict = Body(...)):
+async def test_social_online_images(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_online_images", "social_online_images.json")
 
 
@@ -437,7 +469,7 @@ async def test_social_online_images(payload: dict = Body(...)):
     "/api/social/posts",
     dependencies=SCAN_DEPS,
 )
-async def test_social_posts(payload: dict = Body(...)):
+async def test_social_posts(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_posts", "social_posts.json")
 
 
@@ -445,7 +477,7 @@ async def test_social_posts(payload: dict = Body(...)):
     "/api/social/videos",
     dependencies=SCAN_DEPS,
 )
-async def test_social_videos(payload: dict = Body(...)):
+async def test_social_videos(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_videos", "social_videos.json")
 
 
@@ -453,7 +485,7 @@ async def test_social_videos(payload: dict = Body(...)):
     "/api/social/shorts",
     dependencies=SCAN_DEPS,
 )
-async def test_social_shorts(payload: dict = Body(...)):
+async def test_social_shorts(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_shorts", "social_shorts.json")
 
 
@@ -461,7 +493,7 @@ async def test_social_shorts(payload: dict = Body(...)):
     "/api/social/metadata",
     dependencies=SCAN_DEPS,
 )
-async def test_social_metadata(payload: dict = Body(...)):
+async def test_social_metadata(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_online_presence", "social_online_presence.json")
 
 
@@ -501,23 +533,15 @@ async def test_social_data_delete(profile_username: str):
     "/api/social/followers",
     dependencies=SCAN_DEPS,
 )
-async def test_social_followers(payload: dict = Body(...)):
+async def test_social_followers(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_followers", "social_followers.json")
-
-
-@test_routes.post(
-    "/api/social/following",
-    dependencies=SCAN_DEPS,
-)
-async def test_social_following(payload: dict = Body(...)):
-    return TestRouteHelper.pending_or_elastic_mock("social_following", "social_following.json")
 
 
 @test_routes.post(
     "/api/social/entity",
     dependencies=SCAN_DEPS,
 )
-async def test_social_entity(payload: dict = Body(...)):
+async def test_social_entity(_payload: dict = Body(...)):
     return TestRouteHelper.pending_or_elastic_mock("social_entity", "social_entity.json")
 
 
@@ -525,7 +549,7 @@ async def test_social_entity(payload: dict = Body(...)):
     "/api/social/session/upsert",
     dependencies=SCAN_DEPS,
 )
-async def test_social_session_upsert(data: dict = Body(...), graph_type: str = Query("social")):
+async def test_social_session_upsert(_data: dict = Body(...), graph_type: str = Query("social")):
     return TestRouteHelper.pending_or_elastic_mock(f"social_session_upsert_{graph_type}", "social_session_upsert.json")
 
 
@@ -543,7 +567,7 @@ async def test_social_session_tabs(graph_type: str = Query("social")):
     "/api/social/session/tab/add",
     dependencies=SCAN_DEPS,
 )
-async def test_social_session_tab_add(tab: dict = Body(...), graph_type: str = Query("social")):
+async def test_social_session_tab_add(_tab: dict = Body(...), graph_type: str = Query("social")):
     return TestRouteHelper.pending_or_elastic_mock(f"social_session_tab_add_{graph_type}", "social_session_tab_add.json")
 
 @test_routes.post("/api/manage-profiles/platforms", dependencies=SCAN_DEPS)

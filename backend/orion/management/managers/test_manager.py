@@ -82,7 +82,7 @@ class test_manager:
             except Exception as ex:
                 log.g().e(f"Failed to drop test collection {c}: {ex}")
 
-        mocks_dir = Path(__file__).resolve().parents[3] / "static" / "test" / "mocks" / "mongo"
+        mocks_dir = Path(__file__).resolve().parents[3] / "tests" / "mock" / "mongo"
         if mocks_dir.exists():
             for fp in sorted(mocks_dir.glob("*.json")):
                 parts = fp.name.split(".")
@@ -159,19 +159,19 @@ class test_manager:
             )
 
         try:
-            async def _delete_indices(indices):
-                for idx in list(indices.keys()):
-                    if idx.startswith("."):
+            async def _delete_indices(index_map):
+                for index_name in list(index_map.keys()):
+                    if index_name.startswith("."):
                         continue
-                    print(f"Deleting index: {idx}", flush=True)
+                    print(f"Deleting index: {index_name}", flush=True)
                     try:
-                        await es.indices.delete(index=idx, ignore_unavailable=True)
+                        await es.indices.delete(index=index_name, ignore_unavailable=True)
                     except NotFoundError:
-                        print(f"Index not found: {idx}", flush=True)
+                        print(f"Index not found: {index_name}", flush=True)
                         continue
-                    except ApiError as e:
-                        print(f"Error deleting index {idx}: {e}", flush=True)
-                        if getattr(e, "status_code", None) == 404:
+                    except ApiError as exc:
+                        print(f"Error deleting index {index_name}: {exc}", flush=True)
+                        if getattr(exc, "status_code", None) == 404:
                             continue
                         raise
 
@@ -234,9 +234,8 @@ class test_manager:
 
             mocks_dir = (
                     Path(__file__).resolve().parents[3]
-                    / "static"
-                    / "test"
-                    / "mocks"
+                    / "tests"
+                    / "mock"
                     / "elastic"
             )
             print(f"Mocks dir: {mocks_dir}", flush=True)
@@ -245,15 +244,15 @@ class test_manager:
                 print("Mocks dir does not exist, exiting", flush=True)
                 return
 
-            async def _create_index_from_fixture(idx: str):
-                mapping_fp = mocks_dir / f"{idx}.mapping.json"
-                settings_fp = mocks_dir / f"{idx}.settings.json"
+            async def _create_index_from_fixture(index_name: str):
+                mapping_fp = mocks_dir / f"{index_name}.mapping.json"
+                settings_fp = mocks_dir / f"{index_name}.settings.json"
                 body = {}
 
                 if mapping_fp.exists():
                     with mapping_fp.open("r", encoding="utf-8") as f:
                         mapping_payload = json.load(f)
-                    mappings = mapping_payload.get(idx, mapping_payload).get("mappings")
+                    mappings = mapping_payload.get(index_name, mapping_payload).get("mappings")
                     if mappings:
                         body["mappings"] = mappings
 
@@ -262,7 +261,7 @@ class test_manager:
                         settings_payload = json.load(f)
                     index_settings = (
                         settings_payload
-                        .get(idx, settings_payload)
+                        .get(index_name, settings_payload)
                         .get("settings", {})
                         .get("index", {})
                     )
@@ -276,11 +275,11 @@ class test_manager:
                 if not body:
                     return
 
-                print(f"Creating index from fixture mapping: {idx}", flush=True)
+                print(f"Creating index from fixture mapping: {index_name}", flush=True)
                 try:
-                    await es.indices.create(index=idx, body=body)
-                except ApiError as e:
-                    if getattr(e, "status_code", None) != 400:
+                    await es.indices.create(index=index_name, body=body)
+                except ApiError as exc:
+                    if getattr(exc, "status_code", None) != 400:
                         raise
 
             def _has_data(p: Path) -> bool:
@@ -313,10 +312,10 @@ class test_manager:
                             line = line.strip()
                             if not line:
                                 continue
-                            d = json.loads(line)
-                            _id = d.get("_id")
-                            _index = d.get("_index") or default_index
-                            src = d.get("_source", d)
+                            entry = json.loads(line)
+                            _id = entry.get("_id")
+                            _index = entry.get("_index") or default_index
+                            src = entry.get("_source", entry)
                             a = {
                                 "_op_type": "index",
                                 "_index": _index,
@@ -347,7 +346,7 @@ class test_manager:
         if env_handler.get_instance().env("TESTING_ENABLED", "0") != "1":
             return
 
-        dumps_root = Path(__file__).resolve().parents[3] / "static" / "test" / "mocks" / "arango"
+        dumps_root = Path(__file__).resolve().parents[3] / "tests" / "mock" / "arango"
         if not dumps_root.exists():
             return
 
@@ -372,15 +371,15 @@ class test_manager:
         try:
             vcol.truncate()
         except Exception as exc:
-            log.warning(f"Failed to truncate cti_vertices during test setup: {exc}")
+            log.g().w(f"Failed to truncate cti_vertices during test setup: {exc}")
         try:
             ecol.truncate()
         except Exception as exc:
-            log.warning(f"Failed to truncate cti_edges during test setup: {exc}")
+            log.g().w(f"Failed to truncate cti_edges during test setup: {exc}")
 
-        def load_docs(fp: Path):
-            docs = []
-            with fp.open("r", encoding="utf-8") as f:
+        def load_docs(path: Path):
+            entries = []
+            with path.open("r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -389,8 +388,8 @@ class test_manager:
                     if isinstance(d, dict):
                         d.pop("_rev", None)
                         d.pop("_id", None)
-                    docs.append(d)
-            return docs
+                    entries.append(d)
+            return entries
 
         v_files = sorted(dumps_root.rglob("cti_vertices_*.data.json"))
         e_files = sorted(dumps_root.rglob("cti_edges_*.data.json"))

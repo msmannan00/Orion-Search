@@ -1,5 +1,6 @@
 import redis.asyncio as redis
 from contextlib import asynccontextmanager
+from redis.exceptions import LockError
 
 from orion.services.redis_manager.redis_enums import REDIS_CONNECTIONS, REDIS_COMMANDS
 
@@ -114,7 +115,7 @@ class redis_controller:
         finally:
             try:
                 await lock.release()
-            except redis.exceptions.LockError:
+            except LockError:
                 pass
 
     async def __delete_key(self, p_key):
@@ -144,10 +145,11 @@ class redis_controller:
         elif p_commands == REDIS_COMMANDS.S_SET_FLOAT:
             return await self.__set_float(p_data[0], p_data[1], p_data[2])
         elif p_commands == REDIS_COMMANDS.S_FLUSH_ALL:
-            await self.__flush_all()
+            return await self.__flush_all()
         elif p_commands == REDIS_COMMANDS.S_ACQUIRE_LOCK:
             return await self.__acquire_lock(p_data[0], p_data[1], p_data[2])
         elif p_commands == REDIS_COMMANDS.S_RELEASE_LOCK:
-            await self.__release_lock(p_data[0])
+            return await self.__release_lock(p_data[0])
         elif p_commands == REDIS_COMMANDS.S_DELETE_KEY:
-            await self.__delete_key(p_data[0])
+            return await self.__delete_key(p_data[0])
+        return None

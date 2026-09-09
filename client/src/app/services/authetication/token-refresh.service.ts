@@ -10,18 +10,14 @@ export class TokenRefreshService {
 
   constructor() {
     this.destroyRef.onDestroy(() => {
-      this.stopTokenRefresh(); 
+      this.stopTokenRefresh();
     });
   }
 
   startTokenRefresh(refreshAction: () => Observable<void>): void {
     if (!this.refreshTokenSubscription || this.refreshTokenSubscription.closed) {
       this.refreshTokenSubscription = timer(this.FIRST_REFRESH_DELAY, this.REFRESH_INTERVAL)
-        .pipe(switchMap(() => refreshAction()),
-          catchError(() => {
-            this.stopTokenRefresh();
-            return EMPTY;
-          }),
+        .pipe(switchMap(() => refreshAction().pipe(catchError(() => EMPTY))),
           takeUntilDestroyed(this.destroyRef))
         .subscribe();
     }

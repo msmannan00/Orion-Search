@@ -1,0 +1,17 @@
+{
+  "addons": {
+    "orionsocial@orionintelligence.org": {
+      "updates": [
+        {
+          "version": "0.6.2",
+          "update_link": "https://try.orionintelligence.org/ext/firefox/orion-social-firefox.xpi",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "142.0"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

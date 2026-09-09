@@ -1,12 +1,12 @@
 export abstract class ValuePresentationBase {
-  getObjectEntries(item: any): { key: string; value: any }[] {
+  getObjectEntries(item: unknown): { key: string; value: unknown }[] {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       return [];
     }
     return Object.entries(item).map(([key, value]) => ({ key, value }));
   }
 
-  getFlattenedObjectEntries(item: any, prefix = ''): { key: string; value: any }[] {
+  getFlattenedObjectEntries(item: unknown, prefix = ''): { key: string; value: unknown }[] {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       return [];
     }
@@ -26,18 +26,18 @@ export abstract class ValuePresentationBase {
       .replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  isObjectValue(value: any): boolean {
+  isObjectValue(value: unknown): boolean {
     return !!value && typeof value === 'object' && !Array.isArray(value);
   }
 
-  isUrlValue(value: any): boolean {
+  isUrlValue(value: unknown): boolean {
     if (typeof value !== 'string') {
       return false;
     }
     return /^https?:\/\//i.test(value.trim());
   }
 
-  stringifyPrimitive(value: any): string {
+  stringifyPrimitive(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return 'not available';
     }
@@ -47,7 +47,7 @@ export abstract class ValuePresentationBase {
     return String(value);
   }
 
-  isEmptyDisplayValue(value: any): boolean {
+  isEmptyDisplayValue(value: unknown): boolean {
     if (value === null || value === undefined) {
       return true;
     }
@@ -64,7 +64,7 @@ export abstract class ValuePresentationBase {
     return false;
   }
 
-  stringifyNestedValue(value: any): string {
+  stringifyNestedValue(value: unknown): string {
     if (Array.isArray(value)) {
       return value
         .filter(item => !this.isEmptyDisplayValue(item))
@@ -77,7 +77,7 @@ export abstract class ValuePresentationBase {
     return this.stringifyPrimitive(value);
   }
 
-  stringifyJson(value: any): string {
+  stringifyJson(value: unknown): string {
     try {
       return JSON.stringify(value, null, 2);
     }

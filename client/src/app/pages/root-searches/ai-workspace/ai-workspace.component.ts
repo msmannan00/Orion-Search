@@ -13,20 +13,18 @@ import { BotMessageActionsComponent } from './bot-message-actions/bot-message-ac
 import { MessageScrollRailComponent } from './message-scroll-rail/message-scroll-rail.component';
 import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { AiChatSession, NexusChatMessage } from './model/ai-chat-session.model';
+import { AiChatSession, NexusChatMessage, NexusChatSession } from './model/ai-chat-session.model';
 import { AiChatSidebarComponent } from './ai-chat-sidebar/ai-chat-sidebar.component';
 import { ProfileComponent } from '../../../shared/partials/profile/profile.component';
 import { AiDirectory } from './ai-directory/ai-directory';
 import { TranslationService } from '../../../shared/services/translation.service';
+import type { PendingNexusStream } from './model/ai-workspace.model';
+export type { PendingNexusStream } from './model/ai-workspace.model';
+
 
 type AiWorkspaceViewMode = 'chat' | 'directory' | 'split';
 
-interface PendingNexusStream {
-  requestId: string;
-  sessionId: string;
-  message: string;
-  baselineMessageCount: number;
-}
+
 
 @Component({
   selector: 'app-ai-workspace',
@@ -146,7 +144,10 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     if (event.pointerId !== this.activeSplitPointerId) {
       return;
     }
-    const divider = event.currentTarget as HTMLElement;
+    const divider = event.currentTarget;
+    if (!(divider instanceof HTMLElement)) {
+      return;
+    }
     if (divider.hasPointerCapture(event.pointerId)) {
       divider.releasePointerCapture(event.pointerId);
     }
@@ -191,7 +192,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
 
     this.cancelMessageEdit();
     this.detachActiveNexusRequest();
-    const requestId = this.resumedRequestId || crypto.randomUUID();
+    const requestId = this.resumedRequestId ?? crypto.randomUUID();
     this.resumedRequestId = null;
 
     const sendToSession = (sessionId: string, sessionMessages: AiWorkspaceMessage[], shouldNameNewChat = false) => {
@@ -269,7 +270,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
             this.cdr.detectChanges();
           }
           if (chunk.error) {
-            fail(chunk.response || this.translationService.translate('Something went wrong. Try again.'));
+            fail(chunk.response ?? this.translationService.translate('Something went wrong. Try again.'));
             return;
           }
           if (chunk.delta) {
@@ -283,7 +284,9 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
           }
         },
         complete,
-        error: () => fail(),
+        error: () => {
+          fail();
+        },
       });
     };
 
@@ -554,7 +557,9 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     }
     this.resultRowHelper.copyToClipboard(text).subscribe((ok) => {
       this.copiedMessageId.set(ok ? message.id : null);
-      setTimeout(() => this.copiedMessageId.set(null), 1200);
+      setTimeout(() => {
+        this.copiedMessageId.set(null);
+      }, 1200);
     });
   }
 
@@ -571,9 +576,11 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     this.editingMessageId = message.id;
     this.editDraft = message.text;
     requestAnimationFrame(() => {
-      const textarea = document.getElementById(`ai-message-edit-${message.id}`) as HTMLTextAreaElement | null;
-      textarea?.focus();
-      textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
+      const textarea = document.getElementById(`ai-message-edit-${message.id}`);
+      if (textarea instanceof HTMLTextAreaElement) {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }
     });
   }
 
@@ -644,7 +651,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   private cancelActiveNexusRequest(): void {
-    if (this.activeChatRequest || this.isSending()) {
+    if (Boolean(this.activeChatRequest) || this.isSending()) {
       this.nexusChatService.cancelNexusChat();
     }
     this.activeChatRequest?.unsubscribe();
@@ -688,8 +695,8 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     try {
       sessionStorage.setItem(this.pendingStreamStorageKey, JSON.stringify(pending));
     }
-    catch {
-      // Reconnection is unavailable when browser session storage is blocked.
+    catch (error) {
+      void error;
     }
   }
 
@@ -717,7 +724,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
       sessionStorage.removeItem(this.pendingStreamStorageKey);
     }
     catch {
-      // Nothing to clear when browser session storage is blocked.
+      return;
     }
   }
 
@@ -775,8 +782,8 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
       if (!container) {
         return;
       }
-      const lastMessage = container.lastElementChild as HTMLElement | null;
-      if (!lastMessage) {
+      const lastMessage = container.lastElementChild;
+      if (!(lastMessage instanceof HTMLElement)) {
         return;
       }
 
@@ -792,7 +799,9 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   queueComposerResize(): void {
-    requestAnimationFrame(() => this.resizeComposer());
+    requestAnimationFrame(() => {
+      this.resizeComposer();
+    });
   }
 
   private getComposerLineCount(textarea: HTMLTextAreaElement): number {
@@ -834,9 +843,9 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     panels?.style.setProperty('--ai-directory-panel-grow', String(this.directorySplitPercent));
   }
 
-  private mapSession(session: any): AiChatSession {
+  private mapSession(session: NexusChatSession): AiChatSession {
     return {
-      sessionId: session.session_id || session.id,
+      sessionId: session.session_id ?? session.id ?? '',
       title: session.title,
       updatedAt: session.updated_at,
       messageCount: session.message_count ?? (Array.isArray(session.messages) ? session.messages.length : 0),

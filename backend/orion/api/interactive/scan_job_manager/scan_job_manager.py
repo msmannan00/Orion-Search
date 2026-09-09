@@ -31,7 +31,7 @@ class ScanJobManager:
         ScanJobManager.__instance = self
 
     @classmethod
-    def is_terminal_status(self, scan_status: str | ScanJobStatus | None) -> bool:
+    def is_terminal_status(cls, scan_status: str | ScanJobStatus | None) -> bool:
         return str(scan_status or "").strip().lower() in {ScanJobStatus.PARTIAL.value, ScanJobStatus.DONE.value, ScanJobStatus.ERROR.value, ScanJobStatus.CANCELLED.value, ScanJobStatus.EXPIRED.value}
 
     @staticmethod
@@ -57,12 +57,12 @@ class ScanJobManager:
         return str(value or "")
 
     @classmethod
-    def _job_status_from_response(self, response: Dict[str, Any]) -> ScanJobStatus:
+    def _job_status_from_response(cls, response: Dict[str, Any]) -> ScanJobStatus:
         result = response.get("result")
-        if isinstance(result, dict) and result.get("status"):
-            response_status = str(result.get("status")).strip().lower()
-        else:
-            response_status = str(response.get("status") or "").strip().lower()
+        raw_status: Any = result.get("status") if isinstance(result, dict) else None
+        if not raw_status:
+            raw_status = response.get("status") or ""
+        response_status = str(raw_status).strip().lower()
 
         if response_status in {"error", "failed", "failure"}:
             return ScanJobStatus.ERROR
@@ -89,7 +89,7 @@ class ScanJobManager:
     def _as_response_dict(response: Any) -> Dict[str, Any]:
         if isinstance(response, dict):
             return response
-        body = getattr(response, "body", None)
+        body: Any = getattr(response, "body", None)
         if body:
             try:
                 return json.loads(body.decode("utf-8"))
@@ -151,7 +151,8 @@ class ScanJobManager:
         scan_status = self._scan_status_value(job)
         is_unseen_or_incomplete = not job.seen or not self.is_terminal_status(scan_status.value)
         latest_date = job.created_at or job.updated_at or datetime.min
-        return (0 if is_unseen_or_incomplete else 1, -latest_date.timestamp())
+        priority = 0 if is_unseen_or_incomplete else 1
+        return priority, -latest_date.timestamp()
 
     async def create_job(self, current_user, api_reference: str, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None, force_new: bool = False, confirm_duplicates: bool = True) -> Dict[str, Any]:
         config = self._route_config(api_reference)

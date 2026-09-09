@@ -1,0 +1,136 @@
+<div data-testid="social-work-list" class="overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[#111a2c] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] shadow-[0_6px_20px_var(--color-shadow-light)] transition-[border-color,box-shadow] [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-[#f7fafd] [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
+  @for (view of views(); track view.key) {
+    <article data-testid="social-work-row" class="group/row relative border-b border-[rgba(148,163,184,0.10)] bg-transparent px-4 py-3.5 transition-colors last:border-b-0 hover:bg-[rgba(87,165,235,0.065)] [body.light-theme_&]:border-[#dce6f1] [body.light-theme_&]:hover:bg-[#edf5fd]">
+      <div class="pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-[var(--color-blue-640)] opacity-0 transition-opacity group-hover/row:opacity-100"></div>
+
+      <div class="flex min-w-0 items-start gap-3">
+        @if (view.ownerAvatar) {
+          <img [src]="view.ownerAvatar" [alt]="view.owner" referrerpolicy="no-referrer" (error)="onImageError($event)" class="mt-0.5 h-8 w-8 flex-shrink-0 rounded-lg border border-[var(--color-border)] object-cover">
+        }
+
+        <div class="min-w-0 flex-1">
+          <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            @if (view.url) {
+              <a [href]="view.url" target="_blank" rel="noopener noreferrer" class="min-w-0 break-words text-sm font-bold leading-5 text-[var(--color-blue-640)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">{{ view.name }}</a>
+            } @else {
+              <span class="min-w-0 break-words text-sm font-bold leading-5 text-[var(--color-text1)]">{{ view.name }}</span>
+            }
+            @for (label of view.labels; track label) {
+              <span class="inline-flex flex-shrink-0 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-blue-720)]/60 px-2 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text4)]">{{ label | translate }}</span>
+            }
+            @if (view.status) {
+              <span class="inline-flex flex-shrink-0 items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-amber-400">{{ view.status }}</span>
+            }
+            @if (view.owner) {
+              <span class="ml-auto flex-shrink-0 font-mono text-[10px] text-[var(--color-text4)]">{{ view.owner }}</span>
+            }
+          </div>
+
+          @if (view.forkSource) {
+            <div class="mt-0.5 text-[11px] text-[var(--color-text4)]">
+              {{ 'Forked from' | translate }}
+              @if (view.forkSourceUrl) {
+                <a [href]="view.forkSourceUrl" target="_blank" rel="noopener noreferrer" class="font-medium text-[var(--color-text3)] hover:underline">{{ view.forkSource }}</a>
+              } @else {
+                <span class="font-medium text-[var(--color-text3)]">{{ view.forkSource }}</span>
+              }
+            </div>
+          }
+
+          @if (view.description) {
+            <p class="mb-0 mt-1 line-clamp-2 max-w-3xl text-xs leading-5 text-[var(--color-text3)]">{{ view.description }}</p>
+          }
+
+          @if (view.homepage) {
+            <a [href]="view.homepage" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[var(--color-blue-640)] hover:underline">
+              <i class="bi bi-link-45deg flex-shrink-0 text-xs" aria-hidden="true"></i>
+              <span class="truncate">{{ view.homepage }}</span>
+            </a>
+          }
+
+          @if (view.topics.length) {
+            <div class="mt-1.5 flex flex-wrap gap-1">
+              @for (topic of view.topics; track topic) {
+                <span class="inline-flex items-center rounded-full bg-[var(--color-blue-640)]/15 px-2 py-px text-[10px] font-semibold text-[var(--color-blue-640)]">{{ topic }}</span>
+              }
+            </div>
+          }
+
+          <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-text4)]">
+            @if (view.language) {
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-2.5 w-2.5 flex-shrink-0" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="5" [attr.fill]="languageColor(view.language)"></circle></svg>
+                <span class="font-medium text-[var(--color-text3)]">{{ view.language }}</span>
+              </span>
+            }
+            @if (view.stars) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Stars' | translate"><i class="bi bi-star-fill text-[10px] text-amber-400" aria-hidden="true"></i>{{ view.stars }}</span>
+            }
+            @if (view.forks) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Forks' | translate"><i class="bi bi-diagram-3 text-[10px]" aria-hidden="true"></i>{{ view.forks }}</span>
+            }
+            @if (view.watchers) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Watchers' | translate"><i class="bi bi-eye text-[10px]" aria-hidden="true"></i>{{ view.watchers }}</span>
+            }
+            @if (view.issues) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Open issues' | translate"><i class="bi bi-exclamation-circle text-[10px]" aria-hidden="true"></i>{{ view.issues }}</span>
+            }
+            @if (view.pulls) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Pulls' | translate"><i class="bi bi-cloud-arrow-down text-[10px]" aria-hidden="true"></i>{{ view.pulls }}</span>
+            }
+            @if (view.downloads) {
+              <span class="inline-flex items-center gap-1 tabular-nums" [title]="'Downloads' | translate"><i class="bi bi-download text-[10px]" aria-hidden="true"></i>{{ view.downloads }}</span>
+            }
+            @if (view.updated.date || view.updated.raw) {
+              <span class="inline-flex items-center gap-1" [title]="'Updated' | translate"><i class="bi bi-clock-history text-[10px]" aria-hidden="true"></i>{{ view.updated.date ? (view.updated.date | date:'mediumDate') : view.updated.raw }}</span>
+            }
+          </div>
+
+          @if (view.license || view.branch || view.size || view.created.date || view.latestTag || view.tagsCount || view.platforms.length) {
+            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text4)]">
+              @if (view.license) {
+                <span class="inline-flex items-center gap-1"><i class="bi bi-shield-check text-[10px]" aria-hidden="true"></i>{{ view.license }}</span>
+              }
+              @if (view.branch) {
+                <span class="inline-flex items-center gap-1 font-mono"><i class="bi bi-diagram-3 text-[10px]" aria-hidden="true"></i>{{ view.branch }}</span>
+              }
+              @if (view.latestTag) {
+                <span class="inline-flex items-center gap-1 font-mono"><i class="bi bi-tag text-[10px]" aria-hidden="true"></i>{{ view.latestTag }}</span>
+              }
+              @if (view.tagsCount) {
+                <span class="tabular-nums">{{ view.tagsCount }} {{ 'tags' | translate }}</span>
+              }
+              @if (view.size) {
+                <span class="tabular-nums">{{ view.size }}</span>
+              }
+              @for (platform of view.platforms; track platform) {
+                <span class="rounded border border-[var(--color-border)] px-1 font-mono text-[9px]">{{ platform }}</span>
+              }
+              @if (view.created.date) {
+                <span>{{ 'Created' | translate }} {{ view.created.date | date:'mediumDate' }}</span>
+              }
+            </div>
+          }
+
+          @if (view.extra.length) {
+            <button type="button" (click)="toggle(view)" [attr.aria-expanded]="isExpanded(view)" class="mt-2 inline-flex cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text4)] outline-none hover:text-[var(--color-text2)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+              {{ view.extra.length }} {{ 'more' | translate }}
+              <i class="bi text-[9px]" [class.bi-chevron-up]="isExpanded(view)" [class.bi-chevron-down]="!isExpanded(view)" aria-hidden="true"></i>
+            </button>
+          }
+
+          @if (isExpanded(view)) {
+            <dl class="mb-0 mt-2 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-720)]/40 p-3 md:grid-cols-3 xl:grid-cols-4">
+              @for (entry of view.extra; track entry.key) {
+                <div class="min-w-0">
+                  <dt class="min-w-0 truncate text-[9px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text4)]" [title]="formatKeyLabel(entry.key)">{{ formatKeyLabel(entry.key) }}</dt>
+                  <dd class="mb-0 mt-0.5 min-w-0 break-words text-[11px] font-medium leading-4 text-[var(--color-text2)]">{{ entry.value }}</dd>
+                </div>
+              }
+            </dl>
+          }
+        </div>
+      </div>
+    </article>
+  }
+</div>

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, Resolve, RouterStateSnapshot } from '@angular/router';
+import { Resolve } from '@angular/router';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 import { ApiService } from '../services/api.service';
@@ -10,10 +10,8 @@ export class InsightResolver implements Resolve<InsightCallbackModel> {
 
   constructor(private apiService: ApiService) { }
 
-  resolve(_route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): Observable<InsightCallbackModel> {
-    if (!this.cache$) {
-      this.cache$ = this.apiService.get<InsightCallbackModel>('insight').pipe(shareReplay(1));
-    }
+  resolve(): Observable<InsightCallbackModel> {
+    this.cache$ ??= this.apiService.get<InsightCallbackModel>('insight').pipe(shareReplay(1));
     return this.cache$;
   }
 }

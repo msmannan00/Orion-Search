@@ -1,9 +1,17 @@
-<article data-testid="social-extension-manager" class="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] p-6 shadow-[0_10px_24px_var(--color-shadow-light)]">
+<article data-testid="social-extension-manager" class="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] p-4 shadow-[0_10px_24px_var(--color-shadow-light)] sm:p-6">
   <div class="flex items-start justify-between gap-3">
     <img src="assets/images/sidebar/search_nav_logo.png" [alt]="'Orion' | translate" class="h-7 w-auto flex-shrink-0 object-contain [body.light-theme_&]:[filter:var(--ui-icon-filter-light)]">
   </div>
 
-  @if (mode() === 'signin') {
+  @if (mode() === 'unsupported') {
+    <h3 data-testid="social-extension-unsupported" class="mb-0 mt-4 text-base font-bold text-[var(--color-text1)]">{{ 'Unsupported browser' | translate }}</h3>
+    <p class="mb-0 mt-0.5 text-xs text-[var(--color-text4)]">{{ 'The Orion extension installs only in Firefox, Chrome and Chromium. Get one of those browsers, then open Orion in it to continue.' | translate }}</p>
+
+    <div class="mt-5 flex flex-wrap gap-2.5">
+      <a data-testid="social-extension-get-firefox" [href]="browserUrl('firefox')" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 flex-1 min-w-[160px] items-center justify-center gap-2 rounded-[8px] bg-[var(--color-blue-640)] px-4 text-xs font-semibold text-white transition hover:brightness-110"><i class="bi bi-browser-firefox" aria-hidden="true"></i> {{ 'Get Firefox' | translate }}</a>
+      <a data-testid="social-extension-get-chromium" [href]="browserUrl('chromium')" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 flex-1 min-w-[160px] items-center justify-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-4 text-xs font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-810)]"><i class="bi bi-browser-chrome" aria-hidden="true"></i> {{ 'Get Chromium' | translate }}</a>
+    </div>
+  } @else if (mode() === 'signin') {
     <h3 class="mb-0 mt-4 text-base font-bold text-[var(--color-text1)]">{{ 'Waiting for the Orion extension' | translate }}</h3>
     <p class="mb-0 mt-0.5 text-xs text-[var(--color-text4)]">{{ 'The extension is installed but signed out. Sign in from the popup and this profile loads automatically.' | translate }}</p>
 
@@ -14,21 +22,32 @@
 
     <button data-testid="social-extension-open" type="button" (click)="open()" class="mt-5 inline-flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--color-blue-640)] px-4 text-xs font-semibold text-white transition hover:brightness-110"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ 'Sign in' | translate }}</button>
   } @else {
-    <h3 class="mb-0 mt-4 text-base font-bold text-[var(--color-text1)]">{{ 'Orion extension required' | translate }}</h3>
-    <p class="mb-0 mt-0.5 text-xs text-[var(--color-text4)]">{{ 'This is a signed production build. Download it and approve the browser installation prompt.' | translate }}</p>
+    <h3 class="mb-0 mt-4 text-base font-bold text-[var(--color-text1)]">{{ (mode() === 'update' ? 'Extension update required' : 'Orion extension required') | translate }}</h3>
+    <p class="mb-0 mt-0.5 text-xs text-[var(--color-text4)]">{{ (mode() === 'update' ? 'A newer Orion extension is available. Download and install it from Orion to continue.' : 'Download the signed Orion package for your browser and install it. Orion keeps it updated automatically.') | translate }}</p>
+    @if (mode() === 'update' && latestVersion()) {
+      <p class="mb-0 mt-1 text-[11px] text-[var(--color-text4)]">{{ 'Latest version' | translate }}: {{ latestVersion() }}</p>
+    }
 
-    <div class="mt-5 flex flex-wrap gap-2.5">
-      <a data-testid="social-extension-download-chrome" [href]="downloadUrl('chrome')" class="inline-flex h-9 flex-1 min-w-[160px] items-center justify-center gap-2 rounded-[8px] bg-[var(--color-blue-640)] px-4 text-xs font-semibold text-white transition hover:brightness-110"><i class="bi bi-browser-chrome" aria-hidden="true"></i> {{ 'Download for Chrome' | translate }}</a>
-      <a data-testid="social-extension-download-firefox" [href]="downloadUrl('firefox')" class="inline-flex h-9 flex-1 min-w-[160px] items-center justify-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-4 text-xs font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-810)]"><i class="bi bi-browser-firefox" aria-hidden="true"></i> {{ 'Download for Firefox' | translate }}</a>
+    <div class="mt-5 grid gap-4 md:grid-cols-2">
+      <section class="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-820)] p-4">
+        <a data-testid="social-extension-download-firefox" [href]="downloadUrl('firefox')" class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--color-blue-640)] px-4 text-xs font-semibold text-white transition hover:brightness-110"><i class="bi bi-browser-firefox" aria-hidden="true"></i> {{ 'Install for Firefox' | translate }}</a>
+        <div class="mx-4 my-3 border-t border-[var(--color-border)] opacity-60"></div>
+        <ol data-testid="social-extension-steps-firefox" class="mt-0 mb-0 list-decimal space-y-2 pl-5 text-xs text-[var(--color-text3)] marker:font-semibold marker:text-[var(--color-text2)]">
+          @for (step of firefoxSteps; track step) {
+            <li>{{ step | translate }}</li>
+          }
+        </ol>
+      </section>
+
+      <section class="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-820)] p-4">
+        <a data-testid="social-extension-download-chrome" [href]="chromeWebStoreUrl" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-4 text-xs font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-810)]"><i class="bi bi-browser-chrome" aria-hidden="true"></i> {{ 'Install for Chrome' | translate }}</a>
+        <div class="mx-4 my-3 border-t border-[var(--color-border)] opacity-60"></div>
+        <ol data-testid="social-extension-steps-chrome" class="mt-0 mb-0 list-decimal space-y-2 pl-5 text-xs text-[var(--color-text3)] marker:font-semibold marker:text-[var(--color-text2)]">
+          @for (step of chromeSteps; track step) {
+            <li>{{ step | translate }}</li>
+          }
+        </ol>
+      </section>
     </div>
-
-    <ol class="mt-5 mb-0 flex list-none flex-col gap-2 pl-0">
-      @for (step of installSteps; track step; let i = $index) {
-        <li class="flex items-center gap-2.5 text-xs text-[var(--color-text3)]">
-          <span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-blue-720)] text-[10px] font-semibold text-[var(--color-text2)]">{{ i + 1 }}</span>
-          <span>{{ step | translate }}</span>
-        </li>
-      }
-    </ol>
   }
 </article>

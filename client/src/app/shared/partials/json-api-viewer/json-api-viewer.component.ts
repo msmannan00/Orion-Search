@@ -16,7 +16,7 @@ export class JsonApiViewerComponent {
 
   isExpanded = false;
   copied = false;
-  readonly jsonData = input<any>();
+  readonly jsonData = input<unknown>();
 
   constructor(private cdr: ChangeDetectorRef) {}
 

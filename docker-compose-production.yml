@@ -25,10 +25,11 @@ services:
         condition: service_started
     volumes:
       - ./backend/orion:/app/orion:ro
-      - ./backend/orion/logs:/app/orion/logs:rw
       - ./backend/routes:/app/routes:ro
       - ./backend/static:/app/static:rw
+      - ./backend/workspace:/app/workspace:cached
       - ./backend/migrations:/app/migrations:ro
+      - ./backend/build/backups:/app/backups:rw
       - ./client/build:/client_build:ro
       - bloom-data:/app/bloom_data:rw
       - ../Orion-Crawler/app/logs:/app/crawler_logs:ro
@@ -50,7 +51,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 300s
     command: >
       sh -c "python3 /app/cronjobs.py & exec gunicorn -w 4 --threads 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8070 --timeout 900"
 
@@ -78,7 +79,7 @@ services:
     networks:
       backend:
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8529/_admin/server/availability" ]
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8529/_admin/server/availability" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -153,6 +154,7 @@ services:
     volumes:
       - ./nginx/nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - ./backend/static:/app/static:ro
+      - ./backend/workspace:/app/workspace:cached
       - ./client/build:/client_build:ro
       - letsencrypt-webroot:/var/www/letsencrypt:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -165,6 +167,7 @@ services:
       - no-new-privileges:true
     networks:
       backend:
+      shared_bridge:
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:80 || exit 1" ]
       interval: 30s

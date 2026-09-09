@@ -1,41 +1,45 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { ResultSectionComponent } from '../../../../shared/partials/result-components/result-section/result-section.component';
-import { ResultListComponent } from '../../../../shared/partials/result-components/result-list/result-list.component';
 import { CommonModule, NgClass } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { last } from 'rxjs';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
-import { HelperService } from '../../../../shared/services/helper.service';
 import { AppService } from '../../../../services/core/app/app.service';
 import { Category } from '../../../../shared/constants/pages';
-import { ApiService } from '../../../../shared/services/api.service';
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
-import { JsonApiViewerComponent } from '../../../../shared/partials/json-api-viewer/json-api-viewer.component';
-import { ReportMappingComponent } from "../../../../shared/partials/report-mapping/report-mapping.component";
-import { AuthService } from '../../../../services/authetication/auth.service';
-import { DashboardService } from '../../../../services/dashboard/dashboard.service';
-import { ReportHeaderComponent } from '../../../../shared/partials/report-header/report-header.component';
-import { ChatWidgetComponent } from '../../../root-searches/ai-workspace/chat-widget/chat-widget.component';
 import { CodeBlockComponent } from '../../../../shared/partials/code-block/code-block.component';
+import { JsonApiViewerComponent } from '../../../../shared/partials/json-api-viewer/json-api-viewer.component';
+import { ReportHeaderComponent } from '../../../../shared/partials/report-header/report-header.component';
 import { ReportInteractionHostComponent } from '../../../../shared/partials/report-interactions/report-interaction-host/report-interaction-host.component';
-import { formatKeyLabel as formatKeyLabelUtil, getDisplayTitle as getDisplayTitleUtil, getStatusText as getStatusTextUtil, isHiddenReportMetadataKey, isWithinDays as isWithinDaysUtil, normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../../../shared/utils/intel-report.util';
-import { ScrollService } from '../../../../shared/services/scroll.service';
+import { ReportMappingComponent } from "../../../../shared/partials/report-mapping/report-mapping.component";
+import { ResultListComponent } from '../../../../shared/partials/result-components/result-list/result-list.component';
+import { ResultSectionComponent } from '../../../../shared/partials/result-components/result-section/result-section.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { HelperService } from '../../../../shared/services/helper.service';
+import { ScrollService } from '../../../../shared/services/scroll.service';
+import { formatKeyLabel as formatKeyLabelUtil, getDisplayTitle as getDisplayTitleUtil, getStatusText as getStatusTextUtil, isHiddenReportMetadataKey, isWithinDays as isWithinDaysUtil, normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../../../shared/utils/intel-report.util';
+import { ChatWidgetComponent } from '../../../root-searches/ai-workspace/chat-widget/chat-widget.component';
+import type { GeneralReportItem } from './model/report.model';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
+export type { GeneralReportItem } from './model/report.model';
+
+
+
 
 @Component({
   selector: 'app-result-panel',
   templateUrl: './report.component.html',
   imports: [ResultListComponent, CommonModule, NgClass, ResultSectionComponent, TooltipDirective, JsonApiViewerComponent, ReportMappingComponent, ReportHeaderComponent, ChatWidgetComponent, CodeBlockComponent, ReportInteractionHostComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./report.component.css'],
 })
 export class ReportComponent implements OnInit, AfterViewInit {
   protected readonly last = last;
   protected readonly Category = Category;
 
-  resultItem: any = null;
+  resultItem: GeneralReportItem | null = null;
   arrayKeys: string[] = [];
-  listItems: any[] = [];
+  listItems: string[] = [];
   activeTab = '';
   content = '';
   lang = "en";
@@ -49,7 +53,7 @@ export class ReportComponent implements OnInit, AfterViewInit {
   username = signal<string>('');
   role = signal<string>('');
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef, protected dashboardService: DashboardService, private route: ActivatedRoute, private helperService: HelperService, protected appService: AppService, protected authService: AuthService, private scrollService: ScrollService, private elementRef: ElementRef<HTMLElement>) {
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private route: ActivatedRoute, private helperService: HelperService, protected appService: AppService, private scrollService: ScrollService, private elementRef: ElementRef<HTMLElement>) {
     this.lang = appService.getConfig().appSettings.language_allowed;
     this.lang_detected = appService.getConfig().appSettings.language_allowed;
     this.username.set(this.appService.userSessionData().user.username);
@@ -58,17 +62,17 @@ export class ReportComponent implements OnInit, AfterViewInit {
 
   get filteredArrayKeys(): string[] {
     return this.arrayKeys.filter(key => {
-      if (key === 'm_code_snippet' && 'm_code_snippet' in (this.resultItem)) {
+      if (key === 'm_code_snippet' && this.resultItem && 'm_code_snippet' in this.resultItem) {
         return false;
       }
-      const val = (this.resultItem)?.[key];
+      const val = getOwnProperty((this.resultItem), key);
       return val != null && (!Array.isArray(val) || val.length > 0);
     });
   }
 
   ngOnInit(): void {
     this.route.data.subscribe(({ reportdata, type }) => {
-      this.resultItem = reportdata;
+      this.resultItem = reportdata as GeneralReportItem | null;
       this.type = type;
       this.processResultItem();
       const keys = this.filteredArrayKeys;
@@ -95,8 +99,8 @@ export class ReportComponent implements OnInit, AfterViewInit {
     this.elementRef.nativeElement.scrollIntoView({ block: 'start', behavior: 'auto' });
   }
 
-  langUpdate(result: any) {
-    this.resultItem = result;
+  langUpdate(result: unknown) {
+    this.resultItem = result as GeneralReportItem | null;
     this.processResultItem();
     this.syncActiveMetadataTab();
     if (this.resultItem?.m_screenshot) {
@@ -115,16 +119,17 @@ export class ReportComponent implements OnInit, AfterViewInit {
 
   processResultItem() {
     if (this.resultItem) {
-      this.content = this.resultItem.m_content || '';
+      const resultItem = this.resultItem;
+      this.content = resultItem.m_content ?? '';
       this.arrayKeys = [];
-      if ('m_section' in this.resultItem && Array.isArray(this.resultItem.m_section) && this.resultItem.m_section.length > 0) {
+      if ('m_section' in resultItem && Array.isArray(resultItem.m_section) && resultItem.m_section.length > 0) {
         this.arrayKeys.push('m_section');
       }
-      if (this.resultItem.m_content && this.resultItem.m_content.trim() !== '') {
+      if (resultItem.m_content && resultItem.m_content.trim() !== '') {
         this.arrayKeys.push('m_content');
       }
-      Object.keys(this.resultItem).forEach((key) => {
-        const value = (this.resultItem)[key];
+      Object.keys(resultItem).forEach((key) => {
+        const value = getOwnProperty(resultItem, key);
         if (key !== 'm_section' && this.shouldShowMetadataKey(key, value)) {
           this.arrayKeys.push(key);
         }
@@ -146,7 +151,7 @@ export class ReportComponent implements OnInit, AfterViewInit {
   }
 
   private getMetadataListItems(key: string): string[] {
-    const value = this.resultItem?.[key];
+    const value = getOwnProperty(this.resultItem, key);
     if (Array.isArray(value)) {
       return value.map(item => String(item));
     }
@@ -206,10 +211,10 @@ export class ReportComponent implements OnInit, AfterViewInit {
   }
 
   loadImage(fileName: string) {
-    const endpoint = `search/breach/screenshot/${fileName}`;
-    this.api.get<Blob>(endpoint, {
+    const endpoint = `/api/search/breach/screenshot/${fileName}`;
+    this.http.get(endpoint, {
       responseType: 'blob'
-    } as any).subscribe({
+    }).subscribe({
       next: (blob) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -240,22 +245,22 @@ export class ReportComponent implements OnInit, AfterViewInit {
   }
 
   getReportUrl(): string {
-    return this.resultItem?.m_url || this.resultItem?.m_source_url || this.resultItem?.m_base_url || '';
+    return this.resultItem?.m_url ?? this.resultItem?.m_source_url ?? this.resultItem?.m_base_url ?? '';
   }
 
   getReportDescription(): string {
-    return this.resultItem?.m_important_content || this.resultItem?.m_content || '';
+    return this.resultItem?.m_important_content ?? this.resultItem?.m_content ?? '';
   }
 
   getReportDate(): string {
-    return this.resultItem?.m_date || this.resultItem?.m_published_date || this.resultItem?.m_first_seen || '';
+    return this.resultItem?.m_date ?? this.resultItem?.m_published_date ?? this.resultItem?.m_first_seen ?? '';
   }
 
   getStatusDate(): string {
-    return this.resultItem?.m_creation_date || this.resultItem?.m_update_date || this.getReportDate();
+    return this.resultItem?.m_creation_date ?? this.resultItem?.m_update_date ?? this.getReportDate();
   }
 
   get reportDocId(): string {
-    return this.resultItem?.m_hash || this.resultItem?._id || '';
+    return this.resultItem?.m_hash ?? this.resultItem?._id ?? '';
   }
 }

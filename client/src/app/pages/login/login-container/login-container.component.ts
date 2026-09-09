@@ -20,7 +20,7 @@ import { isSignupHost } from '../../../shared/utils/auth-host.util';
 })
 export class LoginContainerComponent implements OnInit, OnDestroy {
   private static readonly DEFAULT_LOGO_SRC = '/assets/images/shared/logo-wide-light.svg';
-  private static readonly DEFAULT_AUTH_DASHBOARD_SRC = '/assets/images/shared/auth_dashboard_icon.svg';
+  private static readonly DEFAULT_AUTH_DASHBOARD_SRC = '/assets/images/shared/auth_dashboard_map.png';
   private authSubscription!: Subscription;
   private tempToken: string | null = null;
   private pendingUsername: string | null = null;
@@ -51,9 +51,14 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
       if (authState.isAuthenticated) {
         this.appService.loadSession(true).subscribe(() => {
           const user = this.appService.userSessionData().user;
-          const passwordResetToken = user.password_reset_token || this.authService.passwordResetToken;
+          const passwordResetToken = user.password_reset_token ?? this.authService.passwordResetToken;
           if (user.password_reset_required && passwordResetToken) {
             this.router.navigate(['/reset', passwordResetToken], { replaceUrl: true }).then();
+            return;
+          }
+          const mailRedirect = this.validMailSsoRedirect();
+          if (mailRedirect) {
+            window.location.assign(mailRedirect);
             return;
           }
           this.router.navigate(['dashboard'], { replaceUrl: true }).then();
@@ -66,10 +71,10 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       const isScreenMobile = window.innerWidth <= 480;
       this.isMobile = isScreenMobile;
-      let mode = params['mode'];
-      if (!mode && params['redirect']) {
-        const tree = this.router.parseUrl(params['redirect']);
-        mode = tree.queryParams['mode'];
+      let mode = params.mode;
+      if (!mode && params.redirect) {
+        const tree = this.router.parseUrl(params.redirect);
+        mode = tree.queryParams.mode;
       }
       if (mode === 'free') {
         localStorage.setItem('mobileDemo', 'true');
@@ -77,6 +82,24 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
         this.demoLogin();
       }
     });
+  }
+
+  private validMailSsoRedirect(): string | null {
+    const rawRedirect = this.route.snapshot.queryParamMap.get('redirect');
+    if (!rawRedirect) {
+      return null;
+    }
+    try {
+      const redirect = new URL(rawRedirect, window.location.origin);
+      if (redirect.origin !== window.location.origin
+        || redirect.pathname !== '/api/sso/mail/authorize') {
+        return null;
+      }
+      return `${redirect.pathname}${redirect.search}`;
+    }
+    catch {
+      return null;
+    }
   }
 
   getLoginLogoSrc(): string {
@@ -88,6 +111,11 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
 
   getDashboardPreviewSrc(): string {
     return this.appService.getConfig().appSettings.auth_dashboard_icon || LoginContainerComponent.DEFAULT_AUTH_DASHBOARD_SRC;
+  }
+
+  isDefaultDashboardPreview(): boolean {
+    const configuredPreview = this.appService.getConfig().appSettings.auth_dashboard_icon;
+    return !configuredPreview || configuredPreview.includes('auth_dashboard_icon_default.png');
   }
 
   isLightTheme(): boolean {
@@ -106,18 +134,25 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
       return;
     }
     this.authService.login(this.user.mail, this.user.password).subscribe({
-      next: async (res) => {
+      next: (res) => {
         if (res?.twofa_required) {
           this.twofaRequired = true;
-          this.pendingUsername = res.username;
-          this.tempToken = res.temp_token || null;
-          this.otpUri = res.provisioning_uri || null;
-          this.otpSecret = res.twofa_secret || null;
-          this.otpDataUrl = this.otpUri ? await QRCode.toDataURL(this.otpUri) : null;
+          this.pendingUsername = res.username ?? this.user.mail;
+          this.tempToken = res.temp_token ?? null;
+          this.otpUri = res.provisioning_uri ?? null;
+          this.otpSecret = res.twofa_secret ?? null;
+          this.otpDataUrl = null;
+          if (this.otpUri) {
+            void QRCode.toDataURL(this.otpUri).then(dataUrl => {
+              this.otpDataUrl = dataUrl;
+            }).catch(() => {
+              this.otpDataUrl = null;
+            });
+          }
         }
       },
       error: err => {
-        this.errorMessage = err?.error?.detail || err?.message || 'Login failed';
+        this.errorMessage = err?.error?.detail ?? err?.message ?? 'Login failed';
       }
     });
   }
@@ -137,8 +172,8 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.errorMessage =
-                    err?.error?.detail ||
-                        err?.message ||
+                    err?.error?.detail ??
+                        err?.message ??
                         'Login failed';
         }
       });
@@ -170,7 +205,7 @@ export class LoginContainerComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         const vErr = err?.error?.validation_errors?.[0];
-        this.errorMessage = vErr?.message || err?.error?.detail || 'Signup failed';
+        this.errorMessage = vErr?.message ?? err?.error?.detail ?? 'Signup failed';
       }
     });
   }

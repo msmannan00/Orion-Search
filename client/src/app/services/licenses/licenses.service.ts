@@ -7,13 +7,10 @@ import { Router } from '@angular/router';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { AppService } from '../core/app/app.service';
 import { AuthService } from '../authetication/auth.service';
-interface CombinedRule {
-    modules: Set<string> | 'all';
-    cti_graph: boolean;
-    mapping: boolean;
-    scanning: boolean;
-    maintainer: boolean;
-}
+import type { CombinedRule } from './model/licenses.model';
+export type { CombinedRule } from './model/licenses.model';
+
+
 
 type AlertLicenseTarget = string | {
     licenses?: string[] | null;
@@ -96,10 +93,10 @@ export class LicenseService {
           combined.modules.add(m);
         }
       }
-      combined.cti_graph ||= rule.cti_graph;
-      combined.mapping ||= rule.mapping;
-      combined.scanning ||= rule.scanning;
-      combined.maintainer ||= rule.maintainer;
+      combined.cti_graph ||= !!rule.cti_graph;
+      combined.mapping ||= !!rule.mapping;
+      combined.scanning ||= !!rule.scanning;
+      combined.maintainer ||= !!rule.maintainer;
     }
     return combined;
   }
@@ -163,7 +160,7 @@ export class LicenseService {
   }
 
   canUseAlertType(type?: string | null): boolean {
-    const rawType = (type || '').trim().toLowerCase();
+    const rawType = (type ?? '').trim().toLowerCase();
     if (!rawType) {
       return false;
     }
@@ -179,7 +176,7 @@ export class LicenseService {
   }
 
   getAlertLicenses(type?: string | null): string[] {
-    const rawType = (type || '').trim().toLowerCase();
+    const rawType = (type ?? '').trim().toLowerCase();
     const alertType = this.normalizeAlertType(rawType);
     const isScanningAlert = SCANNING_ALERT_TYPES.has(rawType);
     return Object.entries(license_rules)
@@ -201,10 +198,10 @@ export class LicenseService {
     }
     const type = typeof target === 'string'
       ? target
-      : (target?.type || target?.categoryName || '');
+      : (target?.type ?? target?.categoryName ?? '');
     const alertLicenses = typeof target === 'string'
       ? []
-      : (target?.licenses || []);
+      : (target?.licenses ?? []);
     if (alertLicenses.length > 0 && this.getAlertAccessLicenses().some(license => alertLicenses.includes(license))) {
       return true;
     }
@@ -240,8 +237,18 @@ export class LicenseService {
   }
 
   canViewTenantAlerts(): boolean {
-    const permissions = this.appService.userSessionData().user.permissions || [];
+    const permissions = this.appService.userSessionData().user.permissions ?? [];
     return this.isAdmin() || (this.isAnalyst() && permissions.includes('case_management') && this.appService.userSessionData().tenant.isDefault);
+  }
+
+  canUseOrionMail(): boolean {
+    const session = this.appService.userSessionData();
+    return session.tenant.isDefault && (this.isAdmin() || (session.user.permissions ?? []).includes('orion_mail'));
+  }
+
+  canDismissResults(): boolean {
+    const permissions = this.appService.userSessionData().user.permissions ?? [];
+    return this.isAdmin() || this.isMaintainer() || permissions.includes('dismiss_result');
   }
 
   canReviewTakedowns(): boolean {

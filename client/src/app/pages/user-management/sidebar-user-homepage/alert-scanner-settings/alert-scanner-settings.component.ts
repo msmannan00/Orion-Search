@@ -92,19 +92,19 @@ export class AlertScannerSettingsComponent implements OnInit {
         this.allowedScannerKeys = previous;
         this.setAllowedScannersLocal(this.scannerCategories.filter(category => previous.has(this.normalize(category))));
         this.isSaving.set(false);
-        this.messageNotificationService.show(err?.error?.detail || this.translationService.translate('Failed to update alert scanners'));
+        this.messageNotificationService.show(err?.error?.detail ?? this.translationService.translate('Failed to update alert scanners'));
       }
     });
   }
 
   private buildTenantPayload(allowed: readonly string[]): TenantModel {
-    const tenant = this.tenantData || this.appService.tenantData();
+    const tenant = this.tenantData ?? this.appService.tenantData();
     return {
       name: tenant.name || '',
-      phone: tenant.phone || '',
-      country: tenant.country || '',
-      city: tenant.city || '',
-      postal_code: tenant.postal_code || '',
+      phone: tenant.phone ?? '',
+      country: tenant.country ?? '',
+      city: tenant.city ?? '',
+      postal_code: tenant.postal_code ?? '',
       allowed_alert_categories: [...allowed],
     } as TenantModel;
   }

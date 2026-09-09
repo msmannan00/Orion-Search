@@ -12,6 +12,12 @@ class SocialForumRequest(BaseModel):
     max_results: int = Field(default=50, ge=1, le=100)
 
 
+class SocialGraphDataRequest(BaseModel):
+    usernames: List[str] = Field(default_factory=list)
+    priority: List[str] = Field(default_factory=list)
+    limit: int = Field(default=200, ge=1, le=500)
+
+
 class PlatformUsernameRequest(BaseModel):
     platform: str = Field(..., min_length=1)
     username: str = Field(..., min_length=1)
@@ -31,6 +37,7 @@ class SocialProfileRequest(PlatformUsernameRequest):
     url: Optional[str] = None
     type: Optional[str] = None
     command: Optional[str] = None
+    cursor: Optional[str] = None
 
 
 class SocialPostsRequest(PlatformUsernameRequest):
@@ -63,10 +70,6 @@ class SocialFollowersRequest(PlatformUsernameRequest):
 
 class SocialOnlineImages(PlatformUsernameRequest):
     max_images: int = Field(default=10, ge=1, le=100)
-
-
-class SocialFollowingRequest(PlatformUsernameRequest):
-    max_following: int = Field(default=50, ge=1, le=5000)
 
 
 class SocialMetadataRequest(BaseModel):

@@ -1,22 +1,29 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { HttpParams } from '@angular/common/http';
-import { ApiService } from '../../services/api.service';
-import { TooltipDirective } from '../../directive/tooltip-directive.directive';
-import { fadeInDashboardItem } from '../../animations/dashboard.item.animation';
-import { AuthService } from '../../../services/authetication/auth.service';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DashboardService } from '../../../services/dashboard/dashboard.service';
 import { LicenseService } from '../../../services/licenses/licenses.service';
-import { ProxyController } from '../../services/proxy-controller';
+import { TooltipDirective } from '../../directive/tooltip-directive.directive';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { ApiService } from '../../services/api.service';
+import { ProxyController } from '../../services/proxy-controller';
+import type { MappingEdge, MappingGraphItem, MappingVertex } from './model/report-mapping.interfaces.model';
 import { RelatedReportItem, STRONG_RELATED_MAPPING_KEYS } from './model/report-mapping.model';
+export type { MappingEdge,MappingGraphItem,MappingVertex } from './model/report-mapping.interfaces.model';
+
+
+
+
+
+
+
 
 @Component({
   selector: 'app-report-mapping',
   templateUrl: './report-mapping.component.html',
+  styleUrls: ['./report-mapping.component.css'],
   imports: [CommonModule, NgClass, TooltipDirective, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
 })
 export class ReportMappingComponent {
   private readonly proxied_resource = inject(ProxyController);
@@ -24,11 +31,11 @@ export class ReportMappingComponent {
 
   readonly skeletonItems = [0, 1];
   loading = true;
-  result: any[] = [];
+  result: MappingGraphItem[] = [];
   filteredItems: RelatedReportItem[] = [];
   isExpanded = false;
 
-  constructor(private api: ApiService, protected dashboardservice: DashboardService, protected authService: AuthService, protected licenseService: LicenseService) {
+  constructor(private api: ApiService, protected dashboardservice: DashboardService, protected licenseService: LicenseService) {
   }
 
   toggleContent(): void {
@@ -54,7 +61,7 @@ export class ReportMappingComponent {
     this.loading = true;
     this.filteredItems = [];
     this.api.get<{
-            results: any[];
+            results: MappingGraphItem[];
             limit_reached: boolean;
         }>('graph', { params }).subscribe({
           next: response => {
@@ -71,7 +78,7 @@ export class ReportMappingComponent {
         });
   }
 
-  getUniqueSortedItems(result: any[], length: number): RelatedReportItem[] {
+  getUniqueSortedItems(result: MappingGraphItem[], length: number): RelatedReportItem[] {
     const currentId = this.getCurrentReportId();
     const seenIds = new Set<string>();
     const items: RelatedReportItem[] = [];
@@ -99,13 +106,13 @@ export class ReportMappingComponent {
     this.proxied_resource.open(baseUrl);
   }
 
-  private toRelatedReportItem(item: any, vertex: any, id: string, rawMappingKey: string): RelatedReportItem {
+  private toRelatedReportItem(item: MappingGraphItem, vertex: MappingVertex | null, id: string, rawMappingKey: string): RelatedReportItem {
     const mappingKey = this.formatLabel(rawMappingKey);
     const mappingValue = this.extractMappingValue(item);
-    const title = this.cleanText(vertex?.title || vertex?.display_value || vertex?.label) || `Related report ${this.compactId(id)}`;
+    const title = this.cleanText(vertex?.title ?? vertex?.display_value ?? vertex?.label) || `Related report ${this.compactId(id)}`;
     const summary = this.truncate(this.cleanText(vertex?.summary), 220);
-    const cluster = this.formatLabel(vertex?.cluster_id || vertex?.module || '');
-    const source = this.formatLabel(vertex?.source || vertex?.module || vertex?.cluster_id || '');
+    const cluster = this.formatLabel(vertex?.cluster_id ?? vertex?.module ?? '');
+    const source = this.formatLabel(vertex?.source ?? vertex?.module ?? vertex?.cluster_id ?? '');
     return {
       id,
       title,
@@ -120,25 +127,25 @@ export class ReportMappingComponent {
     };
   }
 
-  private getRelatedDocumentVertex(item: any, currentId: string): any {
-    const candidates = [item?.vertex, ...(item?.path?.vertices ?? [])];
+  private getRelatedDocumentVertex(item: MappingGraphItem, currentId: string): MappingVertex | null {
+    const candidates = [item.vertex, ...(item.path?.vertices ?? [])].filter((vertex): vertex is MappingVertex => !!vertex);
     return candidates.find(vertex => {
-      if (String(vertex?.type || '').toLowerCase() !== 'document') {
+      if (String(vertex?.type ?? '').toLowerCase() !== 'document') {
         return false;
       }
       const id = this.getDocumentId(vertex);
       return id && id !== currentId;
-    }) || null;
+    }) ?? null;
   }
 
-  private getDocumentId(vertex: any): string {
+  private getDocumentId(vertex: MappingVertex | null | undefined): string {
     return this.extractDocumentId(vertex?.doc_id)
       || this.extractDocumentId(vertex?.m_document_id)
       || this.extractDocumentId(vertex?._key)
       || this.extractDocumentId(vertex?._id);
   }
 
-  private extractDocumentIdFromEdge(edge: any, currentId: string): string {
+  private extractDocumentIdFromEdge(edge: MappingEdge | undefined, currentId: string): string {
     const candidates = [edge?._from, edge?._to];
     for (const candidate of candidates) {
       const id = this.extractDocumentId(candidate);
@@ -146,7 +153,7 @@ export class ReportMappingComponent {
         return id;
       }
     }
-    const edgeId = this.extractId(edge?._id || '');
+    const edgeId = this.extractId(edge?._id ?? '');
     if (edgeId && edgeId !== currentId) {
       return edgeId;
     }
@@ -154,15 +161,15 @@ export class ReportMappingComponent {
   }
 
   private extractDocumentId(value: unknown): string {
-    const text = String(value || '').trim();
+    const text = String(value ?? '').trim();
     if (!text) {
       return '';
     }
-    const vertexMatch = text.match(/cti_vertices\/([^/]+)/);
+    const vertexMatch = /cti_vertices\/([^/]+)/.exec(text);
     if (vertexMatch?.[1]) {
       return vertexMatch[1];
     }
-    const hashMatch = text.match(/[a-f0-9]{64}/i);
+    const hashMatch = /[a-f0-9]{64}/i.exec(text);
     return hashMatch ? hashMatch[0] : text;
   }
 
@@ -170,32 +177,32 @@ export class ReportMappingComponent {
     return /^[a-f0-9]{64}$/i.test(value);
   }
 
-  private extractMappingKeyRaw(item: any): string {
-    const edge = item?.edge || {};
-    const key = this.extractProperty(edge?._id, 'key', true)
-      || this.extractProperty(edge?._to, 'key', true)
-      || edge?.label
-      || edge?.relationship_type
-      || edge?.edge_type
-      || edge?.type;
-    return String(key || '').replace(/^has_/, '').replace(/^derived_/, '');
+  private extractMappingKeyRaw(item: MappingGraphItem): string {
+    const edge = item.edge ?? {};
+    const key = this.extractProperty(edge._id ?? '', 'key', true)
+      ?? this.extractProperty(edge._to ?? '', 'key', true)
+      ?? edge.label
+      ?? edge.relationship_type
+      ?? edge.edge_type
+      ?? edge.type;
+    return String(key ?? '').replace(/^has_/, '').replace(/^derived_/, '');
   }
 
   private isStrongMappingKey(key: string): boolean {
     return STRONG_RELATED_MAPPING_KEYS.has(key);
   }
 
-  private extractMappingValue(item: any): string {
-    const edge = item?.edge || {};
-    const edgeValue = this.extractProperty(edge?._id, 'value') || this.extractProperty(edge?._to, 'value');
+  private extractMappingValue(item: MappingGraphItem): string {
+    const edge = item.edge ?? {};
+    const edgeValue = this.extractProperty(edge._id ?? '', 'value') || this.extractProperty(edge._to ?? '', 'value');
     if (edgeValue) {
       return this.normalizeDisplayValue(edgeValue);
     }
-    const propertyVertex = [item?.vertex, ...(item?.path?.vertices ?? [])].find(vertex => {
-      const type = String(vertex?.type || '').toLowerCase();
+    const propertyVertex = [item.vertex, ...(item.path?.vertices ?? [])].filter((vertex): vertex is MappingVertex => !!vertex).find(vertex => {
+      const type = String(vertex?.type ?? '').toLowerCase();
       return type && type !== 'document' && type !== 'cluster';
     });
-    return this.normalizeDisplayValue(propertyVertex?.display_value || propertyVertex?.value || propertyVertex?.label || '');
+    return this.normalizeDisplayValue(propertyVertex?.display_value ?? propertyVertex?.value ?? propertyVertex?.label ?? '');
   }
 
   private getCurrentReportId(): string {
@@ -211,7 +218,7 @@ export class ReportMappingComponent {
   }
 
   private cleanText(value: unknown): string {
-    return String(value || '').replace(/\s+/g, ' ').trim();
+    return String(value ?? '').replace(/\s+/g, ' ').trim();
   }
 
   private truncate(value: string, limit: number): string {
@@ -269,7 +276,7 @@ export class ReportMappingComponent {
     if (!id) {
       return '';
     }
-    const vertexMatch = id.match(/cti_vertices\/([^:]+):(.+)/);
+    const vertexMatch = /cti_vertices\/([^:]+):(.+)/.exec(id);
     if (vertexMatch?.[1]) {
       return mode === 'key'
         ? (keepRawKey ? vertexMatch[1] : vertexMatch[1].replace(/^m_/, '').replaceAll('_', ''))
@@ -302,11 +309,11 @@ export class ReportMappingComponent {
   private extractKnownPropertyKey(value: string): string {
     return Array.from(STRONG_RELATED_MAPPING_KEYS)
       .sort((a, b) => b.length - a.length)
-      .find(key => value === key || value.startsWith(`${key}_`)) || '';
+      .find(key => value === key || value.startsWith(`${key}_`)) ?? '';
   }
 
   private extractId(path: string): string {
-    const match = path.match(/[a-f0-9]{64}/);
+    const match = /[a-f0-9]{64}/.exec(path);
     return match ? match[0] : '';
   }
 }

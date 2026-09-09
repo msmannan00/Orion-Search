@@ -6,14 +6,14 @@ import { ApiService } from '../services/api.service';
 import { AppService } from '../../services/core/app/app.service';
 import { TenantModel } from '../model/tenant/tenant.model';
 @Injectable({ providedIn: 'root' })
-export class IocResolver implements Resolve<TenantModel> {
+export class IocResolver implements Resolve<TenantModel | null> {
   constructor(private apiService: ApiService, private appService: AppService) { }
 
-  resolve(): Observable<TenantModel> {
+  resolve(): Observable<TenantModel | null> {
     return this.apiService.post<TenantModel>('get/tenant', {}).pipe(tap(_tenantData => {
       this.appService.tenantData.set(_tenantData);
-    }), catchError(_ => {
-      return of(null as any);
+    }), catchError(() => {
+      return of(null);
     }));
   }
 }

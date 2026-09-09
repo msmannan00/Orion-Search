@@ -29,6 +29,7 @@ class graphs_model:
                     "total_tabs": 0,
                     "max_tabs_allowed": 5,
                     "tabs": [],
+                    "extra": {},
                 }
 
             tabs = existing.tabs or []
@@ -39,6 +40,7 @@ class graphs_model:
                 "total_tabs": len(tabs),
                 "max_tabs_allowed": 5,
                 "tabs": tabs,
+                "extra": existing.extra or {},
             }
 
         except Exception:
@@ -158,8 +160,6 @@ class graphs_model:
                 schema_version=safe_data.get("schema_version", 1),
             )
 
-            if new_doc.tabs is None:
-                new_doc.tabs = []
             if len(new_doc.tabs) > 5:
                 return JSONResponse(
                     status_code=400,

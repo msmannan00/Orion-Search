@@ -13,10 +13,10 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
   templateUrl: './pro-subscription.component.html'
 })
 export class ProSubscriptionComponent {
-  selectedSubscription: string = 'monthly-highlighted';
-  userName: string = '';
-  userPhone: string = '';
-  userEmail: string = '';
+  selectedSubscription = 'monthly-highlighted';
+  userName = '';
+  userPhone = '';
+  userEmail = '';
   submitted = false;
   readonly permanent = input(false);
   readonly close = output<undefined>();
@@ -25,7 +25,7 @@ export class ProSubscriptionComponent {
   }
 
   closePopup() {
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.close.emit(undefined);
   }
 

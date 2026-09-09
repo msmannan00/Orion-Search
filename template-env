@@ -6,6 +6,13 @@ JWT_SECRET_KEY=''
 ENCRYPTION_KEY=''
 S_CRAWLER_PASSWORD='your_crawler_password'
 
+# ORION MAIL SSO
+# Generate once with `openssl rand -hex 32` and set the identical value in Orion Mail.
+ORION_MAIL_SSO_CLIENT_SECRET=''
+ORION_MAIL_REDIRECT_URIS='http://localhost:4300/auth/callback,http://mail.localhost:4200/auth/callback,https://mail.orionintelligence.org/auth/callback'
+ORION_MAIL_PUBLIC_URL='http://localhost:4300'
+TRUSTED_MICROS_API_BASE='http://trusted-micros-api:8010'
+
 # ELASTIC KEYS
 # Production uses Elasticsearch's built-in bootstrap user. Set a strong, unique password.
 ELASTIC_ROOT_USERNAME='elastic'

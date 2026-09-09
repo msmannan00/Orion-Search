@@ -19,6 +19,7 @@ export class ConsolidatedParamModel {
   fullsearch = false;
   tab = "";
   entity_filter?: Record<string, string[]>;
+  hide_dismissed = true;
 
   reset(): void {
     this.q = "";
@@ -39,5 +40,6 @@ export class ConsolidatedParamModel {
     this.fullsearch = false;
     this.tab = "";
     this.entity_filter = undefined;
+    this.hide_dismissed = true;
   }
 }

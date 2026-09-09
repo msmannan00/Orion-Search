@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '../../../../../../../shared/pipes/translate.pipe';
+import { ShipDetailField } from '../../../../model/satellite-intel.model';
+import { getOwnProperty } from '../../../../../../../shared/utils/type-guards.util';
 
-type ShipDetailField = { label: string; value: string; mono?: boolean };
+
 
 const PRIMARY_SHIP_DETAIL_KEYS = new Set([
   'mmsi',
@@ -52,7 +54,7 @@ const PRIMARY_SHIP_DETAIL_KEYS = new Set([
   templateUrl: './ship-details-panel.component.html',
 })
 export class ShipDetailsPanelComponent {
-  @Input() ship: Record<string, any> | null = null;
+  @Input() ship: Record<string, unknown> | null = null;
 
   get fields(): ShipDetailField[] {
     return [
@@ -82,8 +84,8 @@ export class ShipDetailsPanelComponent {
   }
 
   get coordinates(): string {
-    const latitude = this.ship?.['latitude'];
-    const longitude = this.ship?.['longitude'];
+    const latitude = this.ship?.latitude;
+    const longitude = this.ship?.longitude;
     if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
       return `${Number(latitude).toFixed(3)}, ${Number(longitude).toFixed(3)}`;
     }
@@ -92,7 +94,7 @@ export class ShipDetailsPanelComponent {
 
   private pick(...keys: string[]): unknown {
     for (const key of keys) {
-      const value = this.ship?.[key];
+      const value = getOwnProperty(this.ship, key);
       if (value !== null && value !== undefined && value !== '') {
         return value;
       }

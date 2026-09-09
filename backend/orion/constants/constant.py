@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 
 from orion.helper_manager.env_handler import env_handler
+from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
 
 
 class CONSTANTS:
@@ -29,18 +30,18 @@ class CONSTANTS:
     S_AUTH_PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
     S_ENCRYPTION_KEY = env_handler.get_instance().env("ENCRYPTION_KEY")
 
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-    IMAGE_DIR = BASE_DIR / "static" / "resource" / "tenant"
+    BASE_DIR = Path(__file__).resolve().parents[2]
+    IMAGE_DIR = BASE_DIR / "workspace" / "resource" / "tenant"
     S_SATELLITE_ASSET_FILE_NAME = "satellite_assets.json"
     S_CASE_ARTIFACT_RESOURCE_DIR = (
         Path(__file__).resolve().parents[2]
-        / "static"
+        / "workspace"
         / "resource"
         / "case_artifacts"
     )
     S_SESSION_RESOURCE_DIR = (
         Path(__file__).resolve().parents[2]
-        / "static"
+        / "workspace"
         / "resource"
         / "session_data"
     )
@@ -52,6 +53,23 @@ class CONSTANTS:
         "text/plain",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }
+    MAX_BACKUPS = 2
+    BACKUP_BATCH_SIZE = 1000
+    BACKUP_MANIFEST_NAME = "manifest.json"
+    BACKUP_MANIFEST_VERSION = 1
+    BACKUP_DISK_HEADROOM = 1.5
+    BACKUP_EXCLUDED_ELASTIC_INDICES = {ELASTIC_INDEX.S_STEALERLOGS_INDEX}
+    BACKUP_UNSETTABLE_INDEX_SETTINGS = {"creation_date", "uuid", "version", "provided_name", "resize", "routing"}
+    BACKUP_JOB_KEY = "backup_job"
+    BACKUP_JOB_HEARTBEAT_SECONDS = 30
+    BACKUP_JOB_STALE_SECONDS = 120
+    BACKUP_JOB_STALE_MESSAGE = "Backup worker stopped responding"
+    RESTORE_MARKER_NAME = ".restore_in_progress"
+    RESTORE_ROLLBACK_PREFIX = "rollback_"
+    RESTORE_ROLLBACK_MAX_AGE_HOURS = 12
+    RESTORE_QUIESCE_DRAIN_SECONDS = 3
+    MAINTENANCE_FLAG = BASE_DIR / "static" / ".maintenance"
+    MAINTENANCE_CACHE_TTL_SECONDS = 1.0
 
 allowed_key_titles: dict[str, str] = {}
 mail_template = None

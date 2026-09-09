@@ -31,7 +31,7 @@ export class SubscriptionService {
       return 0;
     }
     const expiry = new Date(verifyDate);
-    expiry.setMonth(expiry.getMonth() + 1); // 1-month trial
+    expiry.setMonth(expiry.getMonth() + 1);
     const now = new Date();
     const diffMs = expiry.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));

@@ -14,7 +14,7 @@
 
   @if (!domain() && (!consolidated || activeTab === 'Deep Search')) {
     <app-chat-widget [showLauncher]="app_service.configData().appSettings.ai_endpoint_enabled" tool="api_payload" [type]="aiToolType" [welcomeMessage]="aiWelcomeMessage"></app-chat-widget>
-    <form (submit)="onFormSubmit($event)" @fadeInDashboardItem class="mt-[24px] mx-[30px] flex items-center max-[1000px]:mx-[15px] max-[550px]:grid" [ngClass]="{ 'mt-0': consolidated }">
+    <form (submit)="onFormSubmit($event)" class="mt-[24px] mx-[30px] flex items-center max-[1000px]:mx-[15px] max-[550px]:grid result-fade-in" [ngClass]="{ 'mt-0': consolidated }">
       <div class="flex w-full flex-wrap items-start justify-between">
         <div class="w-full">
           @if (homeSearchService.showFiltersOverlay) {
@@ -64,7 +64,7 @@
                   </div>
                 }
                 @if (app_service.configData().localSettings.enable_advanced_tools) {
-                  <div class="mt-[8px] flex gap-[12px]" @fadeInDashboardItem>
+                  <div class="mt-[8px] flex gap-[12px] result-fade-in">
                     @if (showSorting()) {
                       <div #sortMenuRef class="relative">
                         <button data-testid="result-tools-sort" type="button" class="flex cursor-pointer items-center gap-[6px] text-[13px] font-[Roboto] font-medium text-[var(--color-text1)]" (click)="toggleSortMenu($event)">
@@ -123,7 +123,7 @@
 
   @if (!consolidated) {
     @if (result_count && !isLoading() && result_count !== 0) {
-      <div @fadeInDashboardItem>
+      <div class="result-fade-in">
         <div class="mt-[26px] mb-[8px] flex w-full max-w-[910px] items-center text-[14px] leading-[1.35] font-[Roboto] font-medium tracking-[0.01em] text-[var(--color-text3)]" [ngClass]="domain() ? '' : 'mx-[30px] max-[1000px]:mx-[15px]'">
           <span class="text-[var(--color-text2)]">{{ result_count }} {{ 'Results Found' | translate }}</span>
         </div>
@@ -150,7 +150,7 @@
 
   @if (isLoading()) {
     @if (showResultCardShimmer()) {
-      <div class="mx-[32px] w-[calc(100%-64px)] max-w-none pb-[16px] max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)]" @fadeInDashboardItem>
+      <div class="mx-[32px] w-[calc(100%-64px)] max-w-none pb-[16px] max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)] result-fade-in">
         <div class="mb-3 flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3">
           <div class="flex min-w-0 items-center gap-2">
             <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-4 w-[86px] rounded bg-[var(--color-placeholder)]"></div>
@@ -236,25 +236,25 @@
         </div>
       </div>
     } @else {
-      <div class="mx-[30px] w-full min-w-0 max-w-[910px] max-[1000px]:mx-[15px] max-[800px]:mx-0 max-[800px]:w-full max-[800px]:max-w-full max-[800px]:px-[10px] max-[800px]:box-border" @fadeInDashboardItem>
+      <div class="mx-[30px] w-full min-w-0 max-w-[910px] max-[1000px]:mx-[15px] max-[800px]:mx-0 max-[800px]:w-full max-[800px]:max-w-full max-[800px]:px-[10px] max-[800px]:box-border result-fade-in">
         <app-loading-form></app-loading-form>
       </div>
     }
   }
 
   @if (!entityFiltersCount() && !sidebarFilterCount() && showEmptyQuery() && !isLoading() && !result_count) {
-    <div class="ml-[30px] w-full max-w-[910px] max-[1000px]:ml-[15px]" @fadeInDashboardItem>
+    <div class="ml-[30px] w-full max-w-[910px] max-[1000px]:ml-[15px] result-fade-in">
       <app-empty-query></app-empty-query>
     </div>
   }
 
   @if (showNoResult() && !isLoading() && result_count === 0) {
     @if (shouldShowCrossSearchOnEmptyState) {
-      <div class="mt-[18px] mb-[2px] mx-[30px] w-[calc(100%-60px)] max-w-[910px] box-border max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)]" @fadeInDashboardItem>
+      <div class="mt-[18px] mb-[2px] mx-[30px] w-[calc(100%-60px)] max-w-[910px] box-border max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)] result-fade-in">
         <app-cross-search-card [query]="searchQuery"></app-cross-search-card>
       </div>
     }
-    <div class="mx-[30px] w-[calc(100%-60px)] max-w-[910px] box-border max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)]" @fadeInDashboardItem>
+    <div class="mx-[30px] w-[calc(100%-60px)] max-w-[910px] box-border max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)] result-fade-in">
       <app-empty-result [searchQuery]="searchQuery"></app-empty-result>
     </div>
   }

@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, OnInit, inject, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DatePipe, NgClass } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { HelperService } from '../../../../shared/services/helper.service';
 import { GeneralResultItem } from '../../../../shared/model/results/general/general.callback.model';
 import { LeakResultItem } from '../../../../shared/model/results/leak/leak.callback.model';
@@ -27,7 +27,7 @@ export class DashboardResultsGeneralComponent implements AfterViewInit, OnInit {
   protected readonly window = window;
 
   currentUrl = '';
-  queryParams: any = {};
+  queryParams: Params = {};
   isCollapsed = true;
   isFreeStrategic = false;
   isConsolidatedView = false;
@@ -43,12 +43,13 @@ export class DashboardResultsGeneralComponent implements AfterViewInit, OnInit {
     this.scrollService.scrollToSavedPosition();
   }
 
-  highlightWords(text: any): string {
+  highlightWords(text: unknown): string {
     const key = JSON.stringify(text);
-    if (this.highlightCache.has(key)) {
-      return this.highlightCache.get(key)!;
+    const cached = this.highlightCache.get(key);
+    if (cached !== undefined) {
+      return cached;
     }
-    const result = this.helperService.highlightWords(text);
+    const result = this.helperService.highlightWords(typeof text === 'string' ? text : String(text ?? ''));
     this.highlightCache.set(key, result);
     return result;
   }
@@ -111,7 +112,7 @@ export class DashboardResultsGeneralComponent implements AfterViewInit, OnInit {
   }
 
   getDisplayUrl(item: GeneralResultItem | LeakResultItem): string {
-    return item.m_url || item.m_source_url || item.m_base_url || '';
+    return item.m_url ?? item.m_source_url ?? item.m_base_url ?? '';
   }
 
   getReportLink(item: GeneralResultItem | LeakResultItem): string[] {

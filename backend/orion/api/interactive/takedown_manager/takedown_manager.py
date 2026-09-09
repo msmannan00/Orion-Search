@@ -104,7 +104,7 @@ class TakedownManager:
     @classmethod
     def _serialize_record(cls, record: db_takedown_request_model | Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(record, db_takedown_request_model):
-            data = record.model_dump()
+            data: Dict[str, Any] = record.model_dump()
             data["id"] = str(record.id)
         else:
             data = dict(record)

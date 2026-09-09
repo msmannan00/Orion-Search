@@ -1,3 +1,6 @@
+import { LicenseRule } from '../model/licenses/license.rules';
+import { LanguageOption } from './model/shared-enums.model';
+
 export const LANGUAGE_MAP: Record<string, {
     iso1: string;
     name: string;
@@ -22,10 +25,6 @@ export const LANGUAGE_MAP: Record<string, {
   ces: { iso1: 'cs', name: 'Czech' }
 };
 
-export type LanguageOption = {
-  code: string;
-  name: string;
-};
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = Object.values(LANGUAGE_MAP).map(language => ({
   code: language.iso1,
@@ -76,8 +75,6 @@ export const sidebarItemTooltips: Record<string, string> = {
   'Forum': 'Forum',
   'Reddit': 'Reddit',
   'Facebook': 'Facebook',
-  'Instagram': 'Instagram',
-  'TikTok': 'TikTok',
   'YouTube': 'YouTube',
   'Social': 'Social',
   'Wanted-List': 'Wanted List',
@@ -101,4 +98,4 @@ export const ALLOWED_CONSOLIDATED_RANKED_SINGLETON: Set<string> = new Set<string
   "zeroday"
 ]);
 export const search_filter_labels: Record<string, string> = {};
-export const license_rules: Record<string, any> = {};
+export const license_rules: Record<string, LicenseRule> = {};

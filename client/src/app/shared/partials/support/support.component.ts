@@ -26,7 +26,7 @@ export class SupportComponent {
 
   close() {
     this.resetForm();
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.closePopup.emit(undefined);
   }
 
@@ -76,6 +76,6 @@ export class SupportComponent {
               message?: string;
           };
       } | null | undefined;
-    return error?.error?.detail || error?.error?.message || 'Failed to send message';
+    return error?.error?.detail ?? error?.error?.message ?? 'Failed to send message';
   }
 }

@@ -6,7 +6,7 @@ import { MessageNotificationService } from '../../../services/message_notificati
 import { TooltipDirective } from '../../directive/tooltip-directive.directive';
 import { IocCategory } from '../../model/tenant/tenant.model';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { ConfirmationPopupComponent } from '../../partials/confirmation-popup/confirmation-popup.component';
+import { ConfirmationPopupComponent } from '../confirmation-popup/confirmation-popup.component';
 import { getFirstFileFromInputEvent, readFileAsText } from '../../utils/file-input.util';
 import { downloadIocCsvTemplate, IOC_CSV_MAX_FILE_SIZE_BYTES, isCsvFile, mergeIocCsvValues, parseIocCsv } from '../../utils/ioc-csv.util';
 

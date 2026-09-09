@@ -15,17 +15,17 @@ export function resolveCountryAlpha2(rawValue: unknown): string {
   if (isoCountries.isValid(possibleCode)) {
     return possibleCode.length === 2
       ? possibleCode
-      : isoCountries.toAlpha2(possibleCode) || '';
+      : isoCountries.toAlpha2(possibleCode) ?? '';
   }
 
-  return isoCountries.getAlpha2Code(value, COUNTRY_LANGUAGE) || '';
+  return isoCountries.getAlpha2Code(value, COUNTRY_LANGUAGE) ?? '';
 }
 
 export function normalizeCountryLabel(rawValue: unknown): string {
   const value = compactCountryValue(rawValue);
   const alpha2 = resolveCountryAlpha2(value);
   return alpha2
-    ? isoCountries.getName(alpha2, COUNTRY_LANGUAGE, { select: 'official' }) || value
+    ? isoCountries.getName(alpha2, COUNTRY_LANGUAGE, { select: 'official' }) ?? value
     : value;
 }
 

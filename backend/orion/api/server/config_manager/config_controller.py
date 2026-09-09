@@ -25,9 +25,11 @@ class config_controller:
     TENANT_EDITABLE_SETTINGS = {AllowedKeys.APP_NAME.value}
     ADMIN_SETTING_KEYS = {
         AllowedKeys.VERSION.value,
+        AllowedKeys.EXTENSION_VERSION.value,
         AllowedKeys.LANGUAGE_ALLOWED.value,
         AllowedKeys.ADMIN_ROOT_ALLOWED.value,
         AllowedKeys.S_ONION.value,
+        AllowedKeys.BACKUP_SCHEDULE.value,
     }
     SYSTEM_RESOURCE_FILENAMES = {
         AllowedKeys.LOGO_URL: "logo_url_custom.png",
@@ -45,7 +47,7 @@ class config_controller:
 
     def __init__(self):
         self.BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-        self.SYSTEM_DIR = self.BASE_DIR / "static" / "resource" / "system"
+        self.SYSTEM_DIR = self.BASE_DIR / "workspace" / "resource" / "system"
         self.SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
 
         if config_controller.__instance is not None:
@@ -60,12 +62,12 @@ class config_controller:
         asyncio.create_task(self.load_config())
 
     @classmethod
-    def _is_admin(self, current_user) -> bool:
+    def _is_admin(cls, current_user) -> bool:
         return getattr(current_user, "role", "") == "admin"
 
     @classmethod
-    def _is_tenant_branding_editor(self, current_user) -> bool:
-        if self._is_admin(current_user):
+    def _is_tenant_branding_editor(cls, current_user) -> bool:
+        if cls._is_admin(current_user):
             return True
         licenses = getattr(current_user, "licenses", None) or []
         return LicenseName.MAINTAINER in licenses
@@ -115,6 +117,8 @@ class config_controller:
     async def load_config(self, force_db: bool = False, tenant_id: str | None = None) -> str | None:
         try:
             tenant = await self._get_tenant(tenant_id)
+            if tenant is None:
+                return None
             resolved_tenant_id = str(tenant.id)
             config = None
             if not force_db:
@@ -142,9 +146,10 @@ class config_controller:
             if not tenant.is_default:
                 default_tenant = await self._get_tenant()
                 default_config = {}
-                default_record = await self._engine.find_one(db_system_model, (db_system_model.tenant_id == str(default_tenant.id)) & (db_system_model.key == AllowedKeys.SYSTEM_SETTINGS)) if default_tenant else None
-                if default_record and default_record.value:
-                    default_config = json.loads(default_record.value)
+                if default_tenant:
+                    default_record = await self._engine.find_one(db_system_model, (db_system_model.tenant_id == str(default_tenant.id)) & (db_system_model.key == AllowedKeys.SYSTEM_SETTINGS))
+                    if default_record and default_record.value:
+                        default_config = json.loads(default_record.value)
                 for key in self.ADMIN_SETTING_KEYS:
                     config[key] = default_config.get(key, "")
                 config[AllowedKeys.AI_ENDPOINT_ENABLED.value] = "1" if (
@@ -180,7 +185,7 @@ class config_controller:
         if any(not value for value in required):
             return False
         try:
-            smtp_port = int(str(meta_info.get("ACCOUNTS_SMTP_PORT")))
+            smtp_port = int(str(meta_info.get("ACCOUNTS_SMTP_PORT", "")))
         except ValueError:
             return False
         return 1 <= smtp_port <= 65535
@@ -192,6 +197,10 @@ class config_controller:
         except (TypeError, ValueError):
             return False
         return cls._is_smtp_values_configured(meta_info if isinstance(meta_info, dict) else {})
+
+    @staticmethod
+    async def _is_backup_schedule() -> bool:
+        return await config_controller.getInstance().get_cached(AllowedKeys.BACKUP_SCHEDULE, "0")
 
     def _redact_sensitive_meta_info(self, meta_info_raw: str, include_email_config: bool = False) -> str:
         try:
@@ -212,7 +221,13 @@ class config_controller:
 
         file_name = f"{base}_custom.png"
         resource_path = ResourceManager.get_instance().system_resource_path(file_name, tenant)
-        return f"/api/s/static/system/{resource_path.name}"
+        asset_url = f"/api/s/static/system/{resource_path.name}"
+        if base != "auth_dashboard_icon":
+            return asset_url
+        try:
+            return f"{asset_url}?v={resource_path.stat().st_mtime_ns}"
+        except OSError:
+            return asset_url
 
     def _build_system_info_from_cache(self, tenant_id: str, tenant: db_tenant_model, include_email_config: bool = False) -> config_data:
         fresh_config = dict(self._configs.get(tenant_id, {}))
@@ -232,7 +247,7 @@ class config_controller:
         return config_data(settings=fresh_config)
 
     async def get_system_info(self, include_email_config: bool = False, tenant_id: str | None = None) -> config_data:
-        self.SYSTEM_DIR = self.BASE_DIR / "static" / "resource" / "system"
+        self.SYSTEM_DIR = self.BASE_DIR / "workspace" / "resource" / "system"
         tenant = await self._get_tenant(tenant_id)
         if tenant is None:
             raise RuntimeError("Tenant configuration is unavailable")
@@ -300,8 +315,10 @@ class config_controller:
             AllowedKeys.APP_NAME.value: AllowedKeys.APP_NAME,
             AllowedKeys.META_INFO.value: AllowedKeys.META_INFO,
             AllowedKeys.AI_ENDPOINT_ENABLED.value: AllowedKeys.AI_ENDPOINT_ENABLED,
+            AllowedKeys.BACKUP_SCHEDULE.value: AllowedKeys.BACKUP_SCHEDULE,
             AllowedKeys.ADMIN_ROOT_ALLOWED.value: AllowedKeys.ADMIN_ROOT_ALLOWED,
             AllowedKeys.S_ONION.value: AllowedKeys.S_ONION,
+            AllowedKeys.EXTENSION_VERSION.value: AllowedKeys.EXTENSION_VERSION,
         }
         system_settings = dict(self._configs.get(resolved_tenant_id, {}))
         for key_str, value in settings.items():

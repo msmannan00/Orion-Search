@@ -5,42 +5,20 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { EmptyQueryComponent } from '../../../shared/partials/empty-query/empty-query.component';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { ValuePresentationBase } from '../../../shared/utils/value-presentation.base';
 import { ChatWidgetComponent } from '../../root-searches/ai-workspace/chat-widget/chat-widget.component';
 import { AppService } from '../../../services/core/app/app.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { AiToolRoutingService } from '../../../shared/services/ai-tool-routing.service';
 import { TranslationService } from '../../../shared/services/translation.service';
+import { TextAnalysisResult } from './model/text-analysis.model';
 
-type TextAnalysisResult = {
-  title: string;
-  status?: string;
-  text_length?: number;
-  truncated?: boolean;
-  urls_found?: number;
-  spam?: {
-    label?: string;
-    confidence?: number;
-    is_spam?: boolean;
-  };
-  url_results?: Array<{
-    url?: string;
-    label?: string;
-    confidence?: number;
-    is_safe?: boolean;
-  }>;
-  verdict?: {
-    safe?: boolean;
-    threats?: string[];
-  };
-};
 
 @Component({
   selector: 'app-text-analysis',
   standalone: true,
   imports: [FormsModule, NgClass, EmptyQueryComponent, ChatWidgetComponent, TranslatePipe],
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./text-analysis.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './text-analysis.component.html'
 })
@@ -80,7 +58,7 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
     return !!this.result;
   }
 
-  get resultEntries(): { key: string; value: any }[] {
+  get resultEntries(): { key: string; value: unknown }[] {
     if (!this.result) {
       return [];
     }
@@ -148,7 +126,7 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
   }
 
   get spamLabel(): string {
-    return this.result?.spam?.label || 'not available';
+    return this.result?.spam?.label ?? 'not available';
   }
 
   get spamConfidenceLabel(): string {
@@ -181,7 +159,7 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
     if (!this.result) {
       return false;
     }
-    const spamLabel = this.result.spam?.label?.toLowerCase() || '';
+    const spamLabel = this.result.spam?.label?.toLowerCase() ?? '';
     const threats = Array.isArray(this.result.verdict?.threats) ? this.result.verdict.threats : [];
     return this.unsafeUrlCount > 0 || spamLabel.includes('phish') || threats.some(threat => threat.toLowerCase().includes('phish'));
   }
@@ -206,7 +184,7 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
     this.errorMessage = '';
     this.expanded = true;
     const payload = { text: value, job_id: Date.now().toString() };
-    this.http.post<any>('/api/nexus/analyze-text', payload)
+    this.http.post<unknown>('/api/nexus/analyze-text', payload)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
         next: res => {
@@ -214,7 +192,7 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
           this.result = this.normalizeResult(res);
         },
         error: err => {
-          this.errorMessage = err?.error?.detail || err?.message || this.translationService.translate('Text analysis failed.');
+          this.errorMessage = err?.error?.detail ?? err?.message ?? this.translationService.translate('Text analysis failed.');
         }
       });
   }
@@ -223,18 +201,20 @@ export class TextAnalysisComponent extends ValuePresentationBase implements OnIn
     this.expanded = !this.expanded;
   }
 
-  private normalizeResult(res: any): TextAnalysisResult {
-    const record = (res && typeof res === 'object') ? res : { status: 'unknown' };
+  private normalizeResult(res: unknown): TextAnalysisResult {
+    const record: Partial<TextAnalysisResult> = (res && typeof res === 'object')
+      ? res
+      : { status: 'unknown' };
     return {
       ...record,
       title: this.buildTitle(record)
     };
   }
 
-  private buildTitle(record: TextAnalysisResult): string {
+  private buildTitle(record: Partial<TextAnalysisResult>): string {
     const urlResults = Array.isArray(record.url_results) ? record.url_results : [];
     const hasUnsafeUrl = urlResults.some(item => item.is_safe === false);
-    const spamLabel = record.spam?.label?.toLowerCase() || '';
+    const spamLabel = record.spam?.label?.toLowerCase() ?? '';
     const threats = Array.isArray(record.verdict?.threats) ? record.verdict.threats : [];
     const hasPhishingSignal = hasUnsafeUrl || spamLabel.includes('phish') || threats.some(threat => threat.toLowerCase().includes('phish'));
     if (record.spam?.is_spam === true && hasPhishingSignal) {

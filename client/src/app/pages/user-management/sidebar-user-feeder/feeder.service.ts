@@ -35,6 +35,10 @@ export class FeederService {
     return this.apiService.post<{ message?: string }>(`profile/feeder/scripts/${scriptId}/delete-value`, { value });
   }
 
+  deleteAllValues(scriptId: string): Observable<{ message?: string }> {
+    return this.apiService.post<{ message?: string }>(`profile/feeder/scripts/${scriptId}/delete-all-values`, {});
+  }
+
   toggleScript(scriptId: string): Observable<{ message?: string; script?: FeederScriptItem }> {
     return this.apiService.post<{ message?: string; script?: FeederScriptItem }>(`profile/feeder/scripts/${scriptId}/toggle`, {});
   }

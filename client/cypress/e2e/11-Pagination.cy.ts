@@ -1,10 +1,10 @@
 function ensureSidebarExpanded() {
   cy.get('body').then(($body) => {
     if ($body.find('[data-testid="sidebar-expand-button"]:visible').length) {
-      cy.get('[data-testid="sidebar-expand-button"]').click();
+      void cy.get('[data-testid="sidebar-expand-button"]').click();
     }
   });
-  cy.get('[data-testid="sidebar-collapse-button"]').should('be.visible');
+  void cy.get('[data-testid="sidebar-collapse-button"]').should('be.visible');
 }
 
 describe('Dashboard – General Intelligence – Tabs & Pagination', () => {

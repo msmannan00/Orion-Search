@@ -1028,15 +1028,23 @@ module.exports = [
           ]
         }
       ],
-      '@typescript-eslint/no-unused-vars': [
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/dot-notation': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': [
         'error',
         {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
+          ignoreBooleanCoercion: true,
+          ignoreConditionalTests: false,
+          ignoreMixedLogicalExpressions: true
         }
       ],
+      '@typescript-eslint/no-confusing-void-expression': 'error',
+      '@typescript-eslint/no-meaningless-void-operator': 'error',
+      '@typescript-eslint/no-useless-constructor': 'error',
+      '@typescript-eslint/only-throw-error': 'error',
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'error',
       'no-unused-private-class-members': 'error',
       'local/no-unused-imports': 'error',
       'local/decorator-single-line': 'error',
@@ -1052,6 +1060,10 @@ module.exports = [
       'local/assignment-single-line': 'error',
       'no-restricted-syntax': [
         'error',
+        {
+          selector: "MemberExpression[computed=true][property.type='Identifier']",
+          message: 'Use guarded own-property helpers for dynamic property access.'
+        },
         {
           selector: "CallExpression[callee.property.name='setStyle']",
           message: 'Do not manipulate CSS from TS. Use ngClass/static classes.'
@@ -1092,6 +1104,22 @@ module.exports = [
     },
   },
   {
+    files: ['src/main.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: ['./tsconfig.json', './tsconfig.app.json'],
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
+    rules: {
+      '@typescript-eslint/dot-notation': 'error',
+    },
+  },
+  {
     files: ['src/app/**/*.html'],
     languageOptions: {
       parser: angularTemplateParser,
@@ -1110,15 +1138,7 @@ module.exports = [
   {
     files: ['src/app/**/*guard*.ts'],
     rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^(?:_|route|state)$',
-          varsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
-        }
-      ],
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ];

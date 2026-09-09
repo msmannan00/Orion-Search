@@ -2,10 +2,12 @@ import { Injectable, inject, signal } from '@angular/core';
 import { lastValueFrom, Observable, Subscription } from 'rxjs';
 import { map, takeUntil, tap } from 'rxjs/operators';
 import { GeoCameraResponse, NetworkIntelScanResponse, ResolveIpResponse } from '../../model/network-intel/network-intel-api.models';
-import { IpPortData, VulnerabilityScanDepth } from '../../model/network-intel/network-intel.model';
+import { IpDetail, IpPortData, ScanTaskResponse, VulnerabilityScanDepth } from '../../model/network-intel/network-intel.model';
 import { ScanHelperMethodsService } from '../../partials/scan-helper-methods/scan-helper-methods-service.service';
 import { ScanNotificationService } from '../scan-notification.service';
 import { SubdomainResponse } from '../../model/scanners/scanner.models';
+import { asUnknownRecord } from '../../utils/type-guards.util';
+import { isDecimalString, isDomainName, isIpv4Address } from '../../utils/network-validation.util';
 
 @Injectable({ providedIn: 'root' })
 export class NetworkIntelScanService extends ScanHelperMethodsService {
@@ -13,11 +15,10 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
 
   isRunning = signal(false);
 
-  protected override getPendingStatus<T extends { result?: { status?: string } | null; status?: string }>(res: T): string | undefined {
+  protected override getPendingStatus<T extends { result?: { status?: string; progress?: number; step?: string } | null; status?: string; progress?: number; step?: string }>(res: T): string | undefined {
     const status = super.getPendingStatus(res);
-    const payload = res as any;
-    const progress = Number(payload?.result?.progress ?? payload?.progress);
-    const step = String(payload?.result?.step ?? payload?.step ?? '').toLowerCase();
+    const progress = Number(res.result?.progress ?? res.progress);
+    const step = String(res.result?.step ?? res.step ?? '').toLowerCase();
     if ((status === 'pending' || status === 'busy') && progress >= 100 && step.includes('done')) {
       return 'done';
     }
@@ -40,7 +41,7 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     this.isRunning.set(false);
   }
 
-  protected override handleTaskValue<T>(value: T): void {
+  protected override handleTaskValue<T extends object>(value: T): void {
     const responseError = this.getResponseError(value);
     if (responseError) {
       this.onDone.set(null);
@@ -69,7 +70,7 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
   }
 
   scanUrlVulnerability(domain: string, depth: VulnerabilityScanDepth): Subscription {
-    return this.runTrackedScan<any>('netintel/url_vulnerability_scan', { domain, depth }, {
+    return this.runTrackedScan<ScanTaskResponse>('netintel/url_vulnerability_scan', { domain, depth }, {
       title: 'URL Vulnerability Scan',
       target: domain,
       page_reference: 'network-intel',
@@ -77,21 +78,26 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     });
   }
 
-  async fetchShodanIpDetail(ip: string, onEach?: (response: NetworkIntelScanResponse) => void): Promise<any> {
-    return this.fetchPolledResult<NetworkIntelScanResponse>(() => this.api.post<NetworkIntelScanResponse>('netintel/ipscanner', { ip }), onEach);
+  async fetchShodanIpDetail(ip: string, onEach?: (response: NetworkIntelScanResponse) => void): Promise<IpDetail> {
+    return this.fetchPolledResult(() => this.api.post<NetworkIntelScanResponse>('netintel/ipscanner', { ip }), onEach);
   }
 
-  fetchShodanIpDetail$(ip: string, onEach?: (response: NetworkIntelScanResponse) => void): Observable<any> {
+  fetchShodanIpDetail$(ip: string, onEach?: (response: NetworkIntelScanResponse) => void): Observable<IpDetail> {
     return this.scanNotifications.runApiScanAsResponse<NetworkIntelScanResponse>({
       apiReference: 'netintel/ipscanner',
       payload: { ip },
       metadata: { title: 'Deep IP Scan', target: ip, section: 'deep-scan' },
       pollDelayMs: this.pollDelayMs,
-    }).pipe(tap(response => onEach?.(response)), map(response => this.unwrapPolledResult(response)));
+    }).pipe(tap(response => onEach?.(response)), map(response => this.unwrapIpDetail(response)));
   }
 
   scanThreatLensGeoCamera(coordinates: string, radius_km = 25, max_ips = 200): Subscription {
-    return this.runPolledTask<GeoCameraResponse>(() => this.api.post<GeoCameraResponse>('netintel/iot_detect', { coordinates, radius_km, max_ips }), 250);
+    return this.runTrackedScan<GeoCameraResponse>('netintel/iot_detect', { coordinates, radius_km, max_ips }, {
+      title: 'Threat Lens IP Scan',
+      target: coordinates,
+      page_reference: 'threat-lens',
+      section: 'ip-scan',
+    }, 250, true);
   }
 
   scanGeoCamera(coordinates: string, radius_km = 25, max_ips = 200): Subscription {
@@ -142,11 +148,11 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
   }
 
   getProgressValue(progress: number | null | undefined): number {
-    return Math.max(6, Math.min(100, Math.round(progress || 0)));
+    return Math.max(6, Math.min(100, Math.round(progress ?? 0)));
   }
 
   getLoadingStepLabel(step: string | null | undefined): string {
-    const raw = (step || '').trim();
+    const raw = (step ?? '').trim();
     if (!raw) {
       return 'Scanning in progress...';
     }
@@ -158,7 +164,7 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
   }
 
   shouldShowLoadingSkeleton(hasSearched: boolean, result: unknown, errorMessage: string | null | undefined, isScanning: boolean, progress: number | null | undefined): boolean {
-    return hasSearched && !result && !errorMessage && (isScanning || (progress || 0) > 0);
+    return hasSearched && !result && !errorMessage && (isScanning || (progress ?? 0) > 0);
   }
 
   validateDnsInput(value: string): string | null {
@@ -214,7 +220,7 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
       return null;
     }
     try {
-      const url = new URL(trimmed.match(/^https?:\/\//i) ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`);
+      const url = new URL((/^https?:\/\//i.exec(trimmed)) ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`);
       const host = url.hostname.toLowerCase();
       const pathParts = url.pathname.split('/').filter(Boolean);
       if ((host === 'github.com' || host === 'www.github.com') && pathParts.length >= 2) {
@@ -255,14 +261,8 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
       return { error: null, parsedRanges: [] };
     }
 
-    const cidr = /^(\d{1,3}\.){3}\d{1,3}\/(\d|[12]\d|3[012])$/;
-    const range = /^(\d{1,3}\.){3}\d{1,3}-(\d{1,3}\.){3}\d{1,3}$/;
-    const single = /^(\d{1,3}\.){3}\d{1,3}$/;
-    const isValidOctet = (ip: string) => ip.split('.').every(octet => parseInt(octet, 10) <= 255);
     const parsedRanges = lines.map(line => {
-      const base = line.split('/')[0].split('-')[0];
-      const valid = (cidr.test(line) || range.test(line) || single.test(line)) && isValidOctet(base);
-      return { value: line, valid };
+      return { value: line, valid: this.isValidIpRangeEntry(line) };
     });
     const invalid = parsedRanges.find(rangeItem => !rangeItem.valid);
     return {
@@ -271,7 +271,7 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     };
   }
 
-  safeEntries(obj: Record<string, any> | undefined | null): [string, any][] {
+  safeEntries(obj: Record<string, unknown> | undefined | null): [string, unknown][] {
     if (!obj) {
       return [];
     }
@@ -289,12 +289,12 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     });
   }
 
-  hasItems(arr: any[] | undefined | null): boolean {
+  hasItems(arr: unknown[] | undefined | null): boolean {
     return Array.isArray(arr) && arr.length > 0;
   }
 
   renderablePorts(ports: IpPortData[] | undefined | null): IpPortData[] {
-    return (ports || []).filter(port => this.hasPortDetail(port));
+    return (ports ?? []).filter(port => this.hasPortDetail(port));
   }
 
   securityItems(sec: string[] | Record<string, boolean> | undefined | null): string[] {
@@ -307,62 +307,80 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     return Object.entries(sec).filter(([, value]) => value).map(([key]) => key);
   }
 
-  private getResponseError(value: any): { message: string } | null {
-    const status = this.getPendingStatus(value);
+  private getResponseError(value: unknown): { message: string } | null {
+    const response = asUnknownRecord(value);
+    const result = asUnknownRecord(response.result);
+    const status = String(result.status ?? response.status ?? '');
     if (status !== 'error') {
       return null;
     }
-    return { message: value?.result?.message || value?.message || 'Request failed' };
+    return { message: String(result.message ?? response.message ?? 'Request failed') };
   }
 
-  private runPolledTask<T extends { result?: { status?: string; progress?: number } | null; status?: string; progress?: number | null }>(call: () => Observable<T>, pollDelayMs = this.pollDelayMs): Subscription {
-    return this.runTask<T>((cancel$) => this.poll<T>(call, (response) => this.getPendingStatus(response), (response) => this.updateProgress(response?.result?.progress ?? response?.progress), cancel$, pollDelayMs));
-  }
-
-  private runTrackedScan<T extends { result?: { status?: string; progress?: number } | null; status?: string; progress?: number | null }>( apiReference: string, payload: Record<string, any>, metadata: Record<string, any>, pollDelayMs = this.pollDelayMs, ): Subscription {
+  private runTrackedScan<T extends object>( apiReference: string, payload: Record<string, unknown>, metadata: Record<string, unknown>, pollDelayMs = this.pollDelayMs, reusePrevious = false, ): Subscription {
     return this.runTask<T>((cancel$) => this.scanNotifications.runApiScanAsResponse<T>({
       apiReference,
       payload,
       metadata,
       pollDelayMs,
-    }).pipe(tap((response: T) => this.updateProgress((response as any)?.result?.progress ?? (response as any)?.progress)),
-      takeUntil(cancel$),));
+      reusePrevious,
+    }).pipe(tap((response: T) => {
+      const record = asUnknownRecord(response);
+      const result = asUnknownRecord(record.result);
+      const progress = result.progress ?? record.progress;
+      this.updateProgress(typeof progress === 'number' ? progress : null);
+    }),
+    takeUntil(cancel$),));
   }
 
-  private async fetchPolledResult<T extends { result?: { status?: string } | null; status?: string }>(call: () => Observable<T>, onEach?: (response: T) => void): Promise<any> {
+  private async fetchPolledResult<T extends ScanTaskResponse>(call: () => Observable<T>, onEach?: (response: T) => void): Promise<IpDetail> {
     const cancel$ = this.createCancelSubject();
     try {
       const response = await lastValueFrom(this.poll<T>(call, (value) => this.getPendingStatus(value), (value) => onEach?.(value), cancel$, this.pollDelayMs));
-      return this.unwrapPolledResult(response);
+      return this.unwrapIpDetail(response);
     }
     finally {
       this.completeCancelSubject(cancel$);
     }
   }
 
-  private unwrapPolledResult<T>(response: T): any {
+  private unwrapIpDetail<T extends ScanTaskResponse>(response: T): IpDetail {
     const responseError = this.getResponseError(response);
     if (responseError) {
       throw new Error(responseError.message);
     }
-    return (response as any)?.result ?? response;
+    const payload = response.result ?? response;
+    if (!payload.ip) {
+      throw new Error('IP scan returned no IP details');
+    }
+    return { ...payload, ip: payload.ip };
   }
 
   private isValidDomain(value: string): boolean {
-    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipPattern.test(value)) {
-      return false;
-    }
-    const domainPattern = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-    return domainPattern.test(value);
+    return !isIpv4Address(value) && isDomainName(value);
   }
 
   private isValidIp(value: string): boolean {
-    const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (!ipv4.test(value)) {
-      return false;
+    return isIpv4Address(value);
+  }
+
+  private isValidIpRangeEntry(value: string): boolean {
+    const cidrParts = value.split('/');
+    if (cidrParts.length === 2) {
+      const [address, prefix] = cidrParts;
+      const prefixLength = Number(prefix);
+      return isIpv4Address(address)
+        && isDecimalString(prefix)
+        && String(prefixLength) === prefix
+        && prefixLength >= 0
+        && prefixLength <= 32;
     }
-    return value.split('.').every(octet => parseInt(octet, 10) <= 255);
+
+    const rangeParts = value.split('-');
+    if (rangeParts.length === 2) {
+      return rangeParts.every(isIpv4Address);
+    }
+    return isIpv4Address(value);
   }
 
   private isValidCoordinates(value: string): boolean {
@@ -397,14 +415,8 @@ export class NetworkIntelScanService extends ScanHelperMethodsService {
     if (!port) {
       return false;
     }
-    return Boolean(port.port ||
-      port.protocol ||
-      port.proto ||
-      port.service ||
-      port.state ||
-      port.banner ||
-      port.http ||
-      port.tls ||
-      (Array.isArray(port.risk_flags) && port.risk_flags.length));
+    const values = [port.port, port.protocol, port.proto, port.service, port.state, port.banner, port.http, port.tls];
+
+    return values.some(Boolean) || (Array.isArray(port.risk_flags) && port.risk_flags.length > 0);
   }
 }

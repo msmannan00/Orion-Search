@@ -1,5 +1,7 @@
 import { ThreatLensGeoUtils } from '../map-utils/threat-lens-geo.utils';
-import { ThreatLensCoordinates, ThreatLensCountryBoundary, ThreatLensIpDistributionCell, ThreatLensIpDistributionCellRef, ThreatLensIpGroupStats, ThreatLensIpPointGroup, ThreatLensIpRecord, ThreatLensIpScreenGroup, ThreatLensMapGraphic, ThreatLensScreenPoint } from '../models/threat-lens-map.types';
+import { EsriGeometry, EsriGraphicsLayer, EsriSceneView, EsriSymbol, ThreatLensCoordinates, ThreatLensCountryBoundary, ThreatLensIpDistributionCell, ThreatLensIpDistributionCellRef, ThreatLensIpGroupStats, ThreatLensIpPointGroup, ThreatLensIpRecord, ThreatLensIpScreenGroup, ThreatLensMapGraphic, ThreatLensScreenPoint } from '../models/threat-lens-map.types';
+import { getOwnProperty, setOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 export class ThreatLensIpMarkerRenderer {
   private markerGraphics: ThreatLensMapGraphic[] = [];
@@ -13,7 +15,7 @@ export class ThreatLensIpMarkerRenderer {
   private readonly centerDensityBias = 0.18;
   private readonly earthRadiusKm = 6371.0088;
 
-  constructor(private view: any, private graphicsLayer: any) {}
+  constructor(private view: EsriSceneView, private graphicsLayer: EsriGraphicsLayer) {}
 
   render(records: ThreatLensIpRecord[], _center: ThreatLensCoordinates, _radiusKm: number, boundary: ThreatLensCountryBoundary | null = null): boolean {
     if (!this.graphicsLayer) {
@@ -104,7 +106,7 @@ export class ThreatLensIpMarkerRenderer {
 
   showAccuracyRadius(markerGraphic: ThreatLensMapGraphic): void {
     const center = this.resolveMarkerPoint({
-      ip: String(markerGraphic?.attributes?.ip || ''),
+      ip: String(markerGraphic?.attributes?.ip ?? ''),
       lat: markerGraphic?.geometry?.latitude,
       lon: markerGraphic?.geometry?.longitude,
     });
@@ -185,7 +187,7 @@ export class ThreatLensIpMarkerRenderer {
       attributes: {
         role: 'ip-scan-marker',
         ip: record.ip,
-        network: record.network || '',
+        network: record.network ?? '',
         accuracyRadius: record.accuracyRadius,
         distanceKm: record.distanceKm,
       },
@@ -193,7 +195,7 @@ export class ThreatLensIpMarkerRenderer {
     };
   }
 
-  private buildPointGeometry(point: ThreatLensCoordinates): Record<string, unknown> {
+  private buildPointGeometry(point: ThreatLensCoordinates): EsriGeometry {
     return {
       type: 'point',
       longitude: point.lon,
@@ -203,7 +205,7 @@ export class ThreatLensIpMarkerRenderer {
   }
 
   private getGroupStats(records: ThreatLensIpRecord[]): ThreatLensIpGroupStats {
-    const networks = new Set(records.map((record) => String(record.network || record.ip || '').trim()).filter(Boolean));
+    const networks = new Set(records.map((record) => String(record.network ?? record.ip ?? '').trim()).filter(Boolean));
     const radii = records
       .map((record) => Number(record.accuracyRadius))
       .filter((value) => Number.isFinite(value) && value > 0);
@@ -354,7 +356,7 @@ export class ThreatLensIpMarkerRenderer {
       return records.filter((record) => Boolean(record?.ip));
     }
 
-    const ip = String(graphic?.attributes?.ip || '').trim();
+    const ip = String(graphic?.attributes?.ip ?? '').trim();
     if (!ip) {
       return [];
     }
@@ -363,7 +365,7 @@ export class ThreatLensIpMarkerRenderer {
       ip,
       lat: Number(graphic?.geometry?.latitude),
       lon: Number(graphic?.geometry?.longitude),
-      network: String(graphic?.attributes?.network || ''),
+      network: String(graphic?.attributes?.network ?? ''),
       accuracyRadius: Number(graphic?.attributes?.accuracyRadius),
       distanceKm: Number(graphic?.attributes?.distanceKm),
     }];
@@ -371,8 +373,8 @@ export class ThreatLensIpMarkerRenderer {
 
   private getGraphicPoint(graphic: ThreatLensMapGraphic): ThreatLensCoordinates {
     return {
-      lat: Number(graphic?.geometry?.latitude || 0),
-      lon: ThreatLensGeoUtils.normalizeThreatLensLongitude(Number(graphic?.geometry?.longitude || 0)),
+      lat: Number(graphic?.geometry?.latitude ?? 0),
+      lon: ThreatLensGeoUtils.normalizeThreatLensLongitude(Number(graphic?.geometry?.longitude ?? 0)),
     };
   }
 
@@ -397,10 +399,10 @@ export class ThreatLensIpMarkerRenderer {
 
   private getGraphicRenderKey(graphic: ThreatLensMapGraphic): string {
     return [
-      graphic?.attributes?.role || '',
-      graphic?.attributes?.ip || graphic?.attributes?.count || '',
-      Number(graphic?.geometry?.latitude || 0).toFixed(5),
-      Number(graphic?.geometry?.longitude || 0).toFixed(5),
+      graphic?.attributes?.role ?? '',
+      graphic?.attributes?.ip ?? graphic?.attributes?.count ?? '',
+      Number(graphic?.geometry?.latitude ?? 0).toFixed(5),
+      Number(graphic?.geometry?.longitude ?? 0).toFixed(5),
     ].join(':');
   }
 
@@ -444,7 +446,7 @@ export class ThreatLensIpMarkerRenderer {
 
     const orderedCells = this.orderDistributionCells(Array.from(cells.values()).map((cell) => ({
       ...cell,
-      items: cell.items.slice().sort((left, right) => ThreatLensGeoUtils.hashThreatLensString(String(left.attributes?.ip || '')) - ThreatLensGeoUtils.hashThreatLensString(String(right.attributes?.ip || ''))),
+      items: cell.items.slice().sort((left, right) => ThreatLensGeoUtils.hashThreatLensString(String(left.attributes?.ip ?? '')) - ThreatLensGeoUtils.hashThreatLensString(String(right.attributes?.ip ?? ''))),
     })), limit);
     const selected: ThreatLensMapGraphic[] = [];
     let round = 0;
@@ -452,7 +454,7 @@ export class ThreatLensIpMarkerRenderer {
     while (selected.length < limit) {
       let addedThisRound = false;
       for (const cell of orderedCells) {
-        const marker = cell.items[round];
+        const marker = getOwnProperty(cell.items, round);
         if (!marker) {
           continue;
         }
@@ -501,11 +503,11 @@ export class ThreatLensIpMarkerRenderer {
   }
 
   private getScreenPoint(marker: ThreatLensMapGraphic): ThreatLensScreenPoint | null {
-    if (!this.view?.toScreen) {
+    if (!this.view?.toScreen || !marker.geometry) {
       return null;
     }
 
-    let point: Partial<ThreatLensScreenPoint> | null = null;
+    let point: Partial<ThreatLensScreenPoint> | null;
     try {
       point = this.view.toScreen(marker.geometry);
     }
@@ -619,7 +621,7 @@ export class ThreatLensIpMarkerRenderer {
       .sort((left, right) => this.compareCenterBiasedCells(left, right));
 
     for (let index = 0; index < swapCount; index += 1) {
-      const candidate = candidates[index];
+      const candidate = getOwnProperty(candidates, index);
       if (!candidate) {
         break;
       }
@@ -637,7 +639,7 @@ export class ThreatLensIpMarkerRenderer {
         continue;
       }
 
-      selected[weakestIndex] = candidate;
+      setOwnProperty(selected, weakestIndex, candidate);
     }
 
     return selected.sort((left, right) => this.compareCenterBiasedCells(left, right));
@@ -697,7 +699,7 @@ export class ThreatLensIpMarkerRenderer {
     return Math.max(0, Math.min(1, 1 - (distanceKm / 3500)));
   }
 
-  private buildMarkerSymbol(size: number): any {
+  private buildMarkerSymbol(size: number): EsriSymbol {
     return {
       type: 'simple-marker',
       style: 'circle',
@@ -710,7 +712,7 @@ export class ThreatLensIpMarkerRenderer {
     };
   }
 
-  private buildClusterSymbol(count: number): any {
+  private buildClusterSymbol(count: number): EsriSymbol {
     const size = this.getClusterSymbolSize(count);
     return {
       type: 'text',
@@ -746,9 +748,9 @@ export class ThreatLensIpMarkerRenderer {
     return count > 99 ? '99+' : String(count);
   }
 
-  private buildGraphicSymbol(graphic: ThreatLensMapGraphic, markerSize: number): any {
+  private buildGraphicSymbol(graphic: ThreatLensMapGraphic, markerSize: number): EsriSymbol {
     if (this.isClusterGraphic(graphic)) {
-      return this.buildClusterSymbol(Number(graphic?.attributes?.count || 0));
+      return this.buildClusterSymbol(Number(graphic?.attributes?.count ?? 0));
     }
     return this.buildMarkerSymbol(markerSize);
   }

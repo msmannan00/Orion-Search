@@ -14,7 +14,12 @@ class CaseArtifactHelper:
 
     def __init__(self):
         self.resource_dir = CONSTANTS.S_CASE_ARTIFACT_RESOURCE_DIR
-        self.resource_dir.mkdir(parents=True, exist_ok=True)
+
+    def _ensure_resource_dir(self) -> None:
+        try:
+            self.resource_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Case artifact storage is unavailable") from error
 
     def validate_file_count(self, files: list[UploadFile]) -> None:
         if len(files) > self.MAX_FILE_COUNT:
@@ -50,6 +55,7 @@ class CaseArtifactHelper:
         return b"".join(chunks)
 
     async def save_encrypted_artifact_file(self, file: UploadFile, enc: Fernet) -> tuple[str, int, str]:
+        self._ensure_resource_dir()
         resource_id = str(uuid4())
         target_path = self.resource_dir / f"{resource_id}.enc"
 

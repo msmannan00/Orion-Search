@@ -8,3 +8,12 @@ export enum LicenseName {
     MAINTAINER = 'maintainer',
     ENTERPRISE = 'enterprise'
 }
+
+export interface LicenseRule {
+    modules: string[] | 'all';
+    cti_graph?: boolean;
+    mapping?: boolean;
+    scanning?: boolean;
+    geo_fencing?: boolean;
+    maintainer?: boolean;
+}

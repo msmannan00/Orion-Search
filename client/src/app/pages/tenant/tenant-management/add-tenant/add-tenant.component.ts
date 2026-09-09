@@ -25,11 +25,11 @@ export class AddTenantComponent implements OnInit {
   licenseList = Object.values(LicenseName);
   licenses = ['free', 'osint_basic', 'osint_advanced', 'social_mapper', 'pentester', 'maintainer', 'enterprise'];
   alertTenantOptions: AlertAllowedTenantOption[] = [];
-  isAdmin: boolean = false;
+  isAdmin = false;
   model: TenantTeamModel = { username: '', email: '', password: '', role: 'analyst', status: 'active', subscription: false, licenses: [], permissions: [], alerts_allowed_all: false, alerts_allowed_tenant_ids: [] };
-  errorText: string = "";
+  errorText = "";
   usernamePattern = /^[A-Za-z][A-Za-z0-9_-]{7,19}$/;
-  usernameSuggestion: string = "";
+  usernameSuggestion = "";
   showPasswordMeter = false;
   passwordStrength: PasswordStrength = null;
   passwordChecks: PasswordChecks = createEmptyPasswordChecks();
@@ -44,7 +44,10 @@ export class AddTenantComponent implements OnInit {
 
   get permissionOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [{ key: 'case_management', label: this.translationService.translate('Case Management') }];
+    return [
+      { key: 'case_management', label: this.translationService.translate('Case Management') },
+      { key: 'dismiss_result', label: this.translationService.translate('Dismiss Result') },
+    ];
   }
 
   get statusOptions(): UiDropdownOption[] {
@@ -57,7 +60,7 @@ export class AddTenantComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin = this.appService.userSessionData().user.role === 'admin';
-    this.isAdmin ? (this.model.role = 'analyst') : (this.model.role = 'member');
+    this.model.role = this.isAdmin ? 'analyst' : 'member';
     if (this.isAdmin) {
       this.loadAlertTenantOptions();
     }
@@ -96,12 +99,12 @@ export class AddTenantComponent implements OnInit {
     const endpoint = this.isAdmin ? 'tenant/create/user' : 'tenant/create/user';
     this.apiService.post(endpoint, this.model).subscribe({
       next: () => {
-        // TODO: The 'emit' function requires a mandatory void argument
+
         this.accountAdded.emit(undefined);
         this.onClose();
       },
       error: err => {
-        this.errorText = err?.error?.detail || this.translationService.translate('Failed to create user');
+        this.errorText = err?.error?.detail ?? this.translationService.translate('Failed to create user');
       }
     });
   }
@@ -123,7 +126,9 @@ export class AddTenantComponent implements OnInit {
     this.isClosing = true;
     this.isOpen = false;
     this.cdr.detectChanges();
-    setTimeout(() => this.closs.emit(undefined), 300);
+    setTimeout(() => {
+      this.closs.emit(undefined);
+    }, 300);
   }
 
   get hasFullLicenseAccess(): boolean {
@@ -168,7 +173,7 @@ export class AddTenantComponent implements OnInit {
   }
 
   get showAlertsAllowed(): boolean {
-    return this.isAdmin && (this.model.permissions || []).includes('case_management');
+    return this.isAdmin && (this.model.permissions ?? []).includes('case_management');
   }
 
   get alertAllowedOptions(): UiDropdownOption[] {
@@ -186,7 +191,7 @@ export class AddTenantComponent implements OnInit {
     if (this.model.alerts_allowed_all) {
       return [this.allAlertsOption];
     }
-    return this.model.alerts_allowed_tenant_ids || [];
+    return this.model.alerts_allowed_tenant_ids ?? [];
   }
 
   onPermissionChange(permissions: string[]): void {
@@ -233,11 +238,11 @@ export class AddTenantComponent implements OnInit {
       return;
     }
     const allowedTenantIds = new Set(this.alertTenantOptions.map(tenant => tenant.id));
-    this.model.alerts_allowed_tenant_ids = (this.model.alerts_allowed_tenant_ids || []).filter(id => allowedTenantIds.has(id));
+    this.model.alerts_allowed_tenant_ids = (this.model.alerts_allowed_tenant_ids ?? []).filter(id => allowedTenantIds.has(id));
   }
 
   onLicenseDropdownChange(nextLicenses: string[]): void {
-    const currentLicenses = this.model.licenses || [];
+    const currentLicenses = this.model.licenses ?? [];
     const addedLicense = nextLicenses.find(license => !currentLicenses.includes(license));
     if (addedLicense) {
       this.toggleTenantLicense(this.model, addedLicense as LicenseName);
@@ -246,10 +251,8 @@ export class AddTenantComponent implements OnInit {
     this.model.licenses = nextLicenses;
   }
 
-  toggleTenantLicense(tenant: any, license: LicenseName): void {
-    if (!tenant.licenses) {
-      tenant.licenses = [];
-    }
+  toggleTenantLicense(tenant: TenantTeamModel, license: LicenseName): void {
+    tenant.licenses ??= [];
     const index = tenant.licenses.indexOf(license);
     if (index > -1) {
       tenant.licenses.splice(index, 1);
@@ -259,20 +262,20 @@ export class AddTenantComponent implements OnInit {
       tenant.licenses = [LicenseName.ENTERPRISE];
       return;
     }
-    tenant.licenses = tenant.licenses.filter((l: LicenseName) => l !== LicenseName.ENTERPRISE);
+    tenant.licenses = tenant.licenses.filter((l) => l !== LicenseName.ENTERPRISE);
     if (license === LicenseName.FREE) {
       tenant.licenses = [LicenseName.FREE];
       return;
     }
     if (license === LicenseName.OSINT_BASIC) {
-      tenant.licenses = tenant.licenses.filter((l: LicenseName) =>
+      tenant.licenses = tenant.licenses.filter((l) =>
         l !== LicenseName.OSINT_ADVANCED && l !== LicenseName.FREE);
     }
     if (license === LicenseName.OSINT_ADVANCED) {
-      tenant.licenses = tenant.licenses.filter((l: LicenseName) =>
+      tenant.licenses = tenant.licenses.filter((l) =>
         l !== LicenseName.OSINT_BASIC && l !== LicenseName.FREE);
     }
-    tenant.licenses = tenant.licenses.filter((l: LicenseName) => l !== LicenseName.FREE);
+    tenant.licenses = tenant.licenses.filter((l) => l !== LicenseName.FREE);
 
     tenant.licenses.push(license);
   }

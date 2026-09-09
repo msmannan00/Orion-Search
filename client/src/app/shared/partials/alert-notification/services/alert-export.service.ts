@@ -3,17 +3,19 @@ import { AlertAllIoc, AlertModel } from '../../../model/company-profile/node.mod
 import { GraphReportPayload, GraphReportRecordBlock, GraphReportTableRow } from '../../../model/report/report-export.model';
 import { ExportBrandingService } from '../../../services/export/export-branding.service';
 import { ReportExportService } from '../../../services/export/report-export.service';
+import { setOwnProperty } from '../../../utils/type-guards.util';
+
 
 @Injectable({ providedIn: 'root' })
 export class AlertExportService {
   constructor(private exportBranding: ExportBrandingService, private reportExport: ReportExportService) {
   }
 
-  exportPdf(alerts: AlertModel[] | null | undefined, title: string = 'Brand Alerts'): void {
+  exportPdf(alerts: AlertModel[] | null | undefined, title = 'Brand Alerts'): void {
     this.exportByType(alerts, 'report', title);
   }
 
-  exportByType(alerts: AlertModel[] | null | undefined, type: string, title: string = 'Brand Alerts'): void {
+  exportByType(alerts: AlertModel[] | null | undefined, type: string, title = 'Brand Alerts'): void {
     const payload = this.buildPayload(alerts, title);
     this.reportExport.exportByType(payload, type === 'json' || type === 'csv' ? type : 'doc_pdf');
   }
@@ -29,15 +31,15 @@ export class AlertExportService {
 
     if (safeAlerts.length === 1) {
       const first = safeAlerts[0];
-      baseSummary['type'] = this.getText(first.type);
-      baseSummary['title'] = this.getText(first.title);
-      baseSummary['ioc_type'] = this.getText(first.ioc_type);
-      baseSummary['ioc_value'] = this.getText(first.ioc_value);
-      baseSummary['source'] = this.getText(this.exportBranding.replaceSystemBrand(first.source));
-      baseSummary['url'] = this.getText(first.url);
-      baseSummary['result_date'] = this.getDateText(this.extractAlertResultDate(first.all_ioc || []));
-      baseSummary['first_seen'] = this.getDateText(first.first_seen);
-      baseSummary['last_seen'] = this.getDateText(first.last_seen);
+      baseSummary.type = this.getText(first.type);
+      baseSummary.title = this.getText(first.title);
+      baseSummary.ioc_type = this.getText(first.ioc_type);
+      baseSummary.ioc_value = this.getText(first.ioc_value);
+      baseSummary.source = this.getText(this.exportBranding.replaceSystemBrand(first.source));
+      baseSummary.url = this.getText(first.url);
+      baseSummary.result_date = this.getDateText(this.extractAlertResultDate(first.all_ioc ?? []));
+      baseSummary.first_seen = this.getDateText(first.first_seen);
+      baseSummary.last_seen = this.getDateText(first.last_seen);
     }
 
     return {
@@ -58,7 +60,7 @@ export class AlertExportService {
     alerts.forEach(alert => {
       const key = this.getText(alert.type).toLowerCase();
       const type = key && key !== '-' ? key : 'unknown';
-      grouped.set(type, [...(grouped.get(type) || []), alert]);
+      grouped.set(type, [...(grouped.get(type) ?? []), alert]);
     });
 
     return Array.from(grouped.entries())
@@ -77,7 +79,7 @@ export class AlertExportService {
   private buildAlertRecordBlock(alert: AlertModel, index: number): GraphReportRecordBlock {
     const title = this.firstText(alert.title, alert.ioc_value, alert.type, `Alert ${index + 1}`);
     const values: Record<string, string> = {};
-    this.addField(values, 'Risk', this.getRiskLevel(alert.type || '', alert.risk));
+    this.addField(values, 'Risk', this.getRiskLevel(alert.type ?? '', alert.risk));
     this.addField(values, 'Category', alert.type);
     this.addField(values, 'Title', alert.title, 260);
     this.addField(values, 'Description', alert.description, 700);
@@ -85,12 +87,12 @@ export class AlertExportService {
     this.addField(values, 'IOC Type', alert.ioc_type, 160);
     this.addField(values, 'Source', this.exportBranding.replaceSystemBrand(alert.source), 220);
     this.addField(values, 'URL', alert.url, 320);
-    this.addField(values, 'Result Date', this.getDateText(this.extractAlertResultDate(alert.all_ioc || [])));
+    this.addField(values, 'Result Date', this.getDateText(this.extractAlertResultDate(alert.all_ioc ?? [])));
     this.addField(values, 'Alert First Seen', this.getDateText(alert.first_seen));
     this.addField(values, 'Alert Last Seen', this.getDateText(alert.last_seen));
     this.addField(values, 'Password', this.extractAlertPassword(alert), 220);
     this.addField(values, 'Hash', alert.data_hash, 220);
-    this.appendIocFields(values, alert.all_ioc || []);
+    this.appendIocFields(values, alert.all_ioc ?? []);
 
     return {
       title: `Record ${index + 1} | ${title}`,
@@ -202,15 +204,15 @@ export class AlertExportService {
   }
 
   private extractAlertPassword(alert: AlertModel): string {
-    const fromIoc = this.getFirstAlertIocValue(alert.all_ioc || [], ['password', 'm_password']);
+    const fromIoc = this.getFirstAlertIocValue(alert.all_ioc ?? [], ['password', 'm_password']);
     if (fromIoc) {
       return fromIoc;
     }
-    if ((alert.type || '').toLowerCase() !== 'stealerlogs') {
+    if ((alert.type ?? '').toLowerCase() !== 'stealerlogs') {
       return '';
     }
-    const description = String(alert.description || '');
-    const labelledPassword = description.match(/\bpassword\s*:\s*([\s\S]*?)(?=\s+(?:links?|filelist|files?|https?:\/\/)\b|$)/i)?.[1];
+    const description = String(alert.description ?? '');
+    const labelledPassword = (/\bpassword\s*:\s*([\s\S]*?)(?=\s+(?:links?|filelist|files?|https?:\/\/)\b|$)/i.exec(description))?.[1];
     if (labelledPassword?.trim()) {
       return this.getText(labelledPassword, 360);
     }
@@ -239,7 +241,7 @@ export class AlertExportService {
     const wanted = new Set(keys.map(key => key.toLowerCase()));
     const match = (allIoc || []).find(ioc => wanted.has(String(ioc?.name || '').toLowerCase()));
     const value = match?.values?.find(item => this.cleanValue(item));
-    return this.cleanValue(value || '');
+    return this.cleanValue(value ?? '');
   }
 
   private addField(fields: Record<string, string>, label: string, value: unknown, maxLength = 240): void {
@@ -247,7 +249,7 @@ export class AlertExportService {
     if (text === '-') {
       return;
     }
-    fields[label] = text;
+    setOwnProperty(fields, label, text);
   }
 
   private firstText(...values: unknown[]): string {
@@ -266,7 +268,8 @@ export class AlertExportService {
     }
     const text = String(value)
       .normalize('NFKC')
-      .replace(/[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFE0E\uFE0F\uFEFF]/g, '')
+      .replace(/[\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
+      .replace(/\u034F|\uFE0E|\uFE0F/g, '')
       .replace(/[\uD800-\uDFFF]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -336,7 +339,7 @@ export class AlertExportService {
   }
 
   private formatRisk(value?: string): string {
-    const normalized = (value || '').trim().toLowerCase();
+    const normalized = (value ?? '').trim().toLowerCase();
     if (!normalized) {
       return '';
     }

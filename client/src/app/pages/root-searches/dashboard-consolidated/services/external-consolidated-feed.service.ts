@@ -6,13 +6,11 @@ import { ApiService } from '../../../../shared/services/api.service';
 import { HelperService } from '../../../../shared/services/helper.service';
 import { ConsolidatedParamModel } from '../../../../shared/model/results/consolidated/consolidated.param.model';
 import { AptIntelResultItem } from '../../../../shared/model/results/apt-intel/apt-intel.callback.model';
+import type { AptIntelFeedResponse } from './model/external-consolidated-feed.model';
+export type { AptIntelFeedResponse } from './model/external-consolidated-feed.model';
 
-interface AptIntelFeedResponse {
-  Result?: AptIntelResultItem[];
-  Total_Hits?: number;
-  Total_Groups?: number;
-  Page_Count?: number;
-}
+
+
 
 @Injectable({ providedIn: 'root' })
 export class ExternalConsolidatedFeedService {
@@ -35,19 +33,19 @@ export class ExternalConsolidatedFeedService {
     this.updateActorMalwareResults();
   }
 
-  syncActorMalware(groupedResults: Record<string, AptIntelResultItem[]>, pageCounts: Record<string, number>): void {
+  syncActorMalware(groupedResults: Record<string, unknown[]>, pageCounts: Record<string, number>): void {
     this.localActorMalwareResults = [
-      ...(groupedResults['apt_model'] || []),
-      ...(groupedResults['malware_model'] || []),
+      ...((groupedResults.apt_model || []) as AptIntelResultItem[]),
+      ...((groupedResults.malware_model || []) as AptIntelResultItem[]),
     ];
-    this.localActorMalwareResultCount = (pageCounts['apt_model'] || 0) + (pageCounts['malware_model'] || 0);
+    this.localActorMalwareResultCount = (pageCounts.apt_model || 0) + (pageCounts.malware_model || 0);
     this.updateActorMalwareResults();
   }
 
   fetchActorMalware(paramModel: ConsolidatedParamModel, selectedFilters: Record<string, string | null>): void {
     const localSettings = this.appService.configData().localSettings;
     const entityCategories = localSettings.entityfilterCategories;
-    const resultCount = Number(selectedFilters['platform_result_count'] || 0);
+    const resultCount = Number(selectedFilters.platform_result_count ?? 0);
     let payload: Record<string, unknown> = {
       ...paramModel,
       ...selectedFilters,
@@ -59,7 +57,7 @@ export class ExternalConsolidatedFeedService {
     };
 
     if (entityCategories) {
-      payload['entity_filter'] = Object.fromEntries(Object.entries(entityCategories).filter(([_, value]) => Array.isArray(value) ? value.length > 0 : true));
+      payload.entity_filter = Object.fromEntries(Object.entries(entityCategories).filter(([, value]) => Array.isArray(value) ? value.length > 0 : true));
     }
 
     payload = this.helperService.removeEmptyOrNullValues(payload);
@@ -92,7 +90,7 @@ export class ExternalConsolidatedFeedService {
   private uniqueActorMalwareResults(results: AptIntelResultItem[]): AptIntelResultItem[] {
     const seen = new Set<string>();
     return results.filter((item, index) => {
-      const key = item.m_hash || item._id || item.m_sha256_hash || item.m_sha1_hash || item.m_md5_hash || item.m_url || item.m_base_url || `${index}`;
+      const key = item.m_hash ?? item._id ?? item.m_sha256_hash ?? item.m_sha1_hash ?? item.m_md5_hash ?? item.m_url ?? item.m_base_url ?? `${index}`;
       if (seen.has(key)) {
         return false;
       }

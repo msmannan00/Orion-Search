@@ -54,7 +54,10 @@ describe('Chatbot - Shared Chat Public View', () => {
 
     cy.visit('/chat-share/shared-chat-doc?token=test-token');
     cy.wait('@sharedChat');
-    cy.contains('Shared Chat').should('be.visible');
+    cy.get('[data-testid="chat-share-root"]').should('be.visible');
+    cy.get('[data-testid="chat-share-header"]')
+      .should('contain.text', 'Shared Intelligence Report')
+      .and('contain.text', 'Read Only');
     cy.contains('Summarize this alert for handoff.').should('be.visible');
     cy.contains('The alert needs review before escalation.').should('be.visible');
     cy.docsScreenshot('chat-share-public-view');

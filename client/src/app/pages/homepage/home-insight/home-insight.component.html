@@ -1,4 +1,4 @@
-<div id="analytics" class="max-[943px]:mt-[60px] max-[550px]:box-border max-[550px]:w-full max-[550px]:min-w-0 max-[550px]:max-w-full max-[550px]:[&_.grid]:box-border max-[550px]:[&_.grid]:w-full max-[550px]:[&_.grid]:min-w-0 max-[550px]:[&_.grid]:max-w-full" [ngClass]="{ '': appService.getConfig().localSettings.isSidebarOpen, '': !appService.getConfig().localSettings.isSidebarOpen }">
+<div id="analytics" class="max-[943px]:mt-[60px] max-[550px]:box-border max-[550px]:w-full max-[550px]:min-w-0 max-[550px]:max-w-full max-[550px]:[&_.grid]:box-border max-[550px]:[&_.grid]:w-full max-[550px]:[&_.grid]:min-w-0 max-[550px]:[&_.grid]:max-w-full">
   @if (isLoading) {
     <div>
       <div>
@@ -65,7 +65,7 @@
       </div>
     }
   } @else {
-  @for (modelKey of latestDocumentModelKeys; track modelKey; let i = $index; let last = $last) {
+  @for (modelKey of latestDocumentModelKeys; track modelKey) {
     <div>
       <div>
         <div class="mt-[16px] grid grid-cols-1 gap-[20px] md:grid-cols-2 xl:grid-cols-4">
@@ -149,7 +149,7 @@
         : 'Defacement Index') | translate }}
       </div>
       <div class="grid grid-cols-1 gap-[20px] md:grid-cols-2 xl:grid-cols-4">
-        @for (key of getKeys(insights[model]); track key; let first = $first) {
+        @for (key of getKeys(insights[model]); track key) {
           <div class="ui-home-insight-metric-card flex min-h-[132px] w-full items-center justify-center overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-800)] p-[18px] text-[var(--color-text1)] shadow-[0_1px_3px_rgba(0,0,0,0.1),_0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_3px_6px_rgba(0,0,0,0.11),_0_3px_6px_rgba(0,0,0,0.16)] [.light-theme_&]:!border-[#cdd9e8] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#334e68] [.light-theme_&]:!shadow-[0_4px_14px_rgba(15,23,42,0.065)] [.light-theme_&]:hover:!bg-[#f9fbff] [.light-theme_&]:hover:!shadow-[0_7px_20px_rgba(15,23,42,0.09)] [.light-theme_&]:[&_.min-w-0>div]:!text-[#2f465f] [.light-theme_&]:[&_.text-\[var\(--color-text1\)\]]:!text-[#2f465f] [.light-theme_&]:[&_.opacity-50]:!text-[#6f86a0] [.light-theme_&]:[&_.opacity-50]:!opacity-[85%] max-[550px]:w-full max-[550px]:min-w-0 max-[550px]:max-w-full">
             <div class="grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-[10px]">
               <div class="w-[40px] flex-shrink-0">

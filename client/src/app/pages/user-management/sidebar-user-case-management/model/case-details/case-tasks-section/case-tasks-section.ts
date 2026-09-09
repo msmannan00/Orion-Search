@@ -10,6 +10,8 @@ import { CaseDetailsStore } from '../case-details.store';
 import { CaseEditDrawerComponent } from '../case-edit-drawer/case-edit-drawer';
 import { TranslatePipe } from '../../../../../../shared/pipes/translate.pipe';
 import { DatePickerComponent } from '../../../../../../shared/partials/filters/date-picker/date-picker.component';
+import { getOwnProperty } from '../../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-case-tasks-section',
@@ -55,11 +57,11 @@ export class CaseTasksSectionComponent {
       return null;
     }
 
-    return this.editedCase?.tasks?.[this.editingTaskIndex] || null;
+    return this.editedCase?.tasks?.[this.editingTaskIndex] ?? null;
   }
 
   openEditTask(index: number): void {
-    const task = this.caseData.tasks?.[index];
+    const task = getOwnProperty(this.caseData.tasks, index);
 
     if (!this.canEditTask(task)) {
       return;
@@ -75,7 +77,7 @@ export class CaseTasksSectionComponent {
   }
 
   hasTasksChanged(): boolean {
-    return (this.editedCase?.tasks?.length || 0) !== (this.caseData?.tasks?.length || 0);
+    return (this.editedCase?.tasks?.length ?? 0) !== (this.caseData?.tasks?.length || 0);
   }
 
   getCaseAnalysts(caseItem: Case | null = this.caseData): CaseAnalyst[] {

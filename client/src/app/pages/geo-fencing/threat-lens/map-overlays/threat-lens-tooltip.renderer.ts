@@ -1,3 +1,8 @@
+
+import type { TooltipPointerEvent } from './model/threat-lens-tooltip.model';
+export type { TooltipPointerEvent } from './model/threat-lens-tooltip.model';
+
+
 export class ThreatLensTooltipRenderer {
   private static readonly TOOLTIP_CLASS = 'threat-lens-tooltip fixed left-[var(--threat-lens-tooltip-left,0)] top-[var(--threat-lens-tooltip-top,0)] z-[2147483000] max-w-[340px] rounded-[8px] border border-[rgb(74_222_128_/_32%)] bg-[#172235] px-[10px] py-[6px] text-[12px] font-semibold text-[#eef7f1] shadow-[0_12px_30px_rgb(2_6_23_/_45%)] [backdrop-filter:blur(8px)] pointer-events-none [&[hidden]]:!hidden [body.light-theme_&]:border-[#b9dbc7] [body.light-theme_&]:bg-[rgb(249_251_255_/_98%)] [body.light-theme_&]:text-[#172235]';
   private static readonly CONTENT_CLASS = 'threat-lens-tooltip__content grid gap-[6px] px-[10px] py-[8px] text-[11px] leading-[1.35]';
@@ -27,14 +32,14 @@ export class ThreatLensTooltipRenderer {
     this.tooltipEl = null;
   }
 
-  showIpScan(event: any, attributes: Record<string, unknown>): void {
+  showIpScan(event: unknown, attributes: Record<string, unknown>): void {
     if (!this.tooltipEl) {
       return;
     }
 
-    const ip = typeof attributes['ip'] === 'string' ? attributes['ip'] : this.translate('Unknown IP');
-    const network = typeof attributes['network'] === 'string' ? attributes['network'] : '';
-    const accuracyRadius = this.toFiniteNumber(attributes['accuracyRadius']);
+    const ip = typeof attributes.ip === 'string' ? attributes.ip : this.translate('Unknown IP');
+    const network = typeof attributes.network === 'string' ? attributes.network : '';
+    const accuracyRadius = this.toFiniteNumber(attributes.accuracyRadius);
     const tooltipContent = document.createElement('div');
     tooltipContent.className = `${ThreatLensTooltipRenderer.CONTENT_CLASS} threat-lens-tooltip__content--ip min-w-[190px]`;
 
@@ -52,17 +57,17 @@ export class ThreatLensTooltipRenderer {
     this.show(event, tooltipContent);
   }
 
-  showIpCluster(event: any, attributes: Record<string, unknown>): void {
+  showIpCluster(event: unknown, attributes: Record<string, unknown>): void {
     if (!this.tooltipEl) {
       return;
     }
 
-    const count = Number(attributes['count'] || 0);
-    const networkCount = Number(attributes['networkCount'] || 0);
-    const accuracyRadius = this.toFiniteNumber(attributes['accuracyRadius']);
-    const accuracyMin = this.toFiniteNumber(attributes['accuracyMin']);
-    const accuracyMax = this.toFiniteNumber(attributes['accuracyMax']);
-    const records = Array.isArray(attributes['records']) ? attributes['records'] : [];
+    const count = Number(attributes.count ?? 0);
+    const networkCount = Number(attributes.networkCount ?? 0);
+    const accuracyRadius = this.toFiniteNumber(attributes.accuracyRadius);
+    const accuracyMin = this.toFiniteNumber(attributes.accuracyMin);
+    const accuracyMax = this.toFiniteNumber(attributes.accuracyMax);
+    const records = Array.isArray(attributes.records) ? attributes.records : [];
     const tooltipContent = document.createElement('div');
     tooltipContent.className = `${ThreatLensTooltipRenderer.CONTENT_CLASS} threat-lens-tooltip__content--ip min-w-[190px]`;
 
@@ -71,7 +76,7 @@ export class ThreatLensTooltipRenderer {
     title.textContent = this.translate('Stacked approximate IPs');
 
     tooltipContent.append(title);
-    tooltipContent.append(this.buildTooltipRow(this.translate('Why stacked'), String(attributes['stackReason'] || this.translate('Same MaxMind coordinate'))));
+    tooltipContent.append(this.buildTooltipRow(this.translate('Why stacked'), String(attributes.stackReason ?? this.translate('Same MaxMind coordinate'))));
     tooltipContent.append(this.buildTooltipRow(this.translate('IP records'), String(count || records.length)));
     if (networkCount > 0) {
       tooltipContent.append(this.buildTooltipRow(this.translate('Prefixes'), String(networkCount)));
@@ -83,7 +88,7 @@ export class ThreatLensTooltipRenderer {
       tooltipContent.append(this.buildTooltipRow(this.translate('Approx. radius'), this.formatKm(accuracyRadius)));
     }
     const sampleIps = records
-      .map((record: any) => String(record?.ip || '').trim())
+      .map((record) => String(record?.ip ?? '').trim())
       .filter(Boolean)
       .slice(0, 3)
       .join(', ');
@@ -93,7 +98,7 @@ export class ThreatLensTooltipRenderer {
     this.show(event, tooltipContent);
   }
 
-  showCountry(event: any, countryName: string): void {
+  showCountry(event: unknown, countryName: string): void {
     if (!this.tooltipEl) {
       return;
     }
@@ -109,13 +114,14 @@ export class ThreatLensTooltipRenderer {
     this.show(event, tooltipContent, 'above');
   }
 
-  move(event: any): void {
+  move(event: unknown): void {
     if (!this.tooltipEl) {
       return;
     }
 
-    const x = Number(event?.native?.clientX ?? event?.clientX ?? event?.touches?.[0]?.clientX ?? event?.x ?? 0);
-    const y = Number(event?.native?.clientY ?? event?.clientY ?? event?.touches?.[0]?.clientY ?? event?.y ?? 0);
+    const pointer = event && typeof event === 'object' ? event as TooltipPointerEvent : {};
+    const x = Number(pointer.native?.clientX ?? pointer.clientX ?? pointer.touches?.[0]?.clientX ?? pointer.x ?? 0);
+    const y = Number(pointer.native?.clientY ?? pointer.clientY ?? pointer.touches?.[0]?.clientY ?? pointer.y ?? 0);
     const width = this.tooltipEl.offsetWidth;
     const height = this.tooltipEl.offsetHeight;
     const preferredLeft = this.tooltipPlacement === 'above' ? x - width / 2 : x + 10;
@@ -132,7 +138,7 @@ export class ThreatLensTooltipRenderer {
     }
   }
 
-  private show(event: any, content: HTMLDivElement, placement: 'above' | 'below' = 'below'): void {
+  private show(event: unknown, content: HTMLDivElement, placement: 'above' | 'below' = 'below'): void {
     this.tooltipPlacement = placement;
     this.tooltipEl?.replaceChildren(content);
     if (this.tooltipEl) {

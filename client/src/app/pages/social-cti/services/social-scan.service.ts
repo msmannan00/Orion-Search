@@ -34,8 +34,8 @@ export class SocialScanService {
       return { type: 'complete', payload: Array.isArray(response.result) ? response.result : [] };
     }
     if (response?.status === 'pending') {
-      return { type: 'progress', payload: { progress: response.progress ?? 5, step: response.step || 'Scanning' } };
+      return { type: 'progress', payload: { progress: response.progress ?? 5, step: response.step ?? 'Scanning' } };
     }
-    throw new Error(String(response?.message || (response?.status === 'cancelled' ? 'Scan cancelled' : 'Scan failed')));
+    throw new Error(String(response?.message ?? (response?.status === 'cancelled' ? 'Scan cancelled' : 'Scan failed')));
   }
 }

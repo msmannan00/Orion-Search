@@ -12,3 +12,19 @@
   background: rgb(148 163 184 / 45%);
   border-radius: 999px;
 }
+
+.fade-in-dashboard-item {
+  animation: fade-in-dashboard-item 400ms ease-in-out;
+}
+
+@keyframes fade-in-dashboard-item {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}

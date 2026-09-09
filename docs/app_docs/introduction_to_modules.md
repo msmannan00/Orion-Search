@@ -28,18 +28,18 @@ This document explains what each module is for and when to use it.
 
 The Orion module set is easiest to understand in ten groups:
 
-| Group | What it does | Typical modules |
-| --- | --- | --- |
-| Access and onboarding | account entry, verification, tenant setup, subscription notices, and shared public views | Signup, Login, Password Reset, Welcome, Tenant Onboarding, Notification, Payment Gateway, Case Share, Chat Share |
-| Entry and overview | search-first landing and high-level summaries | Homepage, Statistics |
-| Indexed investigation | query indexed intelligence sources | General Intelligence, Data Breach, Compromise Monitoring, Social, Exploit, Actors & Malware, News Feed, Stealer Logs |
-| Combined investigation | merge multiple result channels around one query | Consolidated |
-| Live lookup and scan | run direct, targeted checks | Entity Lookup, Web Scans, Network Intel, File Scanner, Text Analysis, Crypto Scanner |
-| Scan job tracking | preserve long-running scan state | scan notifications, scan reports, resume and reuse controls |
-| Geo-fencing and map intelligence | inspect map entities, facilities, transportation overlays, imagery, and country-linked threats | Satellite Intel, Threat Lens |
-| Relationship analysis | map entities and pivots visually | CTI Graph, Social Intel |
-| Profile productivity | manage analyst workspaces and case records | AI Workspace, Case Management, Tracking Board, Feeder |
-| Tenant and administration | manage users, alerts, quotas, branding, settings, and takedown review | Users, Tenants, Tenant Homepage, Manage IOCs, Takedown Requests, Audit Logs, Account Settings, Tenant Settings, System Settings |
+| Group                            | What it does                                                                                   | Typical modules                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Access and onboarding            | account entry, verification, tenant setup, subscription notices, and shared public views       | Signup, Login, Password Reset, Welcome, Tenant Onboarding, Notification, Payment Gateway, Case Share, Chat Share                |
+| Entry and overview               | search-first landing and high-level summaries                                                  | Homepage, Statistics                                                                                                            |
+| Indexed investigation            | query indexed intelligence sources                                                             | General Intelligence, Data Breach, Compromise Monitoring, Social, Exploit, Actors & Malware, News Feed, Stealer Logs            |
+| Combined investigation           | merge multiple result channels around one query                                                | Consolidated                                                                                                                    |
+| Live lookup and scan             | run direct, targeted checks                                                                    | Entity Lookup, Web Scans, Network Intel, File Scanner, Text Analysis, Crypto Scanner                                            |
+| Scan job tracking                | preserve long-running scan state                                                               | scan notifications, scan reports, resume and reuse controls                                                                     |
+| Geo-fencing and map intelligence | inspect map entities, facilities, transportation overlays, imagery, and country-linked threats | Satellite Intel, Threat Lens                                                                                                    |
+| Relationship analysis            | map entities and pivots visually                                                               | CTI Graph, Social Intel                                                                                                         |
+| Profile productivity             | manage analyst workspaces and case records                                                     | AI Workspace, Case Management, Tracking Board, Feeder                                                                           |
+| Tenant and administration        | manage users, alerts, quotas, branding, settings, and takedown review                          | Users, Tenants, Tenant Homepage, Manage IOCs, Takedown Requests, Audit Logs, Account Settings, Tenant Settings, System Settings |
 
 ## Visibility And Licensing
 

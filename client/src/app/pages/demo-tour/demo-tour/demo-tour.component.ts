@@ -5,6 +5,8 @@ import { DemoTourService } from '../services/demo.tour.service';
 import { RenderedGeometry } from '../model/rendered-geometry.interface';
 import { TourStep } from '../../../shared/model/demo-tour/demo.tour.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-demo-tour',
@@ -272,10 +274,10 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
       nextCutoutRects = [
         { top, left, width, height, rx: this.spotlightCornerRadius, ry: this.spotlightCornerRadius },
         ...additionalSpotlightStyles.map(spotlight => ({
-          top: Number.parseFloat(spotlight['top']),
-          left: Number.parseFloat(spotlight['left']),
-          width: Number.parseFloat(spotlight['width']),
-          height: Number.parseFloat(spotlight['height']),
+          top: Number.parseFloat(spotlight.top),
+          left: Number.parseFloat(spotlight.left),
+          width: Number.parseFloat(spotlight.width),
+          height: Number.parseFloat(spotlight.height),
           rx: this.spotlightCornerRadius,
           ry: this.spotlightCornerRadius
         }))
@@ -301,8 +303,8 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
       spotlightLeft: left,
       spotlightWidth: width,
       spotlightHeight: height,
-      tooltipTop: Number.parseFloat(this.positionStyle['top'] || '0') || 0,
-      tooltipLeft: Number.parseFloat(this.positionStyle['left'] || '0') || 0
+      tooltipTop: Number.parseFloat(this.positionStyle.top || '0') || 0,
+      tooltipLeft: Number.parseFloat(this.positionStyle.left || '0') || 0
     };
 
     if (this.shouldSkipGeometryUpdate(nextGeometry, nextCutoutRects)) {
@@ -313,9 +315,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
     this.lastRenderedGeometry = nextGeometry;
     this.lastTargetCutoutRects = nextCutoutRects.map(rect => ({ ...rect }));
     this.animateCutoutRects(nextCutoutRects);
-    this.tooltipTop = this.positionStyle['top'] || '0px';
-    this.tooltipLeft = this.positionStyle['left'] || '0px';
-    this.tooltipBottom = this.positionStyle['bottom'] || 'auto';
+    this.tooltipTop = this.positionStyle.top || '0px';
+    this.tooltipLeft = this.positionStyle.left || '0px';
+    this.tooltipBottom = this.positionStyle.bottom || 'auto';
     this.progressWidth = `${this.totalSteps > 0 ? ((this.currentIndex + 1) / this.totalSteps) * 100 : 0}%`;
     this.syncRuntimeStyles();
   }
@@ -337,7 +339,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   private areCutoutRectsStable(nextCutoutRects: { top: number; left: number; width: number; height: number; rx: number; ry: number; }[]): boolean {
     return this.lastTargetCutoutRects.length === nextCutoutRects.length &&
       nextCutoutRects.every((rect, index) => {
-        const previousRect = this.lastTargetCutoutRects[index];
+        const previousRect = getOwnProperty(this.lastTargetCutoutRects, index);
         return this.isWithinTolerance(previousRect.top, rect.top) &&
           this.isWithinTolerance(previousRect.left, rect.left) &&
           this.isWithinTolerance(previousRect.width, rect.width) &&
@@ -822,8 +824,8 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private fitsInViewport( tooltip: Record<string, string>, tooltipWidth: number, tooltipHeight: number, margin: number ): boolean {
-    const top = Number.parseFloat(tooltip['top']);
-    const left = Number.parseFloat(tooltip['left']);
+    const top = Number.parseFloat(tooltip.top);
+    const left = Number.parseFloat(tooltip.left);
 
     return top >= margin &&
       left >= margin &&
@@ -832,8 +834,8 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private clampTooltipToViewport( tooltip: Record<string, string>, tooltipWidth: number, tooltipHeight: number, margin: number ): Record<string, string> {
-    const top = Number.parseFloat(tooltip['top']);
-    const left = Number.parseFloat(tooltip['left']);
+    const top = Number.parseFloat(tooltip.top);
+    const left = Number.parseFloat(tooltip.left);
 
     return {
       top: `${Math.min(Math.max(top, margin), Math.max(window.innerHeight - tooltipHeight - margin, margin))}px`,
@@ -1020,7 +1022,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async setProfileMenuState(state: NonNullable<TourStep['profileMenuState']>): Promise<void> {
-    const menuOpen = document.getElementById('profile-dropdown-menu') instanceof HTMLElement;
+    const menuOpen = document.getElementById('profile-dropdown-menu') !== null;
     const shouldBeOpen = state === 'open';
     if (menuOpen !== shouldBeOpen) {
       const trigger = await this.waitForRenderedSelector('[data-testid="profile-menu"]');
@@ -1084,17 +1086,17 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
         const collapseButton = document.querySelector('[data-testid="sidebar-collapse-button"]');
         const expandButton = document.querySelector('[data-testid="sidebar-expand-button"]');
 
-        if (!(shell instanceof HTMLElement)) {
+        if (!shell) {
           return false;
         }
 
-        const shellVisible = shell.offsetParent !== null;
+        const shellVisible = 'offsetParent' in shell && shell.offsetParent !== null;
 
         if (expanded) {
-          return collapseButton instanceof HTMLElement && !shellVisible;
+          return collapseButton !== null && !shellVisible;
         }
 
-        return expandButton instanceof HTMLElement && shellVisible;
+        return expandButton !== null && shellVisible;
       };
 
       if (isReady()) {
@@ -1275,7 +1277,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private lockPageScroll(): void {
-    const html = document.documentElement;
+    const rootElement = document.documentElement;
     const body = document.body;
 
     if (body.classList.contains('demo-tour-scroll-locked')) {
@@ -1283,8 +1285,8 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.scrollLockY = window.scrollY;
-    html.classList.add('no-scroll');
-    html.classList.add('demo-tour-scroll-locked');
+    rootElement.classList.add('no-scroll');
+    rootElement.classList.add('demo-tour-scroll-locked');
     body.classList.add('no-scroll');
     body.classList.add('demo-tour-scroll-locked');
     body.classList.add('demo-tour-active');
@@ -1292,19 +1294,19 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private unlockPageScroll(): void {
-    const html = document.documentElement;
+    const rootElement = document.documentElement;
     const body = document.body;
 
     if (!body.classList.contains('demo-tour-scroll-locked')) {
-      html.classList.remove('no-scroll');
-      html.classList.remove('demo-tour-scroll-locked');
+      rootElement.classList.remove('no-scroll');
+      rootElement.classList.remove('demo-tour-scroll-locked');
       body.classList.remove('no-scroll');
       body.classList.remove('demo-tour-active');
       return;
     }
 
-    html.classList.remove('no-scroll');
-    html.classList.remove('demo-tour-scroll-locked');
+    rootElement.classList.remove('no-scroll');
+    rootElement.classList.remove('demo-tour-scroll-locked');
     body.classList.remove('no-scroll');
     body.classList.remove('demo-tour-scroll-locked');
     body.classList.remove('demo-tour-active');
@@ -1447,7 +1449,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
       const easedProgress = 1 - Math.pow(1 - progress, 2);
 
       this.cutoutRects = nextCutoutRects.map((targetRect, index) => {
-        const startRect = startRects[index];
+        const startRect = getOwnProperty(startRects, index);
         return {
           top: this.interpolateNumber(startRect.top, targetRect.top, easedProgress),
           left: this.interpolateNumber(startRect.left, targetRect.left, easedProgress),
@@ -1533,7 +1535,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private removeRuntimeRule(styleSheet: CSSStyleSheet, selector: string): void {
     for (let index = styleSheet.cssRules.length - 1; index >= 0; index -= 1) {
-      const rule = styleSheet.cssRules[index];
+      const rule = getOwnProperty(styleSheet.cssRules, index);
       if (rule instanceof CSSStyleRule && rule.selectorText === selector) {
         styleSheet.deleteRule(index);
       }
@@ -1713,7 +1715,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
           finish(element);
         }
       });
-      const timeoutId = window.setTimeout(() => finish(this.getRenderedSelectorElement(selector)), timeoutMs);
+      const timeoutId = window.setTimeout(() => {
+        finish(this.getRenderedSelectorElement(selector));
+      }, timeoutMs);
 
       observer.observe(document.body, {
         childList: true,
@@ -1766,7 +1770,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        requestAnimationFrame(() => stepFrame(remaining - 1));
+        requestAnimationFrame(() => {
+          stepFrame(remaining - 1);
+        });
       };
 
       stepFrame(count);
@@ -1778,7 +1784,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
       let previousUrl = this.router.url;
       let stableFrames = 0;
       let frameId = 0;
-      let navigationPending = this.router.getCurrentNavigation() !== null;
+      let navigationPending = this.router.currentNavigation() !== null;
       let settled = false;
 
       const finish = () => {
@@ -1814,7 +1820,7 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        navigationPending = navigationPending || this.router.getCurrentNavigation() !== null;
+        navigationPending = navigationPending || this.router.currentNavigation() !== null;
         const currentUrl = this.router.url;
         if (navigationPending || currentUrl !== previousUrl) {
           previousUrl = currentUrl;
@@ -1926,7 +1932,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
           finish(true);
         }
       });
-      const timeoutId = window.setTimeout(() => finish(predicate()), timeoutMs);
+      const timeoutId = window.setTimeout(() => {
+        finish(predicate());
+      }, timeoutMs);
 
       observer.observe(document.body, {
         childList: true,
@@ -1983,7 +1991,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         resolve();
       };
-      const cancel = () => finish(false);
+      const cancel = () => {
+        finish(false);
+      };
 
       const tick = () => {
         if (token !== this.stepPreparationToken || this.step !== step || !this.visible) {
@@ -2008,12 +2018,13 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private waitForStepStability(step: TourStep, element: HTMLElement): Promise<void> {
+  private waitForStepStability(step: TourStep, element: HTMLElement, maxWaitMs = 2000): Promise<void> {
     return new Promise(resolve => {
       let settleTimer: number | null = null;
+      let deadlineTimer: number | null = null;
       const stableAfterMs = 180;
 
-      const observedElements = new Set<HTMLElement>([element]);
+      const observedElements = new Set([element]);
       if (step.waitForSelector) {
         const nested = this.getRenderedSelectorElement(step.waitForSelector);
         if (nested) {
@@ -2032,6 +2043,10 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
           window.clearTimeout(settleTimer);
           settleTimer = null;
         }
+        if (deadlineTimer !== null) {
+          window.clearTimeout(deadlineTimer);
+          deadlineTimer = null;
+        }
         resizeObserver.disconnect();
         mutationObserver.disconnect();
         resolve();
@@ -2041,7 +2056,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
         if (settleTimer !== null) {
           window.clearTimeout(settleTimer);
         }
-        settleTimer = window.setTimeout(() => finish(), stableAfterMs);
+        settleTimer = window.setTimeout(() => {
+          finish();
+        }, stableAfterMs);
       };
 
       const resizeObserver = new ResizeObserver(() => {
@@ -2059,6 +2076,10 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
         subtree: true,
         attributes: true
       });
+
+      deadlineTimer = window.setTimeout(() => {
+        finish();
+      }, maxWaitMs);
 
       scheduleSettle();
     });
@@ -2110,7 +2131,9 @@ export class DemoTourComponent implements OnInit, AfterViewInit, OnDestroy {
         frameId = requestAnimationFrame(tick);
       };
 
-      timeoutId = window.setTimeout(() => finish(), 700);
+      timeoutId = window.setTimeout(() => {
+        finish();
+      }, 700);
       frameId = requestAnimationFrame(tick);
     });
   }

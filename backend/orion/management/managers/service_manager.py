@@ -2,6 +2,7 @@ import asyncio
 from asyncio import sleep
 from pathlib import Path
 from migrations.migration import migration_manager
+from orion.api.interactive.backup_manager.backup_manager import BackupManager
 from orion.api.interactive.social_manager.social_scanner import social_scanner
 from orion.api.server.config_manager.config_controller import config_controller
 from orion.helper_manager.env_handler import env_handler
@@ -57,6 +58,8 @@ class service_manager:
                 await self.build_map_assets(build_dir)
                 await config_controller.getInstance().load_config(force_db=True)
                 await asyncio.sleep(5)
+
+                await BackupManager.get_instance().resolve_interrupted_restore()
 
                 await arango_controller.get_instance().link_connection()
                 await arango_controller.get_instance().initialize()

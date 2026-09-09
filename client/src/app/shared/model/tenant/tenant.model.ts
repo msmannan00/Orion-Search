@@ -35,6 +35,7 @@ export interface TenantModel {
     accounts_mail?: string;
     accounts_smtp_server?: string;
     accounts_smtp_port?: string;
+    [key: string]: unknown;
 }
 export interface User {
     username: string;

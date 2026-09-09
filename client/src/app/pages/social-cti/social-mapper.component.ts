@@ -8,6 +8,7 @@ import { ManageProfilesModalData } from './models/social-usability.models';
 import type { FeedUser, NotificationData } from './models/social-usability.models';
 import { HomeMenuComponent } from './home-menu/home-menu.component';
 import { SocialProfileListingComponent } from './profile-listing/profile-listing.component';
+import { SocialUserGraphComponent } from './user-graph/social-user-graph.component';
 import { NotificationBarComponent } from './notification-bar/notification-bar.component';
 import { SocialService } from './services/social.service';
 import { SocialStorageService } from './services/social-storage.service';
@@ -18,6 +19,9 @@ import { ManageProfilesModalComponent } from './profile-popups/manage-profiles-m
 import type { SocialResultSource } from './enums/social-graph.enums';
 import { SocialBreadcrumbComponent } from './breadcrumb/social-breadcrumb.component';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { getInputValue } from '../../shared/utils/event-input.util';
+import { getOwnProperty } from '../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-social-graph',
@@ -27,6 +31,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
   imports: [
     HomeMenuComponent,
     SocialProfileListingComponent,
+    SocialUserGraphComponent,
     ConfirmationPopupComponent,
     NotificationBarComponent,
     ProfileComponent,
@@ -55,6 +60,8 @@ export class SocialMapperComponent {
   ]));
   isHomeMenuCollapsed = this.sidebarState.isHomeMenuCollapsed;
   isInitialLoading = signal(true);
+  graphView = signal(false);
+  graphUsernames = signal<string[]>([]);
   notification = signal<NotificationData | null>(null);
   deleteConfirmationMessage = signal<string | null>(null);
   deleteUsername = signal<string | null>(null);
@@ -75,7 +82,7 @@ export class SocialMapperComponent {
   activeResultSource = computed(() => {
     const username = this.activeUsername();
     const platforms = this.activeSourcePlatforms();
-    const preferred = username ? this.activeResultSources()[username] ?? 'normal' : 'normal';
+    const preferred = username ? getOwnProperty(this.activeResultSources(), username) ?? 'normal' : 'normal';
     if (platforms.some(platform => this.getResultSource(platform) === preferred)) {
       return preferred;
     }
@@ -85,11 +92,18 @@ export class SocialMapperComponent {
   profileListing = viewChild(SocialProfileListingComponent);
 
   constructor(private destroyRef: DestroyRef) {
-    this.destroyRef.onDestroy(() => clearTimeout(this.notificationTimeout));
+    this.destroyRef.onDestroy(() => {
+      clearTimeout(this.notificationTimeout);
+    });
     this.storageService.loadProfiles().pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
       this.isInitialLoading.set(false);
       this.resumeIncompleteScans();
     })).subscribe();
+    this.storageService.loadGraphUsers().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(usernames => {
+      if (usernames.length && !this.graphUsernames().length) {
+        this.graphUsernames.set(usernames);
+      }
+    });
   }
 
   onHomeMenuSearchChanged(term: string): void {
@@ -97,7 +111,7 @@ export class SocialMapperComponent {
   }
 
   onDashboardScanInput(event: Event): void {
-    const nextValue = (event.target as HTMLInputElement | null)?.value ?? '';
+    const nextValue = getInputValue(event);
     this.onHomeMenuSearchChanged(nextValue);
   }
 
@@ -176,11 +190,48 @@ export class SocialMapperComponent {
   }
 
   handleCompletedJobClick(job: Job): void {
+    if (this.graphView()) {
+      this.sidebarState.activeUsername.set(job.id);
+      this.addGraphUser(job.id);
+      return;
+    }
     if (job.status !== 'completed') {
       return;
     }
     this.profileListing()?.clearProfileOverview();
     this.sidebarState.activeUsername.set(job.id);
+  }
+
+  toggleGraphView(): void {
+    const next = !this.graphView();
+    if (next) {
+      const active = this.activeUsername();
+      if (active && !this.graphUsernames().length) {
+        this.graphUsernames.set([active]);
+      }
+    }
+    this.graphView.set(next);
+  }
+
+  addGraphUser(username: string): void {
+    const handle = username.trim().replace(/^@+/, '').toLowerCase();
+    if (!handle || this.graphUsernames().includes(handle)) {
+      return;
+    }
+    this.setGraphUsers([...this.graphUsernames(), handle]);
+  }
+
+  onGraphUsernamesChange(usernames: string[]): void {
+    this.setGraphUsers(usernames);
+    const last = usernames[usernames.length - 1];
+    if (last) {
+      this.sidebarState.activeUsername.set(last);
+    }
+  }
+
+  private setGraphUsers(usernames: string[]): void {
+    this.graphUsernames.set(usernames);
+    this.storageService.saveGraphUsers(usernames).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   private initiateScan(username: string): void {
@@ -239,7 +290,7 @@ export class SocialMapperComponent {
   openDeleteConfirmation(username: string): void {
     const job = this.jobs().find(currentJob => currentJob.id === username);
     this.deleteUsername.set(username);
-    this.deleteConfirmationMessage.set(`Are you sure you want to delete the profile for ${job?.id || username}? This will remove all associated data and cannot be undone.`);
+    this.deleteConfirmationMessage.set(`Are you sure you want to delete the profile for ${job?.id ?? username}? This will remove all associated data and cannot be undone.`);
   }
 
   closeDeleteConfirmation(): void {
@@ -308,18 +359,23 @@ export class SocialMapperComponent {
     this.profileBreadcrumbLabel.set(label);
   }
 
-  private showScanInProgressNotification(): void {
+  protected showScanInProgressNotification(): void {
     clearTimeout(this.notificationTimeout);
     this.notification.set({
       message: 'A scan for this user is already in progress.',
       icon: 'bi bi-hourglass-split',
       style: 'bg-orange-500/90 text-white border border-orange-400',
     });
-    this.notificationTimeout = setTimeout(() => this.notification.set(null), 3000);
+    this.notificationTimeout = setTimeout(() => {
+      this.notification.set(null);
+    }, 3000);
   }
 
-  private getResultSource(_platformData: social_profile): SocialResultSource {
-    return 'normal';
+  private getResultSource(platformData: social_profile): SocialResultSource {
+    const platform = String(platformData?.meta?.platform ?? '').toLowerCase();
+    const kind = `${platformData?.meta?.entity_type ?? ''} ${platformData?.meta?.target_type ?? ''}`.toLowerCase();
+    const darkweb = ['forum', 'telegram', 'discord', 'chat', 'darkweb', 'dark_web', 'onion', 'paste', 'leak'];
+    return darkweb.some(key => platform.includes(key)) || kind.includes('dark') || kind.includes('forum') ? 'darkweb' : 'normal';
   }
 
   private getVisiblePlatforms(ownerUsername: string, platforms: social_profile[]): social_profile[] {

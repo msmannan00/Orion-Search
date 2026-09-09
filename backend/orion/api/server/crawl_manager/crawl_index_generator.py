@@ -76,11 +76,10 @@ class crawl_index_generator:
                 if schema_value:
                     data["schema"] = schema_value
 
-                identifier = data.get("id")
-                if not identifier:
+                if not data.get("id"):
                     continue
 
-                data["m_hash"] = helper_controller.generate_data_hash(str(identifier))
+                data["m_hash"] = helper_controller.generate_data_hash(str(data["id"]))
                 index_entries.append({ELASTIC_KEYS.S_DOCUMENT: ELASTIC_INDEX.S_OPENSANCTIONS_INDEX, ELASTIC_KEYS.S_VALUE: data})
 
             return index_entries
@@ -93,11 +92,10 @@ class crawl_index_generator:
         if schema_value:
             data["schema"] = schema_value
 
-        identifier = data.get("id")
-        if not identifier:
+        if not data.get("id"):
             return index_entries
 
-        data["m_hash"] = helper_controller.generate_data_hash(str(identifier))
+        data["m_hash"] = helper_controller.generate_data_hash(str(data["id"]))
         index_entries.append({ELASTIC_KEYS.S_DOCUMENT: ELASTIC_INDEX.S_OPENSANCTIONS_INDEX, ELASTIC_KEYS.S_VALUE: data})
         return index_entries
 

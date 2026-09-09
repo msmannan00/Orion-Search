@@ -13,11 +13,11 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
   templateUrl: './welcome.component.html',
 })
 export class WelcomeComponent implements OnInit {
-  hasToken: boolean = false;
+  hasToken = false;
   accessUrl: string | null = null;
   isLightTheme = false;
-  message: string = "Your registration has been submitted! We've received your information and are now reviewing your request. You will receive an email notification once your account has been approved by an administrator.";
-  heading: string = "Thank you for registering with ";
+  message = "Your registration has been submitted! We've received your information and are now reviewing your request. You will receive an email notification once your account has been approved by an administrator.";
+  heading = "Thank you for registering with ";
 
   constructor(private router: Router, private route: ActivatedRoute, public apiService: ApiService, private appService: AppService) {
     this.heading += appService.getConfig().appSettings.app_name + "!"
@@ -34,13 +34,13 @@ export class WelcomeComponent implements OnInit {
     this.applyTheme(theme);
 
     const token = this.route.snapshot.paramMap.get('token');
-    if (token !== null) {
+    if (typeof token === 'string') {
       this.hasToken = true;
-      this.apiService.post(`verify/${token}`, null).subscribe({
-        next: (res: any) => {
+      this.apiService.post<{ message?: string; access_url?: string | null }>(`verify/${token}`, null).subscribe({
+        next: (res) => {
           this.heading = "Verification Successful!";
-          this.message = res.message || "Your email has been verified successfully. You may continue onboarding.";
-          this.accessUrl = res.access_url || null;
+          this.message = res.message ?? "Your email has been verified successfully. You may continue onboarding.";
+          this.accessUrl = res.access_url ?? null;
         },
         error: (err) => {
           this.heading = "Verification Failed!";

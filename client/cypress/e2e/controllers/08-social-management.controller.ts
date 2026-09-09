@@ -1,347 +1,258 @@
-const SOCIAL_ROOT = '[data-testid="social-graph-root"]';
-const SOCIAL_LIST_EMPTY = '[data-testid="social-list-empty"]';
-const SOCIAL_PROFILE_EMPTY_CARD = '[data-testid="social-profile-empty-card"]';
-const SOCIAL_PROFILE_EMPTY_OVERVIEW_BUTTON = '[data-testid="social-profile-empty-overview-button"]';
-const SOCIAL_PLATFORM_CARD = '[data-testid="social-platform-card"]';
-const SOCIAL_SCAN_TIMEOUT = 180000;
-const SOCIAL_FETCH_TIMEOUT = 120000;
-const SOCIAL_API_MOCK_ROOT = '../backend/static/test/mocks/api';
-const SOCIAL_ELASTIC_MOCK_ROOT = '../backend/static/test/mocks/elastic';
+import { stubExtensionPresence } from './08-social-extension.controller';
 
-export const SOCIAL_STEALER_USERNAME = 'superman0011';
-export const SOCIAL_STEALER_PLATFORM = /twitter/i;
-const SOCIAL_STEALER_DOMAIN = 'twitter.com';
+export const PLATFORM_CARD = '[data-testid="social-platform-card"]';
+const CRAWL_PANEL = '[data-testid="social-tab-panel-crawl"]';
+export const GRAPH_ROOT = '[data-testid="social-user-graph-root"]';
+export const GRAPH_FIND = '[data-testid="social-user-graph-find"]';
+export const GRAPH_FIND_INPUT = '[data-testid="social-user-graph-find-input"]';
+export const SCAN_TIMEOUT = 180000;
+export const FETCH_TIMEOUT = 120000;
+const API_MOCKS = '../backend/tests/mock/api';
+const ELASTIC_MOCKS = '../backend/tests/mock/elastic';
+
+export const SOCIAL_USERNAME = 'superman0011';
+export const SOCIAL_PLATFORM = /twitter/i;
+export const SOCIAL_DOMAIN = 'twitter.com';
+const CRAWL_TYPES = ['details', 'posts', 'videos', 'images', 'followers', 'repositories'];
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return (value ?? {}) as Record<string, unknown>;
+}
+
+export function findStealerRow(rows: JQuery, limit?: number) {
+  const candidates = limit ? [...rows].slice(0, limit) : [...rows];
+  return candidates.find((row) => {
+    const domain = row.querySelector('[title]')?.getAttribute('title') || '';
+    return (row.textContent || '').includes(SOCIAL_USERNAME) && isStealerDomain(domain);
+  });
+}
 
 function isStealerDomain(value: string) {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return false;
-  }
   try {
-    const host = new URL(normalized.includes('://') ? normalized : `https://${normalized}`).hostname.replace(/^www\./, '');
-    return host === SOCIAL_STEALER_DOMAIN || host.endsWith(`.${SOCIAL_STEALER_DOMAIN}`);
+    const host = new URL(value.includes('://') ? value : `https://${value}`).hostname.replace(/^www\./, '');
+    return host === SOCIAL_DOMAIN || host.endsWith(`.${SOCIAL_DOMAIN}`);
   } catch {
     return false;
   }
 }
 
-function loadSocialElasticMock<T = any>(filename: string) {
-  return cy.readFile(`${SOCIAL_ELASTIC_MOCK_ROOT}/${filename}`, { log: false }) as Cypress.Chainable<T>;
+function loadMock<T = unknown>(root: string, filename: string) {
+  return cy.readFile(`${root}/${filename}`, { log: false }) as Cypress.Chainable<T>;
 }
 
-function loadSocialApiMock<T = any>(filename: string) {
-  return cy.readFile(`${SOCIAL_API_MOCK_ROOT}/${filename}`, { log: false }) as Cypress.Chainable<T>;
-}
-
-export function setupSocialManagementJsonStubs() {
-  loadSocialElasticMock('social_recon.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/recon', { statusCode: 200, body: mock }).as('socialRecon');
-  });
-  loadSocialElasticMock('social_profile.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/profile', { statusCode: 200, body: mock }).as('socialProfile');
-  });
-  loadSocialElasticMock('social_posts.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/posts', { statusCode: 200, body: mock }).as('socialPosts');
-  });
-  loadSocialElasticMock('social_videos.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/videos', { statusCode: 200, body: mock }).as('socialVideos');
-  });
-  loadSocialElasticMock('social_shorts.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/shorts', { statusCode: 200, body: mock }).as('socialShorts');
-  });
-  loadSocialElasticMock('social_online_images.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/online/images', { statusCode: 200, body: mock }).as('socialImages');
-  });
-  loadSocialElasticMock('social_followers.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/followers', { statusCode: 200, body: mock }).as('socialFollowers');
-  });
-  loadSocialElasticMock('social_following.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/following', { statusCode: 200, body: mock }).as('socialFollowing');
-  });
-  loadSocialElasticMock('social_online_presence.json').then((mock) => {
-    cy.intercept('POST', '**/api/social/metadata', { statusCode: 200, body: mock }).as('socialOnlinePresence');
-  });
-  loadSocialElasticMock('social_stealer_logs.json').then((mock) => {
-    cy.intercept('POST', '**/api/search/stealer/ioc', { statusCode: 200, body: mock }).as('socialStealerLogs');
-  });
-  loadSocialApiMock('dynamic_wanted.json').then((mock) => {
-    cy.intercept('POST', '**/api/dynamic/wanted', { statusCode: 200, body: mock }).as('socialWanted');
-  });
-  cy.intercept('GET', '**/api/social/data', { statusCode: 200, body: { status: 'done', result: [] } }).as('socialDataList');
-  cy.intercept('GET', '**/api/social/data/*', { statusCode: 200, body: { profiles: [], count: 0 } }).as('socialDataDetail');
-  cy.intercept('POST', '**/api/social/data', { statusCode: 200, body: { status: 'done' } }).as('socialDataSave');
-}
-
-export function visitSocialIntel() {
-  setViewportToCurrentScreen();
-  cy.visit('/dashboard/social-intel');
-  cy.location('pathname').should('include', '/dashboard/social-intel');
-  cy.get(SOCIAL_ROOT).should('be.visible');
-  cy.get('[data-testid="social-header-breadcrumb"]').should('contain.text', 'Social').and('contain.text', 'Intel');
-  cy.get('[data-testid="social-scan-control"]').should('be.visible');
-  cy.get('[data-testid="social-scan-input"]').should('have.attr', 'placeholder', 'Search username or handle...');
-  cy.get('[data-testid="social-scan-submit"]').should('contain.text', 'Search');
-  cy.get('[data-testid="social-list-view"]').should('be.visible');
-}
-
-function setViewportToCurrentScreen() {
-  cy.viewport(
-    Number(Cypress.config('viewportWidth')) || 1920,
-    Number(Cypress.config('viewportHeight')) || 1080
-  );
-}
-
-export function scanKnownSocialUsername(username = SOCIAL_STEALER_USERNAME) {
-  cy.get('[data-testid="social-scan-input"]').clear().type(username).should('have.value', username);
-  cy.get('[data-testid="social-scan-submit"]').should('not.be.disabled').click();
-  cy.wait('@socialRecon', { timeout: SOCIAL_FETCH_TIMEOUT });
-  cy.contains('[data-testid="social-history-job"]', username, { timeout: SOCIAL_SCAN_TIMEOUT })
-    .should('contain.text', 'Completed')
-    .and('contain.text', 'Results Ready')
-    .click();
-  cy.contains(SOCIAL_PLATFORM_CARD, SOCIAL_STEALER_PLATFORM, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .should('be.visible');
-  cy.docsScreenshot('social-intel');
-}
-
-export function assertSocialResultNavigation() {
-  cy.get('[data-testid="social-sidebar-platform-row"]').should('have.length.greaterThan', 0);
-  cy.contains('[data-testid="social-sidebar-platform-row"]', SOCIAL_STEALER_PLATFORM, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .click();
-  cy.contains(SOCIAL_PLATFORM_CARD, SOCIAL_STEALER_PLATFORM, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .should('be.visible');
-  cy.get('body').then(($body) => {
-    if ($body.find('[data-testid="social-list-platform-open-link"]').length > 0) {
-      cy.get('[data-testid="social-list-platform-open-link"]')
-        .first()
-        .should('have.attr', 'target', '_blank')
-        .and('have.attr', 'rel')
-        .and('include', 'noopener');
-    }
-  });
-}
-
-export function assertDashboardStealerExposure() {
-  cy.get('[data-testid="social-stealerlog-section"]').should('be.visible');
-  cy.wait('@socialStealerLogs', { timeout: SOCIAL_FETCH_TIMEOUT });
-  cy.get('[data-testid="social-dashboard-stealer-exposure"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('be.visible')
-    .and('contain.text', 'Exposure found');
-  cy.get('[data-testid="social-dashboard-stealer-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .then(($rows) => {
-      const matchingRow = [...$rows].slice(0, 3).find((row) => {
-        const text = row.textContent || '';
-        const domain = row.querySelector('[title]')?.getAttribute('title') || '';
-        return text.includes(SOCIAL_STEALER_USERNAME) && isStealerDomain(domain);
+function crawlItemsFor(type: string, mocks: Record<string, unknown>): unknown[] | null {
+  const items = (name: string, key: string) => (asRecord(asRecord(mocks[name])['result'])[key] ?? []) as unknown[];
+  switch (type) {
+    case 'posts':
+      return items('posts', 'posts');
+    case 'videos':
+      return items('videos', 'videos');
+    case 'images':
+      return items('images', 'images');
+    case 'followers':
+      return items('followers', 'followers');
+    case 'repositories':
+      return [{ resource_id: 'repo-1', name: 'orion-recon', url: 'https://github.com/superman0011/orion-recon', description: 'Recon helpers for Orion.', language: 'TypeScript', stars: 128, forks: 12 }];
+    case 'connections':
+      return items('followers', 'followers').map((entry, index) => {
+        const record = asRecord(entry);
+        const handle = typeof entry === 'string' ? entry : String(record['handle'] ?? record['username'] ?? `connection-${index}`);
+        return {
+          resource_id: `connection-${handle}`,
+          handle,
+          title: handle,
+          url: `https://twitter.com/${handle}`,
+          type: 'connections',
+          parent_url: `https://twitter.com/${SOCIAL_USERNAME}/status/1`,
+        };
       });
-      expect(matchingRow, `top 3 stealer rows include ${SOCIAL_STEALER_DOMAIN}`).to.exist;
-    });
+    default:
+      return null;
+  }
 }
 
-export function assertWantedListJsonData() {
-  cy.get('[data-testid="social-wanted-list-section"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('be.visible')
-    .within(() => {
-      cy.get('[data-testid="social-wanted-search-input"]').clear().type('John Doe');
-      cy.get('[data-testid="social-wanted-search-button"]').should('not.be.disabled').click();
-    });
-  cy.wait('@socialWanted', { timeout: SOCIAL_FETCH_TIMEOUT });
-  cy.get('[data-testid="social-wanted-result-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .first()
-    .should('contain.text', 'Johnathan Andrew Doe')
-    .and('contain.text', 'red_notice');
-}
-
-export function openConnectionsFromPlatformCard() {
-  cy.contains(SOCIAL_PLATFORM_CARD, SOCIAL_STEALER_PLATFORM, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .then(($card) => {
-      const $connectionsButton = $card.find('[data-testid="social-list-followers-following"]');
-      if ($connectionsButton.length === 0) {
-        return;
-      }
-      cy.wrap($connectionsButton).click();
-      assertTabPanelSettled('social-tab-panel-connections', 'Loading post mentions');
-      cy.get('[data-testid="social-connection-chip"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-        .should('have.length.greaterThan', 0)
-        .and('contain.text', '@dailyplanet');
-      cy.get('[data-testid="social-header-back"]').click();
-    });
-}
-
-export function openProfileOverviewFromPlatformCard() {
-  cy.contains(SOCIAL_PLATFORM_CARD, SOCIAL_STEALER_PLATFORM, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .within(() => {
-      cy.get('[data-testid="social-profile-overview-button"]').click();
-    });
-  cy.get('[data-testid="social-header-back"]').should('be.visible');
-  cy.get('[data-testid="social-fetch-tab"][data-tab-key="details"]').should('exist');
-  cy.get('[data-testid="social-fetch-tab"][data-tab-key="posts"]').should('exist');
-  cy.get('[data-testid="social-fetch-tab"][data-tab-key="stealerLogs"]').should('exist');
-  assertTabPanelSettled('social-tab-panel-details', 'Loading profile details');
-  cy.get('[data-testid="social-tab-panel-details"]').should('contain.text', 'Clark Kent');
-  cy.docsScreenshot('social-summary-popup');
-  cy.docsScreenshot('social-metadata-results');
-}
-
-
-export function fetchSocialProfileTabs() {
-  clickFetchTab('posts');
-  assertTabPanelSettled('social-tab-panel-posts', 'Loading posts');
-  cy.get('[data-testid="social-post-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .first()
-    .should('contain.text', 'Metropolis skyline');
-  cy.get('[data-testid="social-posts-load-more"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('be.visible')
-    .click();
-  cy.wait('@socialPosts', { timeout: SOCIAL_FETCH_TIMEOUT }).then(({ request }) => {
-    expect(request.body.platform).to.match(/twitter|x/i);
-    expect(request.body.username).to.eq(SOCIAL_STEALER_USERNAME);
-    expect(request.body.max_posts).to.eq(7);
-  });
-
-  clickFetchTabIfPresent('videos', () => {
-    cy.wait('@socialVideos', { timeout: SOCIAL_FETCH_TIMEOUT });
-    assertTabPanelSettled('social-tab-panel-videos', 'Loading videos');
-    cy.get('[data-testid="social-post-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-      .should('have.length.greaterThan', 0)
-      .first()
-      .should('contain.text', 'Press briefing highlights');
-  });
-
-  clickFetchTabIfPresent('shorts', () => {
-    cy.wait('@socialShorts', { timeout: SOCIAL_FETCH_TIMEOUT });
-    assertTabPanelSettled('social-tab-panel-shorts', 'Loading shorts');
-    cy.get('[data-testid="social-post-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-      .should('have.length.greaterThan', 0)
-      .first()
-      .should('contain.text', 'Skyline update');
-  });
-
-  clickFetchTab('images');
-  cy.wait('@socialImages', { timeout: SOCIAL_FETCH_TIMEOUT });
-  assertTabPanelSettled('social-tab-panel-images', 'Loading images');
-  cy.get('[data-testid="social-image-result"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .first()
-    .should('have.attr', 'href')
-    .and('include', 'avatars.githubusercontent.com');
-
-  clickFetchTabIfPresent('followers', () => {
-    cy.wait('@socialFollowers', { timeout: SOCIAL_FETCH_TIMEOUT });
-    assertTabPanelSettled('social-tab-panel-followers', 'Loading followers');
-    cy.get('[data-testid="social-follower-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-      .should('have.length.greaterThan', 0)
-      .first()
-      .should('contain.text', '@loislane');
-    cy.docsScreenshot('social-followers-popup');
-  });
-
-  clickFetchTabIfPresent('following', () => {
-    cy.wait('@socialFollowing', { timeout: SOCIAL_FETCH_TIMEOUT });
-    assertTabPanelSettled('social-tab-panel-following', 'Loading following');
-    cy.get('[data-testid="social-following-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-      .should('have.length.greaterThan', 0)
-      .first()
-      .should('contain.text', '@loislane');
-  });
-
-  clickFetchTab('onlinePresence');
-  cy.wait('@socialOnlinePresence', { timeout: SOCIAL_FETCH_TIMEOUT });
-  assertTabPanelSettled('social-tab-panel-online-presence', 'Loading online presence');
-  cy.get('[data-testid="social-online-presence-result"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .first()
-    .should('contain.text', 'superman0011 on GitHub');
-
-  clickFetchTab('stealerLogs');
-  cy.wait('@socialStealerLogs', { timeout: SOCIAL_FETCH_TIMEOUT });
-  cy.get('[data-testid="social-tab-panel-stealer-logs"]', { timeout: SOCIAL_FETCH_TIMEOUT }).should('be.visible');
-  cy.get('[data-testid="social-stealerlog-row"]', { timeout: SOCIAL_FETCH_TIMEOUT })
-    .should('have.length.greaterThan', 0)
-    .then(($rows) => {
-      const matchingRow = [...$rows].find((row) => {
-        const text = row.textContent || '';
-        const domain = row.querySelector('[title]')?.getAttribute('title') || '';
-        return isStealerDomain(domain) && text.includes(SOCIAL_STEALER_USERNAME);
-      });
-      expect(matchingRow, `stealer tab row includes ${SOCIAL_STEALER_DOMAIN} and ${SOCIAL_STEALER_USERNAME}`).to.exist;
-    });
-}
-
-export function assertManageProfilesForScannedResult() {
-  cy.get('[data-testid="social-list-manage-profiles"]').first().click();
-  cy.get('[data-testid="social-manage-profiles-modal"]').should('be.visible');
-  cy.docsScreenshot('social-manage-profiles');
-  cy.get('[data-testid="social-manage-profiles-filter"]').clear().type('twitter');
-  cy.get('[data-testid="social-manage-profile-card"]').should('have.length.greaterThan', 0);
-  cy.get('[data-testid="social-manage-profile-switch"]').first().should('have.attr', 'role', 'switch');
-  cy.get('[data-testid="social-manage-profiles-close"]').click();
-  cy.get('[data-testid="social-manage-profiles-modal"]').should('not.exist');
-}
-
-export function assertSocialSidebarAndBackNavigation() {
-  cy.get('app-home-menu [data-sidebar-expanded]').should('be.visible');
-  cy.get('[data-testid="graph-sidebar-collapse"]')
-    .should('be.visible')
-    .and('have.attr', 'aria-label', 'Collapse sidebar')
-    .click();
-  cy.get('app-home-menu [data-sidebar-expanded]').should('not.exist');
-  cy.get('app-home-menu [data-sidebar-collapsed]').should('be.visible');
-  cy.get('[data-testid="graph-sidebar-expand"]')
-    .should('be.visible')
-    .and('have.attr', 'aria-label', 'Expand sidebar')
-    .click();
-  cy.get('app-home-menu [data-sidebar-expanded]').should('be.visible');
-  cy.get('app-home-menu [data-sidebar-collapsed]').should('not.exist');
-  cy.get('[data-testid="social-scan-control"]').should('be.visible');
-  cy.get('[data-testid="social-header-back"]').click();
-  cy.location('pathname').should('match', /^\/dashboard\/(home|profile\/homepage)/);
-}
-
-export function assertSocialEmptyStateIfNoResults() {
-  cy.get('body').then(($body) => {
-    const $emptyState = $body.find(SOCIAL_LIST_EMPTY);
-    if ($body.find(SOCIAL_PLATFORM_CARD).length === 0 && $emptyState.length > 0) {
-      cy.wrap($emptyState).within(() => {
-        cy.get(SOCIAL_PROFILE_EMPTY_CARD).should('be.visible');
-        cy.get(SOCIAL_PROFILE_EMPTY_OVERVIEW_BUTTON).should('contain.text', 'Profile Overview').and('be.disabled');
-        cy.get('[data-testid="social-platform-search-empty"]').should('be.disabled');
-        cy.get('[data-testid="social-list-empty-manage-profiles"]').should('be.disabled');
-      });
-    }
+function reconProfilesFrom(mock: unknown) {
+  return ((asRecord(mock)['result'] ?? []) as unknown[]).map((entry, index) => {
+    const entryRecord = asRecord(entry);
+    const meta = asRecord(entryRecord['meta'] ?? entryRecord['metadata']);
+    const ids = asRecord(asRecord(entryRecord['data'])['ids']);
+    const platform = String(meta['platform'] ?? 'platform');
+    const username = String(meta['username'] ?? index);
+    return {
+      id: `${platform.toLowerCase()}:${username}`,
+      meta: { platform, username, url: String(meta['url'] ?? ''), status: meta['status'] ?? 'active' },
+      profile_details: {
+        real_name: String(ids['fullname'] ?? ''),
+        bio: String(ids['bio'] ?? ''),
+        total_followers: String(ids['follower_count'] ?? ''),
+        crawl_type: CRAWL_TYPES,
+      },
+    };
   });
 }
 
-function clickFetchTab(tabKey: string) {
-  cy.get(`[data-testid="social-fetch-tab"][data-tab-key="${tabKey}"]`, { timeout: SOCIAL_FETCH_TIMEOUT })
-    .scrollIntoView()
-    .should('be.visible')
-    .click();
+function graphDocumentFor(username: string) {
+  return {
+    user_id: 'cypress',
+    profile_username: username,
+    config: { disallowed: [] },
+    profiles: [{
+      id: `twitter:${username}`,
+      meta: { platform: 'Twitter', username, url: `https://twitter.com/${username}` },
+      profile_details: { real_name: 'Clark Kent', bio: 'Daily Planet field reporter' },
+      resources: [
+        { id: 'followers', resources: [{ handle: 'loislane', url: 'https://twitter.com/loislane' }] },
+        { id: 'connections', resources: [{ handle: 'dailyplanet', url: 'https://twitter.com/dailyplanet', parent_url: 'https://twitter.com/superman0011/status/1' }] },
+      ],
+    }],
+  };
 }
 
-function clickFetchTabIfPresent(tabKey: string, assertions: () => void) {
-  cy.get('body').then(($body) => {
-    if ($body.find(`[data-testid="social-fetch-tab"][data-tab-key="${tabKey}"]`).length === 0) {
+let loadedMocks: Record<string, unknown> = {};
+
+function replyWithCrawlMock(request: { body?: Record<string, unknown>; reply(response: unknown): void }, type: string) {
+  if (type === 'details') {
+    const details = JSON.parse(JSON.stringify(asRecord(loadedMocks['profile'])['result'] ?? {})) as Record<string, unknown>;
+    details['profile'] = { ...asRecord(details['profile']), crawl_type: CRAWL_TYPES };
+    request.reply({ statusCode: 200, body: { status: 'done', result: details } });
+    return;
+  }
+  const items = crawlItemsFor(type, loadedMocks);
+  request.reply({ statusCode: 200, body: items === null ? { status: 'idle' } : { status: 'done', result: { items, has_more: false } } });
+}
+
+export function stubSlowCrawlSection(slowType: string, delay = 30000) {
+  void cy.intercept('POST', '**/api/social/profile', (request) => {
+    const type = String(request.body?.type ?? '');
+    if (request.body?.command === 'cancel') {
+      request.reply({ statusCode: 200, body: { status: 'done' } });
       return;
     }
-    clickFetchTab(tabKey);
-    assertions();
-  });
+    if (type === slowType) {
+      request.reply({ statusCode: 200, delay, body: { status: 'done', result: { items: [], has_more: false } } });
+      return;
+    }
+    replyWithCrawlMock(request, type);
+  }).as('socialCrawl');
 }
 
-function assertTabPanelSettled(panelTestId: string, loadingText: string) {
-  cy.get(`[data-testid="${panelTestId}"]`, { timeout: SOCIAL_FETCH_TIMEOUT }).should('be.visible');
-  cy.get(`[data-testid="${panelTestId}"]`, { timeout: SOCIAL_FETCH_TIMEOUT }).should(($panel) => {
-    const text = ($panel.text() || '').replace(/\s+/g, ' ').trim();
-    expect(text).not.to.include(loadingText);
-    expect(text.length).to.be.greaterThan(0);
+export function stubBulkCrawlSection(bulkType: string, count: number) {
+  const items = Array.from({ length: count }, (_, index) => ({
+    resource_id: `bulk-${index}`,
+    id: `bulk-${index}`,
+    caption: `Bulk ${bulkType} entry ${index}`,
+    title: `Bulk ${bulkType} entry ${index}`,
+    handle: `bulk_handle_${index}`,
+    url: `https://twitter.com/${SOCIAL_USERNAME}/status/${index}`,
+    datetime: '2026-06-13T10:00:00Z',
+  }));
+  void cy.intercept('POST', '**/api/social/profile', (request) => {
+    const type = String(request.body?.type ?? '');
+    if (request.body?.command === 'cancel') {
+      request.reply({ statusCode: 200, body: { status: 'done' } });
+      return;
+    }
+    if (type === bulkType) {
+      request.reply({ statusCode: 200, body: { status: 'done', result: { items, has_more: false } } });
+      return;
+    }
+    replyWithCrawlMock(request, type);
+  }).as('socialCrawl');
+}
+
+export function setupSocialStubs() {
+  stubExtensionPresence(true);
+
+  const mocks: Record<string, unknown> = {};
+  loadedMocks = mocks;
+  const remember = (key: string, filename: string) => loadMock(ELASTIC_MOCKS, filename).then((mock) => {
+    mocks[key] = mock;
   });
+
+  void remember('profile', 'social_profile.json');
+  void remember('posts', 'social_posts.json');
+  void remember('videos', 'social_videos.json');
+  void remember('images', 'social_online_images.json');
+  void remember('followers', 'social_followers.json');
+
+  loadMock(ELASTIC_MOCKS, 'social_recon.json').then((mock) => {
+    void cy.intercept('POST', '**/api/social/recon', { statusCode: 200, body: { job_id: 'cypress', result: reconProfilesFrom(mock) } }).as('socialRecon');
+  });
+  loadMock(ELASTIC_MOCKS, 'social_online_presence.json').then((mock) => {
+    void cy.intercept('POST', '**/api/social/metadata', { statusCode: 200, body: mock }).as('socialOnlinePresence');
+  });
+  loadMock(ELASTIC_MOCKS, 'social_stealer_logs.json').then((mock) => {
+    void cy.intercept('POST', '**/api/search/stealer/ioc', { statusCode: 200, body: mock }).as('socialStealerLogs');
+  });
+  loadMock(API_MOCKS, 'dynamic_wanted.json').then((mock) => {
+    void cy.intercept('POST', '**/api/dynamic/wanted', { statusCode: 200, body: mock }).as('socialWanted');
+  });
+
+  void cy.intercept('POST', '**/api/social/profile', (request) => {
+    const type = String(request.body?.type ?? '');
+    if (request.body?.command === 'cancel') {
+      request.reply({ statusCode: 200, body: { status: 'done' } });
+      return;
+    }
+    replyWithCrawlMock(request, type);
+  }).as('socialCrawl');
+
+  void cy.intercept('POST', '**/api/social/connections', (request) => {
+    const query = String(request.body?.query ?? '').toLowerCase();
+    const items = (crawlItemsFor('connections', mocks) ?? []) as unknown[];
+    const filtered = query ? items.filter((item) => JSON.stringify(item).toLowerCase().includes(query)) : items;
+    request.reply({ statusCode: 200, body: { result: { items: filtered, total: filtered.length } } });
+  }).as('socialConnections');
+
+  void cy.intercept('POST', '**/api/social/graph/data', (request) => {
+    const usernames = (request.body?.usernames ?? []) as string[];
+    request.reply({ statusCode: 200, body: { result: usernames.map(graphDocumentFor) } });
+  }).as('socialGraphData');
+
+  void cy.intercept('POST', '**/api/social/recon/status', { statusCode: 200, body: { status: 'pending', progress: 90, step: 'Scanning' } });
+  void cy.intercept('POST', '**/api/search/social', { statusCode: 200, body: { Result: [], Total_Hits: 0 } });
+  void cy.intercept('POST', '**/api/phone/universal_search', { statusCode: 200, body: { cards_data: [] } }).as('socialPhone');
+  void cy.intercept('GET', '**/api/social/data', { statusCode: 200, body: { status: 'done', result: [] } });
+  void cy.intercept('GET', '**/api/social/data/*', { statusCode: 200, body: { profiles: [], count: 0 } });
+  void cy.intercept('POST', '**/api/social/data', { statusCode: 200, body: { status: 'done' } });
+  void cy.intercept('GET', '**/api/graph/session/tabs*', { statusCode: 200, body: { tabs: [], extra: { usernames: [] } } });
+  void cy.intercept('POST', '**/api/graph/session/upsert*', { statusCode: 200, body: { status: 'done' } }).as('socialGraphSave');
+}
+
+export function assertCrawlTabs() {
+  const tabs: Array<[string, string, string]> = [
+    ['posts', '[data-testid="social-feed-list"]', '[data-testid="social-feed-post"]'],
+    ['videos', '[data-testid="social-media-grid"]', '[data-testid="social-media-tile"], [data-testid="social-media-placeholder"]'],
+    ['images', '[data-testid="social-media-grid"]', '[data-testid="social-media-tile"], [data-testid="social-media-placeholder"]'],
+    ['followers', '[data-testid="social-people-list"]', '[data-testid="social-people-card"]'],
+    ['repositories', '[data-testid="social-work-list"]', '[data-testid="social-work-row"]'],
+  ];
+  tabs.forEach(([key, list, item]) => {
+    clickTab(key);
+    void cy.get('[data-testid="social-crawl-section-fetch"]', { timeout: FETCH_TIMEOUT }).first().click();
+    void cy.wait('@socialCrawl', { timeout: FETCH_TIMEOUT });
+    void cy.get(CRAWL_PANEL, { timeout: FETCH_TIMEOUT }).should('be.visible');
+    void cy.get(list, { timeout: FETCH_TIMEOUT }).should('be.visible');
+    void cy.get(item).should('have.length.greaterThan', 0);
+    void cy.get('[data-testid="social-crawl-fresh-band"], [data-testid="social-crawl-stale-band"]').should('have.length.greaterThan', 0);
+  });
+  void cy.get('[data-testid="social-work-row"]').first().should('contain.text', 'orion-recon').and('contain.text', 'TypeScript');
+  void cy.docsScreenshot('social-followers-popup');
+}
+
+export function stubPhoneIntelligence() {
+  void cy.intercept('POST', '**/api/phone/universal_search', {
+    statusCode: 200,
+    delay: 700,
+    body: {
+      name: 'Clark Kent',
+      formatted_address: 'Metropolis, DE',
+      emails: ['clark.kent@dailyplanet.test'],
+      knowledge_graph: { description: 'Field reporter at the Daily Planet.' },
+    },
+  }).as('socialPhone');
+}
+
+export function clickTab(key: string) {
+  void cy.get(`[data-testid="social-fetch-tab"][data-tab-key="${key}"]`, { timeout: FETCH_TIMEOUT }).scrollIntoView().click();
 }

@@ -1,13 +1,12 @@
 import { Component, HostListener, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgClass } from '@angular/common';
 import { PasswordSchemaFilter } from '../../../../shared/model/stealerlogs-filter/stealerlogs-filters';
 import { AppService } from '../../../../services/core/app/app.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-password-schema',
-  imports: [FormsModule, NgClass, TranslatePipe],
+  imports: [FormsModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './password-schema.component.html'
 })
@@ -26,20 +25,20 @@ export class PasswordSchemaComponent {
   onSearch() {
     this.normalizeRange();
     this.search.emit(this.filter);
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.close.emit(undefined);
   }
 
   onClose() {
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.close.emit(undefined);
   }
 
   @HostListener('document:click', ['$event'])
   onOutsideClick(event: MouseEvent) {
-    const eventTargetElement = event.target as HTMLElement;
-    if (this.isOpen() && eventTargetElement.classList.contains('password-schema-overlay')) {
-      // TODO: The 'emit' function requires a mandatory void argument
+    const eventTargetElement = event.target;
+    if (this.isOpen() && eventTargetElement instanceof HTMLElement && eventTargetElement.classList.contains('password-schema-overlay')) {
+
       this.close.emit(undefined);
     }
   }

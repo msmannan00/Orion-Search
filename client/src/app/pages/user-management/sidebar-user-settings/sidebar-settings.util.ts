@@ -1,7 +1,4 @@
-type TenantLocation = {
-    city?: string;
-    country?: string;
-} | null | undefined;
+import { TenantLocation } from './model/sidebar-settings.model';
 
 export function getTenantLocationDisplay(tenant: TenantLocation): string {
   if (!tenant) {
@@ -22,12 +19,4 @@ export function getTenantLocationDisplay(tenant: TenantLocation): string {
   }
 
   return '';
-}
-
-export function toggleEditState(event: Event, isEditing: boolean, onSave: () => void): boolean {
-  event.stopPropagation();
-  if (isEditing) {
-    onSave();
-  }
-  return !isEditing;
 }

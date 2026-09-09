@@ -1,4 +1,6 @@
 import asyncio
+import re
+import requests
 from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile, File
 from orion.api.interactive.auditlog_manager.audit_log_manager import AuditLogManager
@@ -8,6 +10,7 @@ from configs.app_dependency import (
     _scan_domain_with_type,
     _validate_public_scan_target,
     admin_or_enterprise_required,
+    dismiss_result_required,
     license_required,
     role_required,
     status_required,
@@ -20,6 +23,7 @@ from orion.api.interactive.account_manager.account_manager import AccountManager
 from orion.api.interactive.feedback_manager.feedback_manager import FeedbackManager
 from orion.api.interactive.feedback_manager.models.feedback_param_model import feedback_comment_param_model
 from orion.api.interactive.scan_job_manager.scan_job_manager import ScanJobManager
+from orion.helper_manager.env_handler import env_handler
 from orion.api.interactive.takedown_manager.takedown_manager import TakedownManager
 from orion.api.interactive.directory_manager.directory_model import directory_model
 from orion.api.interactive.directory_manager.directory_shared_model.directory_param_model import directory_param_model
@@ -38,6 +42,8 @@ from orion.api.server.crawl_manager.class_model.ip_scan_request_model import IPS
 from orion.api.server.crawl_manager.class_model.log_model import SiemSearchRequestModel, SiemSearchResponseModel
 from orion.api.server.crawl_manager.class_model.social_scrape_request_model import SocialScrapeRequest
 from orion.services.mongo_manager.shared_model.db_scan_job_model import ScanJobCreateRequest, ScanJobDetailResponse, ScanJobListResponse, ScanJobSeenRequest
+from orion.services.mongo_manager.shared_model.db_tenant_model import ResultDismissRequest, DismissedIocType
+from orion.api.interactive.tenant_manager.tenant_manager import TenantManager
 from orion.services.mongo_manager.shared_model.db_takedown_request_model import TakedownCreateRequest, TakedownDecisionRequest, TakedownListResponse
 from orion.api.server.crawl_manager.crawl_model import crawl_model
 from orion.api.server.entity_manager.entity_manager import entity_manager
@@ -381,7 +387,31 @@ async def get_insight():
     dependencies=STEALER_LOG_DEPS)
 async def search_stealer_iocs(param: search_credential_param_model = Body(...), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().register(str(current_user.tenant_uuid), str(current_user.id), param.model_dump_json())
-    return await search_model.getInstance().search_stealer_iocs(param)
+    return await search_model.getInstance().search_stealer_iocs(param, current_user)
+
+
+@api_routes.post(
+    "/api/search/result/dismiss",
+    include_in_schema=False,
+    dependencies=[Depends(role_required(SCAN_ROLE_DEPS)), Depends(dismiss_result_required)])
+async def dismiss_result(payload: ResultDismissRequest = Body(...), current_user=Depends(get_current_user)):
+    try:
+        dismissed_ioc_type = DismissedIocType(payload.type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid dismiss type")
+    return await TenantManager.get_instance().dismiss_stealer_log(str(current_user.tenant_uuid), payload.hash, str(current_user.id), dismissed_ioc_type, all_tenants=current_user.role == user_role.ADMIN)
+
+
+@api_routes.post(
+    "/api/search/result/restore",
+    include_in_schema=False,
+    dependencies=[Depends(role_required(SCAN_ROLE_DEPS)), Depends(dismiss_result_required)])
+async def restore_result(payload: ResultDismissRequest = Body(...), current_user=Depends(get_current_user)):
+    try:
+        dismissed_ioc_type = DismissedIocType(payload.type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid dismiss type")
+    return await TenantManager.get_instance().restore_stealer_log(str(current_user.tenant_uuid), payload.hash, dismissed_ioc_type, all_tenants=current_user.role == user_role.ADMIN)
 
 
 @api_routes.post(
@@ -1115,3 +1145,33 @@ async def delete_completed_scan_jobs(current_user=Depends(get_current_user)):
 )
 async def delete_scan_job(scan_id: str, current_user=Depends(get_current_user)):
     return await ScanJobManager.get_instance().delete_job(scan_id, current_user)
+
+
+@api_routes.post(
+    "/api/phone/universal_search",
+    summary="Phone and Domain OSINT Lookup",
+    tags=["Entity Scans"],
+    dependencies=SCANNING_DEPS,
+)
+async def phone_universal_search_proxy(payload: dict = Body(...), current_user=Depends(get_current_user)):
+    base_url = str(env_handler.get_instance().env("TRUSTED_MICROS_API_BASE", "") or "").strip().rstrip("/")
+    if not base_url:
+        raise HTTPException(status_code=500, detail="Phone lookup service is not configured")
+
+    user_id = str(current_user.id)
+    if not re.fullmatch(r"[A-Fa-f0-9]{24}", user_id):
+        raise HTTPException(status_code=400, detail="Invalid user")
+
+    def forward_to_micros():
+        url = f"{base_url}/api/phone/universal_search/{user_id}"
+        response = requests.post(url, json=payload, timeout=30)
+
+        if response.status_code != 200:
+            raise Exception(f"Failed with status {response.status_code}: {response.text}")
+
+        return response.json()
+
+    try:
+        return await asyncio.to_thread(forward_to_micros)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Microservice Connection Failed: {str(e)}")

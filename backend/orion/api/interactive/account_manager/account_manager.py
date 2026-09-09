@@ -4,9 +4,11 @@ import json
 import re
 import secrets
 from typing import List
+from urllib.parse import quote
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 from bson import ObjectId
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
@@ -20,6 +22,8 @@ from orion.api.interactive.alert_manager.alert_manager import AlertManager
 from orion.api.interactive.tenant_manager.models.tenant_param_model import tenant_param_model
 from orion.helper_manager.helper_controller import helper_controller
 from orion.services.mongo_manager.shared_model.db_auth_models import db_user_account, UserStatus, LicenseName, user_role
+from orion.api.server.sso_manager.constants.sso_constants import SSO_CONSTANTS
+from orion.helper_manager.env_handler import env_handler
 from orion.services.permission_manager.permission_models import UserPermission
 from orion.services.encryption_manager.key_manager import KeyManager
 from orion.constants.constant import CONSTANTS
@@ -34,11 +38,11 @@ class AccountManager:
     def __init__(self):
         from orion.services.mongo_manager.mongo_controller import mongo_controller
         self.BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-        self.IMAGE_DIR = self.BASE_DIR / "static" / "resource" / "profile"
+        self.IMAGE_DIR = self.BASE_DIR / "workspace" / "resource" / "profile"
         self._engine = mongo_controller.get_instance().get_engine()
 
         self.BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-        self.TENANT_DIR = self.BASE_DIR / "static" / "resource" / "tenant"
+        self.TENANT_DIR = self.BASE_DIR / "workspace" / "resource" / "tenant"
         self.TENANT_DIR.mkdir(parents=True, exist_ok=True)
         if AccountManager.__instance is not None:
             raise Exception("This class is a singleton!")
@@ -75,6 +79,35 @@ class AccountManager:
                 raise HTTPException(status_code=400, detail="Invalid password")
         return hashed_password
 
+    async def _assert_orion_mail_allowed(self, permissions, tenant_uuid, current_user):
+        if UserPermission.ORION_MAIL not in (permissions or []):
+            return
+        if current_user.role != user_role.ADMIN:
+            raise HTTPException(status_code=403, detail="Only a root tenant admin can assign the Orion Mail permission")
+        tenant = await self._engine.find_one(db_tenant_model, db_tenant_model.id == ObjectId(str(tenant_uuid)))
+        if tenant is None or not tenant.is_default:
+            raise HTTPException(status_code=403, detail="Orion Mail permission is limited to root tenant users")
+
+    async def _delete_orion_mail_account(self, user):
+        if UserPermission.ORION_MAIL not in (getattr(user, "permissions", None) or []):
+            return
+
+        base_url = str(env_handler.get_instance().env("ORION_MAIL_PUBLIC_URL", "") or "").strip().rstrip("/")
+        if not base_url:
+            raise HTTPException(status_code=500, detail="Orion Mail is not configured")
+
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                response = await client.delete(
+                    f"{base_url}/api/accounts/{quote(str(user.email or ''), safe='')}",
+                    headers={SSO_CONSTANTS.S_CLIENT_AUTH_HEADER: SSO_CONSTANTS.S_CLIENT_CREDENTIAL},
+                )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail="Orion Mail is not reachable") from exc
+
+        if response.status_code not in (200, 202, 204, 404):
+            raise HTTPException(status_code=500, detail="Orion Mail account could not be removed")
+
     async def create_user(self, data: user_model, current_user):
         from orion.services.mongo_manager.mongo_controller import mongo_controller
         try:
@@ -105,6 +138,8 @@ class AccountManager:
             existing_user = await engine.find_one(db_user_account, db_user_account.username == username)
             existing_mail = await engine.find_one(db_user_account, db_user_account.email == email)
             hashed_password = self.create_tenant_user(existing_user, existing_mail, password)
+
+            await self._assert_orion_mail_allowed(data.permissions, current_user.tenant_uuid, current_user)
 
             user = db_user_account(
                 username=username,
@@ -142,6 +177,8 @@ class AccountManager:
                     status_code=401, detail="Maintainer can only delete non-maintainer users from the same tenant")
         else:
             raise HTTPException(status_code=401, detail="You are not allowed to delete users")
+
+        await self._delete_orion_mail_account(user)
 
         await self._engine.remove(db_keys, db_keys.auth_id == str(user.id))
 
@@ -181,7 +218,7 @@ class AccountManager:
                 str(user.tenant_uuid), str(current_user.id), "User update denied")
             raise HTTPException(status_code=401, detail="This user type cannot be updated")
 
-        tenant = None
+        tenant: db_tenant_model | None = None
         if request.licenses is not None or (user.status == UserStatus.DISABLE and request.status == UserStatus.ACTIVE):
             tenant = await self._engine.find_one(db_tenant_model, db_tenant_model.id == ObjectId(user.tenant_uuid))
 
@@ -212,6 +249,7 @@ class AccountManager:
                     raise HTTPException(status_code=400, detail="User assigned license not allowed for this tenant")
             user.licenses = request.licenses
         if request.permissions is not None:
+            await self._assert_orion_mail_allowed(request.permissions, user.tenant_uuid, current_user)
             user.permissions = request.permissions
             if UserPermission.CASE_MANAGEMENT not in (user.permissions or []):
                 user.alerts_allowed_all = False
@@ -362,7 +400,7 @@ class AccountManager:
 
         node = NodeCallbackModel.model_validate(
             {"user": {"email": user.email, "theme": theme, "twofa_enabled": user.twofa_enabled, "username": user.username, "role": user.role, "status": user.status, "subscription": user.subscription, "verificationDate": user.account_verify_at.isoformat() if user.account_verify_at else None, "password_reset_required": getattr(user, "password_reset_required", False), "license": [
-                license.value for license in
+                user_license.value for user_license in
                 user.licenses], "permissions": [
                 permission.value if hasattr(permission, "value") else permission for permission in (getattr(user, "permissions", None) or [])], "image": user_image_path, "preferences": user.preferences or {}, "demo_tour": getattr(user, "demo_tour", True) }, "tenant": {"hasOnboarding": tenant.status == TenantStatus.ONBOARDING, "id": str(
                 tenant.id), "isDefault": str(tenant.is_default), "name": self.safe_decrypt(
@@ -417,5 +455,5 @@ class AccountManager:
             "email": user.email,
             "role": user.role,
             "tenant_name": tenant_name,
-            "licenses": [license.value if hasattr(license, "value") else str(license) for license in (user.licenses or [])],
+            "licenses": [user_license.value if hasattr(user_license, "value") else str(user_license) for user_license in (user.licenses or [])],
         }

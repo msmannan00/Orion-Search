@@ -24,7 +24,7 @@ export class ErrorStoreService {
   private setupRouterListener() {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((_: NavigationEnd) => {
+      .subscribe(() => {
         let route = this.router.routerState.snapshot.root;
         while (route.firstChild) {
           route = route.firstChild;

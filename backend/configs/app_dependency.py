@@ -1,7 +1,7 @@
 import asyncio
 import ipaddress
 import socket
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from fastapi import Depends, HTTPException, Request, UploadFile, status
@@ -78,6 +78,12 @@ def role_required(required_roles: list[user_role]):
     return verify_role
 
 
+async def default_tenant_required(request: Request):
+    if not getattr(getattr(request.state, "tenant", None), "is_default", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
+    return True
+
+
 async def _authenticate_request(request: Request, token: str | None):
     user = await session_manager.get_instance().get_current_user(token)
     enforce_request_tenant_access(user, request)
@@ -130,10 +136,23 @@ async def case_management_required(current_user=Depends(get_current_user)):
         return True
 
     permissions = [_enum_value(permission) for permission in (current_user.permissions or [])]
-    if role == user_role.ANALYST.value and UserPermission.CASE_MANAGEMENT.value in permissions:
+    if role in (user_role.ANALYST.value, user_role.MEMBER.value) and UserPermission.CASE_MANAGEMENT.value in permissions:
         return True
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Case management permission required")
+
+
+async def dismiss_result_required(current_user=Depends(get_current_user)):
+    role = _enum_value(getattr(current_user, "role", None))
+    licenses = {_enum_value(license_name) for license_name in (current_user.licenses or [])}
+    if role == user_role.ADMIN.value or LicenseName.MAINTAINER.value in licenses:
+        return True
+
+    permissions = [_enum_value(permission) for permission in (current_user.permissions or [])]
+    if UserPermission.DISMISS_RESULT.value in permissions:
+        return True
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Dismiss result permission required")
 
 
 def _extract_scan_host(target: str) -> str:
@@ -200,13 +219,13 @@ def _enforce_demo_safe_search(param, current_user, is_free: bool = False) -> Non
         param.safe = True
 
 
-def status_required(status_required: list[UserStatus], bypass_roles: Optional[list[user_role]] = None):
+def status_required(required_statuses: list[UserStatus], bypass_roles: Optional[list[user_role]] = None):
     async def verify_status(user_status: UserStatus = Depends(get_current_status),
             role: user_role = Depends(get_current_role), ):
         if bypass_roles and role in bypass_roles:
             return user_status
 
-        if user_status not in status_required:
+        if user_status not in required_statuses:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
         return user_status
 
@@ -236,7 +255,7 @@ def license_required(feature: str, bypass_roles: Optional[list[user_role]] = Non
 
     return checker
 def get_user_permissions(user):
-    final = {"modules": set(), "cti_graph": False, "mapping": False, "scanning": False, "maintainer": False, "geo_fencing": False}
+    final: dict[str, Any] = {"modules": set(), "cti_graph": False, "mapping": False, "scanning": False, "maintainer": False, "geo_fencing": False}
 
     for lic in user.licenses:
         rules = constant.license_rules.get(lic, {})

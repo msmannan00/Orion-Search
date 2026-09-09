@@ -1,9 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../../../shared/services/api.service';
-import { SatelliteFacilitiesResponse } from '../../model/satellite-intel-api.models';
+import { SatelliteFacilitiesResponse, SatelliteFacilityFeature } from '../../model/satellite-intel-api.models';
 import { OrionSatelliteFeature, OrionSatelliteFeatureType } from '../../../models/geo-fencing.models';
 import { SatelliteIntelService } from '../../satellite-intel-service';
+import { asUnknownRecord, getOwnProperty, isUnknownRecord } from '../../../../../shared/utils/type-guards.util';
+import type { StreamedMapEntity } from './model/facilities.model';
+export type { StreamedMapEntity } from './model/facilities.model';
+
+
+
 
 @Injectable({ providedIn: 'root' })
 export class SatelliteFacilitiesService {
@@ -21,10 +27,10 @@ export class SatelliteFacilitiesService {
   }
 
   getTypeEntries(data: SatelliteFacilitiesResponse['result'] | null): [string, number][] {
-    return Object.entries(data?.type_counts || {}).sort((a, b) => b[1] - a[1]) as [string, number][];
+    return Object.entries(data?.type_counts ?? {}).sort((a, b) => b[1] - a[1]);
   }
 
-  async streamMapEntities(size: number, onChunk: (items: OrionSatelliteFeature[]) => void, onComplete?: () => void, onError?: (error: any) => void): Promise<void> {
+  async streamMapEntities(size: number, onChunk: (items: OrionSatelliteFeature[]) => void, onComplete?: () => void, onError?: (error: unknown) => void): Promise<void> {
     try {
       const response = await fetch('/api/search/map-entities/stream', {
         method: 'POST',
@@ -44,7 +50,7 @@ export class SatelliteFacilitiesService {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) {
           break;
@@ -52,16 +58,20 @@ export class SatelliteFacilitiesService {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (!line.trim()) {
             continue;
           }
 
-          const chunk = JSON.parse(line);
+          const chunk: unknown = JSON.parse(line);
+          if (!Array.isArray(chunk)) {
+            continue;
+          }
           const mapped = chunk
-            .map((item: any, index: number) => this.toStreamedMapEntityFeature(item, index))
+            .filter(isUnknownRecord)
+            .map((item, index: number) => this.toStreamedMapEntityFeature(item as StreamedMapEntity, index))
             .filter((item: OrionSatelliteFeature | null): item is OrionSatelliteFeature => item !== null);
 
           onChunk(mapped);
@@ -76,22 +86,22 @@ export class SatelliteFacilitiesService {
   }
 
   private getPollStatus(res: SatelliteFacilitiesResponse): string | undefined {
-    return res?.result?.status || res?.status;
+    return res?.result?.status ?? res?.status;
   }
 
-  private toFeature(feature: any, index: number): OrionSatelliteFeature | null {
-    const coordinates = this.extractCoordinates(feature?.geometry);
+  private toFeature(feature: SatelliteFacilityFeature, index: number): OrionSatelliteFeature | null {
+    const coordinates = this.extractCoordinates(feature.geometry);
     if (!coordinates) {
       return null;
     }
 
-    const properties = feature?.properties || {};
+    const properties = feature.properties || {};
     const rawKind = this.getRawKind(properties);
     const type = this.detectTypeFromRecord({ ...properties, type: rawKind });
 
     return {
-      id: `osm-${feature?.properties?.osm_id ?? index}`,
-      name: String(feature?.properties?.name || '').trim() || this.defaultLabel(type),
+      id: `osm-${feature.properties?.osm_id ?? index}`,
+      name: String(feature.properties?.name || '').trim() || this.defaultLabel(type),
       type,
       rawType: rawKind || type,
       source: 'OSM',
@@ -99,7 +109,7 @@ export class SatelliteFacilitiesService {
       color: this.getNearbyFacilityColor(type),
       capacityMw: null,
       properties: {
-        ...(feature?.properties || {}),
+        ...(feature.properties || {}),
       },
     };
   }
@@ -218,31 +228,31 @@ export class SatelliteFacilitiesService {
     }
   }
 
-  private extractCoordinates(geometry: any): [number, number] | null {
-    const coords = geometry?.coordinates;
+  private extractCoordinates(geometry: SatelliteFacilityFeature['geometry']): [number, number] | null {
+    const coords = geometry.coordinates;
     if (!Array.isArray(coords)) {
       return null;
     }
-    if (geometry?.type === 'Point' && Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
+    if (geometry.type === 'Point' && Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
       return [coords[0], coords[1]];
     }
-    if (geometry?.type === 'LineString' && Array.isArray(coords[0])) {
+    if (geometry.type === 'LineString' && Array.isArray(coords[0])) {
       return this.averageCoordinates(coords);
     }
-    if (geometry?.type === 'MultiLineString' && Array.isArray(coords[0]?.[0])) {
+    if (geometry.type === 'MultiLineString' && Array.isArray(coords[0]?.[0])) {
       return this.averageCoordinates(coords.flat());
     }
-    if (geometry?.type === 'Polygon' && Array.isArray(coords[0]?.[0])) {
+    if (geometry.type === 'Polygon' && Array.isArray(coords[0]?.[0])) {
       return this.averageCoordinates(coords[0]);
     }
-    if (geometry?.type === 'MultiPolygon' && Array.isArray(coords[0]?.[0]?.[0])) {
+    if (geometry.type === 'MultiPolygon' && Array.isArray(coords[0]?.[0]?.[0])) {
       return this.averageCoordinates(coords[0][0]);
     }
     return null;
   }
 
-  private averageCoordinates(points: any[]): [number, number] | null {
-    const valid = points.filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]));
+  private averageCoordinates(points: unknown[]): [number, number] | null {
+    const valid = points.filter((point): point is [number, number] => Array.isArray(point) && typeof point[0] === 'number' && Number.isFinite(point[0]) && typeof point[1] === 'number' && Number.isFinite(point[1]));
     if (!valid.length) {
       return null;
     }
@@ -254,39 +264,39 @@ export class SatelliteFacilitiesService {
     return type.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
   }
 
-  private getRawKind(properties: Record<string, any>): string {
-    const rawKind = properties?.['kind'] ||
-      properties?.['type'] ||
-      properties?.['amenity'] ||
-      properties?.['man_made'] ||
-      properties?.['building'] ||
-      properties?.['landuse'] ||
-      properties?.['waterway'] ||
-      properties?.['seamark:type'] ||
-      properties?.['seamark_type'] ||
+  private getRawKind(properties: Record<string, unknown>): string {
+    const rawKind = properties?.kind ??
+      properties?.type ??
+      properties?.amenity ??
+      properties?.man_made ??
+      properties?.building ??
+      properties?.landuse ??
+      properties?.waterway ??
+      properties?.['seamark:type'] ??
+      properties?.seamark_type ??
       '';
     return String(rawKind).trim().toLowerCase();
   }
 
-  private toStreamedMapEntityFeature(item: { id?: string; _id?: string; name?: string; type?: string; primary_fuel?: string; country?: string; capacity_mw?: number; source?: string; location?: { lat?: number; lon?: number }; location_point?: { lat?: number; lon?: number }; lat?: number; lon?: number }, index: number): OrionSatelliteFeature | null {
+  private toStreamedMapEntityFeature(item: StreamedMapEntity, index: number): OrionSatelliteFeature | null {
     const parsedLocation = this.extractLatLon(item);
     const lat = parsedLocation?.lat;
     const lon = parsedLocation?.lon;
-    const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lon);
+    const hasValidCoords = typeof lat === 'number' && typeof lon === 'number' && Number.isFinite(lat) && Number.isFinite(lon);
     const type = this.detectTypeFromRecord(item);
-    const rawType = String(item?.type || item?.primary_fuel || '').trim();
+    const rawType = String(item?.type ?? item?.primary_fuel ?? '').trim();
 
     if (!item.id && !item._id && !item.name) {
       return null;
     }
 
     return {
-      id: item.id || item._id || `wri-${index}`,
-      name: item.name?.trim() || `Facility ${index + 1}`,
+      id: item.id ?? item._id ?? `wri-${index}`,
+      name: item.name?.trim() ?? `Facility ${index + 1}`,
       type,
       rawType: rawType || type,
       source: 'WRI',
-      coordinates: hasValidCoords ? [lon as number, lat as number] : [0, 0],
+      coordinates: hasValidCoords ? [lon, lat] : [0, 0],
       color: this.getStreamedMapEntityColor(type),
       capacityMw: typeof item?.capacity_mw === 'number' ? item.capacity_mw : null,
       properties: {
@@ -299,11 +309,14 @@ export class SatelliteFacilitiesService {
     };
   }
 
-  private extractLatLon(item: any): { lat: number; lon: number } | null {
+  private extractLatLon(item: unknown): { lat: number; lon: number } | null {
+    const record = asUnknownRecord(item);
+    const location = asUnknownRecord(record.location);
+    const locationPoint = asUnknownRecord(record.location_point);
     const candidates = [
-      { lat: item?.location?.lat, lon: item?.location?.lon },
-      { lat: item?.location_point?.lat, lon: item?.location_point?.lon },
-      { lat: item?.lat, lon: item?.lon },
+      { lat: location.lat, lon: location.lon },
+      { lat: locationPoint.lat, lon: locationPoint.lon },
+      { lat: record.lat, lon: record.lon },
     ];
 
     for (const candidate of candidates) {
@@ -333,7 +346,7 @@ export class SatelliteFacilitiesService {
   private toScalarLatLon(latValue: unknown, lonValue: unknown): { lat: number; lon: number } | null {
     const lat = this.toFiniteNumber(latValue);
     const lon = this.toFiniteNumber(lonValue);
-    return this.isValidLatLon(lat, lon) ? { lat: lat as number, lon: lon as number } : null;
+    return lat !== null && lon !== null && this.isValidLatLon(lat, lon) ? { lat, lon } : null;
   }
 
   private toLatLonSequence(latValue: unknown, lonValue: unknown): { lat: number; lon: number } | null {
@@ -342,19 +355,19 @@ export class SatelliteFacilitiesService {
     }
 
     const count = Math.min(latValue.length, lonValue.length);
-    const points: Array<{ lat: number; lon: number }> = [];
+    const points: { lat: number; lon: number }[] = [];
     for (let index = 0; index < count; index += 1) {
-      const lat = this.toFiniteNumber(latValue[index]);
-      const lon = this.toFiniteNumber(lonValue[index]);
-      if (this.isValidLatLon(lat, lon)) {
-        points.push({ lat: lat as number, lon: lon as number });
+      const lat = this.toFiniteNumber(getOwnProperty(latValue, index));
+      const lon = this.toFiniteNumber(getOwnProperty(lonValue, index));
+      if (lat !== null && lon !== null && this.isValidLatLon(lat, lon)) {
+        points.push({ lat, lon });
       }
     }
 
     return this.averageLatLon(points);
   }
 
-  private extractCoordinatePairs(value: unknown): Array<{ lat: number; lon: number }> {
+  private extractCoordinatePairs(value: unknown): { lat: number; lon: number }[] {
     if (!Array.isArray(value)) {
       return [];
     }
@@ -362,15 +375,15 @@ export class SatelliteFacilitiesService {
     if (value.length >= 2) {
       const lon = this.toFiniteNumber(value[0]);
       const lat = this.toFiniteNumber(value[1]);
-      if (this.isValidLatLon(lat, lon)) {
-        return [{ lat: lat as number, lon: lon as number }];
+      if (lat !== null && lon !== null && this.isValidLatLon(lat, lon)) {
+        return [{ lat, lon }];
       }
     }
 
     return value.flatMap((entry) => this.extractCoordinatePairs(entry));
   }
 
-  private averageLatLon(points: Array<{ lat: number; lon: number }>): { lat: number; lon: number } | null {
+  private averageLatLon(points: { lat: number; lon: number }[]): { lat: number; lon: number } | null {
     if (!points.length) {
       return null;
     }
@@ -394,17 +407,18 @@ export class SatelliteFacilitiesService {
   }
 
   private isValidLatLon(lat: number | null, lon: number | null): boolean {
-    return Number.isFinite(lat) && Number.isFinite(lon) && (lat as number) >= -90 && (lat as number) <= 90 && (lon as number) >= -180 && (lon as number) <= 180;
+    return lat !== null && lon !== null && Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
   }
 
-  private detectTypeFromRecord(record: any): OrionSatelliteFeatureType {
-    const kind = this.normalizeKindKey(String(record?.kind || record?.type || record?.primary_fuel || ''));
-    const landuse = this.normalizeKindKey(String(record?.landuse || ''));
-    const building = this.normalizeKindKey(String(record?.building || ''));
-    const manMade = this.normalizeKindKey(String(record?.man_made || ''));
-    const amenity = this.normalizeKindKey(String(record?.amenity || ''));
-    const waterway = this.normalizeKindKey(String(record?.waterway || ''));
-    const seamarkType = this.normalizeKindKey(String(record?.['seamark:type'] || record?.seamark_type || ''));
+  private detectTypeFromRecord(value: unknown): OrionSatelliteFeatureType {
+    const record = asUnknownRecord(value);
+    const kind = this.normalizeKindKey(String(record.kind ?? record.type ?? record.primary_fuel ?? ''));
+    const landuse = this.normalizeKindKey(String(record.landuse ?? ''));
+    const building = this.normalizeKindKey(String(record.building ?? ''));
+    const manMade = this.normalizeKindKey(String(record.man_made ?? ''));
+    const amenity = this.normalizeKindKey(String(record.amenity ?? ''));
+    const waterway = this.normalizeKindKey(String(record.waterway ?? ''));
+    const seamarkType = this.normalizeKindKey(String(record['seamark:type'] ?? record.seamark_type ?? ''));
 
     if (kind) {
       const detected = this.normalizeType(kind);
@@ -413,14 +427,14 @@ export class SatelliteFacilitiesService {
       }
     }
 
-    if (record?.aeroway) {
+    if (record.aeroway) {
       const aeroway = this.normalizeKindKey(String(record.aeroway));
       if (['aerodrome', 'airfield', 'airstrip', 'hangar', 'helipad', 'heliport', 'terminal'].includes(aeroway)) {
         return 'airport';
       }
     }
 
-    if (record?.port || record?.harbour || record?.harbor) {
+    if (Boolean(record.port) || Boolean(record.harbour) || Boolean(record.harbor)) {
       return 'port';
     }
     if (['port', 'harbour', 'harbor', 'dock', 'marina', 'shipyard'].includes(landuse)) {
@@ -442,14 +456,14 @@ export class SatelliteFacilitiesService {
       return 'port';
     }
 
-    if (record?.military) {
+    if (record.military) {
       const military = this.normalizeKindKey(String(record.military));
       if (military && military !== 'no') {
         return 'military';
       }
     }
 
-    if (record?.landuse) {
+    if (record.landuse) {
       if (landuse === 'industrial' || landuse === 'power' || landuse === 'brownfield' || landuse === 'quarry') {
         return 'industrial';
       }
@@ -467,7 +481,7 @@ export class SatelliteFacilitiesService {
       }
     }
 
-    if (record?.building) {
+    if (record.building) {
       if (['warehouse', 'storage', 'depot'].includes(building)) {
         return 'warehouse';
       }
@@ -482,7 +496,7 @@ export class SatelliteFacilitiesService {
       }
     }
 
-    if (record?.man_made) {
+    if (record.man_made) {
       if (['wind_farm', 'power_station', 'biogas_plant', 'heat_plant', 'solar_panels'].includes(manMade)) {
         return 'industrial';
       }
@@ -491,7 +505,7 @@ export class SatelliteFacilitiesService {
       }
     }
 
-    if (record?.power) {
+    if (record.power) {
       const power = this.normalizeKindKey(String(record.power));
       if (power === 'plant') {
         return 'industrial';
@@ -528,7 +542,7 @@ export class SatelliteFacilitiesService {
       wave_and_tidal: '#06b6d4',
       other: '#64748b',
     };
-    return colors[type] || colors.other;
+    return getOwnProperty(colors, type) || colors.other;
   }
 
   private getStreamedMapEntityColor(type: OrionSatelliteFeatureType): string {
@@ -554,6 +568,6 @@ export class SatelliteFacilitiesService {
       military: '#d71c1c',
       other: '#a3a3a3',
     };
-    return colors[type] || colors.other;
+    return getOwnProperty(colors, type) || colors.other;
   }
 }

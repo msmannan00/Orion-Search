@@ -10,9 +10,12 @@ export interface SatelliteGeocodeResult {
 
 export interface SatelliteGeocodeResponse {
   status?:  string;
+  message?: string;
   result?: {
     status:  string;
     results: SatelliteGeocodeResult[];
+    error_message?: string;
+    message?: string;
   };
   results?: SatelliteGeocodeResult[];
 }
@@ -21,7 +24,7 @@ export interface SatelliteFacilityFeature {
   type:     'Feature';
   geometry: {
     type:        string;
-    coordinates: any;
+    coordinates: unknown;
   };
   properties: {
     osm_id: number;
@@ -57,7 +60,7 @@ export interface SatelliteImageResult {
   image_base64?: string | null;
   mime_type?:    string | null;
   content_type?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SatelliteImageResponse {
@@ -119,6 +122,8 @@ export interface SatelliteLiveAircraft {
   vertical_rate?:  number | null;
   on_ground?:      boolean | null;
   category?:       number | null;
+  track?:          { path?: unknown[] } | null;
+  path?:           unknown[] | null;
 }
 
 export interface SatelliteLiveAircraftBBoxResponse {

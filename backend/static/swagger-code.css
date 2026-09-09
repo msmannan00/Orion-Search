@@ -303,10 +303,6 @@
     padding: 0;
 }
 
-.swagger-ui .scheme-container{
-    padding: 10 !important;
-}
-
 .swagger-ui .opblock-summary {
     padding: 0 !important;
     align-items: center !important;
@@ -559,10 +555,7 @@ html, body {
 
 .swagger-ui .models .json-schema-2020-12 {
     padding: 0;
-    margin-left: 10px;
-    margin-right: 20px;
-    margin-top: 0;
-    margin-bottom: 0;
+    margin: 0 20px 0 10px;
 }
 
 .swagger-ui .json-schema-2020-12-head {
@@ -911,8 +904,4 @@ html, body {
 .swagger-ui .auth-container label[for="client_id_password"],
 .swagger-ui .auth-container label[for="client_secret_password"] {
     display: none !important;
-}
-
-.swagger-ui .auth-container #client_id_password:required {
-    required: false !important;
 }

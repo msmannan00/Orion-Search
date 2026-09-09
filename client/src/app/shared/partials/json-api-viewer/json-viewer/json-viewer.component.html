@@ -6,8 +6,8 @@
   <span class="pointer-events-none absolute bottom-0 left-[3px] top-0 border-l-[1.5px] border-[var(--color-divider)]"></span>
   <ul class="list-none pl-0 font-mono text-[13px] leading-[1.55]">
     @for (key of keys(json); track key; let last = $last) {
-      <li class="relative py-[1px]" [class.mb-[3px]]="!last">
-        @if (isCollapsible(json[key])) {
+      <li class="relative py-[1px]" [ngClass]="{'mb-[3px]': !last}">
+        @if (isCollapsible(valueAt(key))) {
           <div (click)="toggle(pathKey(parentPath, key))" class="group relative flex cursor-pointer items-center gap-1 rounded-[6px] px-2 py-[4px] hover:bg-[var(--color-blue-790)] [&&]:!bg-[var(--color-blue-790)] [body.light-theme_&&]:!bg-[#f6faff] [body.light-theme_&&]:hover:!bg-[var(--color-blue-800)]">
             @if (level() > 0) {
               <span class="pointer-events-none absolute left-[-11px] top-1/2 w-[20px] -translate-y-1/2 border-t-[1.5px] border-[var(--color-divider)]"></span>
@@ -18,23 +18,23 @@
             <span class="min-w-0 truncate text-[14px] text-[var(--color-blue-640)]">"{{ key }}"</span>
             <span class="mx-[2px] text-[var(--color-text4)]">:</span>
             @if (!isExpanded(pathKey(parentPath, key))) {
-              <span class="text-[var(--color-text4)]">{{ openToken(json[key]) }}</span>
-              <span class="mx-1 text-[12px] text-[var(--color-text4)] opacity-80">{{ collapsedSummary(json[key]) }}</span>
-              <span class="text-[var(--color-text4)]">{{ closeToken(json[key]) }}@if (!last) {
+              <span class="text-[var(--color-text4)]">{{ openToken(valueAt(key)) }}</span>
+              <span class="mx-1 text-[12px] text-[var(--color-text4)] opacity-80">{{ collapsedSummary(valueAt(key)) }}</span>
+              <span class="text-[var(--color-text4)]">{{ closeToken(valueAt(key)) }}@if (!last) {
                 <span>,</span>
               }</span>
             } @else {
-              <span class="text-[var(--color-text4)]">{{ openToken(json[key]) }}</span>
+              <span class="text-[var(--color-text4)]">{{ openToken(valueAt(key)) }}</span>
             }
           </div>
           @if (isExpanded(pathKey(parentPath, key))) {
             <div class="ml-5 mt-[2px] border-l-[1.5px] border-[var(--color-divider)] pl-3 pt-[1px]">
               <app-json-viewer
-                [json]="json[key]"
+                [json]="valueAt(key)"
                 [level]="level() + 1"
               [parentPath]="pathKey(parentPath, key)"></app-json-viewer>
               <div class="px-2 py-[2px] text-[var(--color-text4)]">
-                {{ closeToken(json[key]) }}@if (!last) {
+                {{ closeToken(valueAt(key)) }}@if (!last) {
                 <span>,</span>
               }
             </div>
@@ -51,12 +51,12 @@
           <span class="min-w-0 truncate text-[14px] text-[var(--color-blue-640)]">"{{ key }}"</span>
           <span class="mx-[2px] text-[var(--color-text4)]">:</span>
           @if (isExpanded(pathKey(parentPath, key))) {
-            <span class="break-all" [ngClass]="primitiveClass(json[key])">{{ formatPrimitive(json[key]) }}</span>
+            <span class="break-all" [ngClass]="primitiveClass(valueAt(key))">{{ formatPrimitive(valueAt(key)) }}</span>
             @if (!last) {
               <span class="text-[var(--color-text4)]">,</span>
             }
           } @else {
-            <span class="text-[12px] text-[var(--color-text4)] opacity-85">{{ primitiveSummary(json[key]) }}</span>
+            <span class="text-[12px] text-[var(--color-text4)] opacity-85">{{ primitiveSummary(valueAt(key)) }}</span>
             @if (!last) {
               <span class="text-[var(--color-text4)]">,</span>
             }

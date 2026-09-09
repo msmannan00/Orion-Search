@@ -1,31 +1,30 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../../shared/services/api.service';
-import { userMetaData, userSessionData } from '../../../shared/model/company-profile/node.model';
-import { UserImagePickerComponent } from "./user-image-picker/user-image-picker.component";
 import { AppService } from '../../../services/core/app/app.service';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { MessageNotificationService } from '../../../services/message_notification/message-notification.service';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
-import { LicenseName } from '../../../shared/model/licenses/license.rules';
-import { getTenantLocationDisplay } from './sidebar-settings.util';
-import { areAllPasswordRequirementsMet, createEmptyPasswordChecks, evaluatePasswordInput, PasswordChecks, PasswordStrength } from '../../../shared/utils/auth-form.util';
+import { LANGUAGE_OPTIONS } from '../../../shared/constants/shared-enums';
+import { LanguageOption } from '../../../shared/constants/model/shared-enums.model';
 import { PasswordToggleDirective } from '../../../shared/directive/password-toggle.directive';
-import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { LANGUAGE_OPTIONS, LanguageOption } from '../../../shared/constants/shared-enums';
-import { TranslationService } from '../../../shared/services/translation.service';
-import { RecoveryKeyPopupComponent } from '../../../shared/partials/recovery-key-popup/recovery-key-popup.component';
+import { UserDataModel, userMetaData, userSessionData } from '../../../shared/model/company-profile/node.model';
 import { PasswordConfirmationPopupComponent } from '../../../shared/partials/password-confirmation-popup/password-confirmation-popup.component';
+import { RecoveryKeyPopupComponent } from '../../../shared/partials/recovery-key-popup/recovery-key-popup.component';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { ApiService } from '../../../shared/services/api.service';
+import { TranslationService } from '../../../shared/services/translation.service';
+import { areAllPasswordRequirementsMet, createEmptyPasswordChecks, evaluatePasswordInput, PasswordChecks, PasswordStrength } from '../../../shared/utils/auth-form.util';
+import { getTenantLocationDisplay } from './sidebar-settings.util';
+import { UserImagePickerComponent } from "./user-image-picker/user-image-picker.component";
 
 type SensitiveAction = 'twofa' | 'password' | 'recovery';
 
 @Component({
   selector: 'app-sidebar-profile-settings',
   imports: [FormsModule, CommonModule, UserImagePickerComponent, PasswordToggleDirective, TranslatePipe, RecoveryKeyPopupComponent, PasswordConfirmationPopupComponent],
-  animations: [fadeInDashboardItem],
   changeDetection: ChangeDetectionStrategy.Eager,
-  templateUrl: './account-settings.component.html'
+  templateUrl: './account-settings.component.html',
+  styleUrls: ['./account-settings.component.css']
 })
 export class AccountSettingsComponent implements OnInit {
   userSessionData: userSessionData;
@@ -61,11 +60,12 @@ export class AccountSettingsComponent implements OnInit {
 
   setItemsFromPreferences() {
     const userTheme = this.userSessionData?.user?.theme;
-    const preferenceTheme = this.userSessionData?.user?.preferences?.["theme"];
-    const theme = userTheme || preferenceTheme || 'dark-theme';
+    const preferenceTheme = this.userSessionData?.user?.preferences?.theme;
+    const theme = userTheme ?? preferenceTheme ?? 'dark-theme';
     this.isDarkMode = theme === 'dark-theme';
-    this.isProfileVisible = this.userSessionData?.user?.preferences?.["profile_visible"] !== false;
-    const userLanguage = this.userSessionData?.user?.preferences?.["language"];
+    this.isProfileVisible = this.userSessionData?.user?.preferences?.profile_visible !== false;
+    const languagePreference = this.userSessionData?.user?.preferences?.language;
+    const userLanguage = typeof languagePreference === 'string' ? languagePreference : '';
     this.hasLanguagePreference = this.translationService.isSupportedLanguage(userLanguage);
     const systemLanguage = this.translationService.getSystemLanguage();
     this.selectedLanguage = this.hasLanguagePreference ? this.translationService.getSupportedLanguage(userLanguage, systemLanguage) : systemLanguage;
@@ -101,7 +101,7 @@ export class AccountSettingsComponent implements OnInit {
           ...state.user,
           theme,
           preferences: {
-            ...(state.user.preferences || {}),
+            ...(state.user.preferences ?? {}),
             theme
           }
         }
@@ -121,7 +121,7 @@ export class AccountSettingsComponent implements OnInit {
       return;
     }
     const preferences = {
-      ...(this.userSessionData.user.preferences || {}),
+      ...(this.userSessionData.user.preferences ?? {}),
       profile_visible: this.isProfileVisible
     };
     this.userSessionData.user.preferences = preferences;
@@ -132,7 +132,7 @@ export class AccountSettingsComponent implements OnInit {
     this.selectedLanguage = this.translationService.getSupportedLanguage(this.selectedLanguage, this.translationService.getSystemLanguage());
     this.hasLanguagePreference = true;
     const preferences = {
-      ...(this.userSessionData.user.preferences || {}),
+      ...(this.userSessionData.user.preferences ?? {}),
       language: this.selectedLanguage
     };
     this.userSessionData.user.preferences = preferences;
@@ -145,7 +145,7 @@ export class AccountSettingsComponent implements OnInit {
         user: {
           ...state.user,
           preferences: {
-            ...(state.user.preferences || {}),
+            ...(state.user.preferences ?? {}),
             language: this.selectedLanguage
           }
         }
@@ -162,19 +162,19 @@ export class AccountSettingsComponent implements OnInit {
     const route = "update/current/user";
     this.userSessionData.user.username = this.editableUsername.trim() || this.userSessionData.user.username;
     const theme = this.getCurrentTheme();
-    const preferences: Record<string, any> & {
+    const preferences: Record<string, unknown> & {
       theme: 'dark-theme' | 'light-theme';
       profile_visible: boolean;
     } = {
-      ...(this.userSessionData.user.preferences || {}),
+      ...(this.userSessionData.user.preferences ?? {}),
       theme,
       profile_visible: this.isProfileVisible
     };
     if (this.hasLanguagePreference) {
-      preferences['language'] = this.selectedLanguage;
+      preferences.language = this.selectedLanguage;
     }
     else {
-      delete preferences['language'];
+      delete preferences.language;
     }
     this.userSessionData.user.theme = theme;
     this.userSessionData.user.preferences = preferences;
@@ -186,7 +186,7 @@ export class AccountSettingsComponent implements OnInit {
     };
     this.apiService.post(route, userMeta).subscribe({
       next: () => void 0,
-      error: (_err) => void 0,
+      error: () => void 0,
     });
   }
 
@@ -216,7 +216,7 @@ export class AccountSettingsComponent implements OnInit {
           this.sensitiveAction = null;
           this.recoveryKey = response.recovery_key;
         },
-        error: (err) => this.confirmationError = err?.error?.detail || 'Invalid password'
+        error: (err) => this.confirmationError = err?.error?.detail ?? 'Invalid password'
       });
       return;
     }
@@ -240,7 +240,7 @@ export class AccountSettingsComponent implements OnInit {
           this.isPasswordSectionOpen = false;
         }
       },
-      error: (err) => this.confirmationError = err?.error?.detail || 'Invalid password'
+      error: (err) => this.confirmationError = err?.error?.detail ?? 'Invalid password'
     });
   }
 
@@ -261,30 +261,30 @@ export class AccountSettingsComponent implements OnInit {
   updateUserResource(file: File) {
     const formData = new FormData();
     formData.append('file', file);
-    return this.apiService.put<any>('user/image', formData).subscribe({
+    return this.apiService.put<{ image?: string }>('user/image', formData).subscribe({
       next: (res) => {
         if (res?.image) {
           this.appService.userSessionData().user.image = `/api/s/static/user/${res.image}`;
         }
       },
       error: (err) => {
-        const message = err?.error?.detail || this.translationService.translate('Failed to upload image');
+        const message = err?.error?.detail ?? this.translationService.translate('Failed to upload image');
         this.messageNotificationService.show(message);
       }
     });
   }
 
   deleteUserResource() {
-    return this.apiService.delete<any>('user/image').subscribe(() => {
+    return this.apiService.delete<unknown>('user/image').subscribe(() => {
       this.appService.userSessionData().user.image = `/api/s/static/user/default.png`;
     });
   }
 
-  getUserLicensesLabel(user: any): string {
+  getUserLicensesLabel(user: UserDataModel): string {
     if (!user?.license?.length) {
       return '';
     }
-    return user.license.map((l: LicenseName) => this.licenseService.getLicenseLabel(l)).join(', ');
+    return user.license.map(l => this.licenseService.getLicenseLabel(l)).join(', ');
   }
 
   get displayVersion(): string {

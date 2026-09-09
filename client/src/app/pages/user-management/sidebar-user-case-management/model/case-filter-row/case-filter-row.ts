@@ -87,23 +87,23 @@ export class CaseFilterRowComponent {
   }
 
   setStatusFilter(value: string | null): void {
-    this.updateFilters({ status: (value || 'all') as CaseFilterValue<CaseStatus> });
+    this.updateFilters({ status: (value ?? 'all') as CaseFilterValue<CaseStatus> });
   }
 
   setSeverityFilter(value: string | null): void {
-    this.updateFilters({ severity: (value || 'all') as CaseFilterValue<Severity> });
+    this.updateFilters({ severity: (value ?? 'all') as CaseFilterValue<Severity> });
   }
 
   setPriorityFilter(value: string | null): void {
-    this.updateFilters({ priority: (value || 'all') as CaseFilterValue<Priority> });
+    this.updateFilters({ priority: (value ?? 'all') as CaseFilterValue<Priority> });
   }
 
   setCaseTypeFilter(value: string | null): void {
-    this.updateFilters({ caseType: (value || 'all') as CaseFilterValue<CaseType> });
+    this.updateFilters({ caseType: (value ?? 'all') as CaseFilterValue<CaseType> });
   }
 
   setCaseSort(value: string | null): void {
-    this.updateFilters({ sort: (value || 'updated_desc') as CaseSortValue });
+    this.updateFilters({ sort: (value ?? 'updated_desc') as CaseSortValue });
   }
 
   private updateFilters(filters: Partial<CaseListFilters>): void {

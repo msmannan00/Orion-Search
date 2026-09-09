@@ -3,8 +3,8 @@ from fastapi import APIRouter, Body, Depends, Request
 from configs.app_dependency import get_current_user, license_required, role_required, status_required
 from orion.api.interactive.social_manager.social_models.search_social_param_model import (
     SocialFollowersRequest,
-    SocialFollowingRequest,
     SocialForumRequest,
+    SocialGraphDataRequest,
     SocialMetadataRequest,
     SocialPostsRequest,
     SocialOnlineImages,
@@ -102,14 +102,6 @@ async def search_dynamic_followers(request: Request, param: SocialFollowersReque
 
 
 @social_routes.post(
-    "/api/social/following",
-    status_code=200,
-    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning")), ], )
-async def search_dynamic_following(request: Request, param: SocialFollowingRequest = Body(...), current_user=Depends(get_current_user)):
-    return await social_model.getInstance().search_following(param, current_user, request)
-
-
-@social_routes.post(
     "/api/social/posts",
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning")), ], )
@@ -150,19 +142,27 @@ async def search_social_metadata(request: Request, param: SocialMetadataRequest 
 
 
 @social_routes.get(
-    "/api/social/extensions/download/chrome",
-    status_code=200,
-    dependencies=[Depends(role_required([user_role.ADMIN, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning")), ], )
-async def download_social_extension_chrome():
-    return await social_model.getInstance().extension_download("chrome")
+    "/api/social/extensions/version",
+    include_in_schema=False,
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.MEMBER, user_role.ANALYST]))])
+async def social_extension_version():
+    return await social_model.getInstance().extension_version()
 
 
-@social_routes.get(
-    "/api/social/extensions/download/firefox",
+@social_routes.post(
+    "/api/social/connections",
     status_code=200,
-    dependencies=[Depends(role_required([user_role.ADMIN, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning")), ], )
-async def download_social_extension_firefox():
-    return await social_model.getInstance().extension_download("firefox")
+    include_in_schema=False,
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced", "social_mapper"]))])
+async def search_social_connections(data: dict = Body(...), current_user=Depends(get_current_user)):
+    return await social_model.getInstance().search_connections(
+        str(current_user.id),
+        (data or {}).get("profile_username") or (data or {}).get("username") or "",
+        (data or {}).get("platform") or "",
+        (data or {}).get("query") or "",
+        (data or {}).get("limit") or 500,
+        (data or {}).get("post_url") or "",
+    )
 
 
 @social_routes.post(
@@ -183,6 +183,14 @@ async def append_social_data(data: dict = Body(...), current_user=Depends(get_cu
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced", "social_mapper"]))])
 async def get_social_data(current_user=Depends(get_current_user)):
     return await social_model.getInstance().get_social_profiles(str(current_user.id))
+
+
+@social_routes.post(
+    "/api/social/graph/data",
+    include_in_schema=False,
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced", "social_mapper"]))])
+async def get_social_graph_data(param: SocialGraphDataRequest = Body(...), current_user=Depends(get_current_user)):
+    return await social_model.getInstance().get_graph_data(str(current_user.id), param.usernames, param.priority, param.limit)
 
 
 @social_routes.get(

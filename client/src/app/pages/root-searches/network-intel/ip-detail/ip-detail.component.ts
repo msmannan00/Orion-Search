@@ -4,6 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { IpDetail } from '../../../../shared/model/network-intel/network-intel.model';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { asUnknownRecord, getOwnProperty } from '../../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-ip-detail',
@@ -28,11 +29,11 @@ export class IpDetailComponent {
   }
 
   get cameraPortCount(): number {
-    return (this.detail?.ports || []).filter((port: any) => port && (port.is_camera || port.device_type === 'camera')).length;
+    return (this.detail?.ports ?? []).filter((port) => port && ((port.is_camera ?? false) || port.device_type === 'camera')).length;
   }
 
   get iotPortCount(): number {
-    return (this.detail?.ports || []).filter((port: any) => port?.is_iot).length;
+    return (this.detail?.ports ?? []).filter((port) => port?.is_iot).length;
   }
 
   get hasCameraSignals(): boolean {
@@ -59,16 +60,17 @@ export class IpDetailComponent {
     });
   }
 
-  formatVulnerability(value: any): string {
+  formatVulnerability(value: unknown): string {
     if (typeof value === 'string') {
       return value.trim();
     }
 
     if (value && typeof value === 'object') {
-      const cve = typeof value.cve === 'string' ? value.cve.trim() : '';
-      const cvss = value.cvss !== null && value.cvss !== undefined && `${value.cvss}`.trim() !== ''
-        ? `CVSS ${value.cvss}`
-        : '';
+      const record = asUnknownRecord(value);
+      const cve = typeof record.cve === 'string' ? record.cve.trim() : '';
+      const rawCvss = record.cvss;
+      const cvssValue = typeof rawCvss === 'string' || typeof rawCvss === 'number' ? String(rawCvss).trim() : '';
+      const cvss = cvssValue ? `CVSS ${cvssValue}` : '';
 
       return [cve, cvss].filter(Boolean).join(' • ');
     }
@@ -76,13 +78,13 @@ export class IpDetailComponent {
     return '';
   }
 
-  renderHeaderEntries(source: Record<string, any> | undefined | null): [string, string][] {
+  renderHeaderEntries(source: Record<string, unknown> | undefined | null): [string, string][] {
     return this.ui.safeEntries(source)
       .map(([key, value]) => [key.trim(), this.formatDisplayValue(value)] as [string, string])
       .filter(([key, value]) => Boolean(key && value));
   }
 
-  formatDisplayValue(value: any): string {
+  formatDisplayValue(value: unknown): string {
     if (value === null || value === undefined) {
       return '';
     }
@@ -105,11 +107,11 @@ export class IpDetailComponent {
     return this.sanitizer.bypassSecurityTrustResourceUrl(`http://${ip}:${port}`);
   }
 
-  private hasRenderableValue(value: any): boolean {
+  private hasRenderableValue(value: unknown): boolean {
     return this.ui.hasRenderableValue(value);
   }
 
-  private buildRenderableEntries(source: Record<string, any> | undefined | null, includeEntry: (key: string, value: any) => boolean): [string, string][] {
+  private buildRenderableEntries(source: Record<string, unknown> | undefined | null, includeEntry: (key: string, value: unknown) => boolean): [string, string][] {
     return this.ui.safeEntries(source)
       .filter(([key, value]) => includeEntry(key, value) && this.hasRenderableValue(value))
       .map(([key, value]) => [this.formatLabel(key), this.formatDisplayValue(value)] as [string, string])
@@ -122,8 +124,8 @@ export class IpDetailComponent {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
-  private isDuplicateGeneralInfoField(key: string, value: any): boolean {
-    const duplicateFields: Record<string, any> = {
+  private isDuplicateGeneralInfoField(key: string, value: unknown): boolean {
+    const duplicateFields: Record<string, unknown> = {
       country: this.detail?.country,
       city: this.detail?.city,
       org: this.detail?.organization,
@@ -131,6 +133,6 @@ export class IpDetailComponent {
       as: this.detail?.asn,
     };
 
-    return key in duplicateFields && this.formatDisplayValue(duplicateFields[key]) === this.formatDisplayValue(value);
+    return key in duplicateFields && this.formatDisplayValue(getOwnProperty(duplicateFields, key)) === this.formatDisplayValue(value);
   }
 }

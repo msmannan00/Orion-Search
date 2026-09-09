@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import re
+from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont, PngImagePlugin
@@ -64,6 +65,7 @@ def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
     return mask
 
 
+@lru_cache(maxsize=None)
 def render_border(
     size: tuple[int, int],
     radius: int,
@@ -91,6 +93,7 @@ def render_border(
     return border.resize(size, Image.Resampling.LANCZOS)
 
 
+@lru_cache(maxsize=None)
 def load_font(size: int) -> ImageFont.ImageFont:
     candidates = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",

@@ -23,9 +23,9 @@ export class ResetPasswordComponent implements OnInit {
   password = '';
   errorMessage: string | null = null;
   responseError = false;
-  hasToken: boolean = false;
-  token: string = '';
-  confirmPassword: string = 'asdsadasd';
+  hasToken = false;
+  token = '';
+  confirmPassword = 'asdsadasd';
   forcedPasswordReset = false;
   passwordStrength: PasswordStrength = null;
   showPasswordMeter = false;
@@ -58,7 +58,7 @@ export class ResetPasswordComponent implements OnInit {
 
   ngOnInit() {
     const token = this.route.snapshot.paramMap.get('token');
-    if (token !== null) {
+    if (typeof token === 'string') {
       this.token = token;
       this.hasToken = true;
     }
@@ -74,7 +74,7 @@ export class ResetPasswordComponent implements OnInit {
           return;
         }
         this.auth_service.updatePassword(this.token, this.password).subscribe({
-          next: (_) => {
+          next: () => {
             this.responseError = false;
             if (this.forcedPasswordReset) {
               this.appService.loadSession(true).subscribe(() => {
@@ -103,7 +103,7 @@ export class ResetPasswordComponent implements OnInit {
           ? this.auth_service.recoverAccount(this.recoveryKey)
           : this.auth_service.forgotPassword(this.email);
         request.subscribe({
-          next: (_) => {
+          next: () => {
             this.responseError = false;
             this.router.navigate(['notification'], {
               state: {
@@ -115,7 +115,7 @@ export class ResetPasswordComponent implements OnInit {
           error: (err) => {
             this.responseError = true;
             if (this.recoveryMode) {
-              this.errorMessage = err?.error?.detail || "Invalid recovery key";
+              this.errorMessage = err?.error?.detail ?? "Invalid recovery key";
             }
             else {
               this.errorMessage = "Something went wrong. Please try again later.";

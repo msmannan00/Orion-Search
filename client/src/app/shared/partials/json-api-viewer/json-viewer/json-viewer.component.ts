@@ -1,20 +1,21 @@
 import { Component, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TranslatePipe } from '../../../pipes/translate.pipe';
+import { getOwnProperty } from '../../../utils/type-guards.util';
+
 
 @Component({
   selector: 'app-json-viewer',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './json-viewer.component.html'
 })
 export class JsonViewerComponent {
-  readonly jsonInput = input<any>(undefined, { alias: 'json' });
+  readonly jsonInput = input<unknown>(undefined, { alias: 'json' });
   readonly parentPathInput = input('', { alias: 'parentPath' });
   expandedMap = new Map<string, boolean>();
   excludedPaths = new Set([ '_title:trocador.app', 'm_meta_description', 'm_content', 'm_important_content' ]);
-  json: any;
+  json: unknown;
   readonly level = input(0);
   parentPath = '';
   readonly showRootBraces = input(false);
@@ -28,13 +29,13 @@ export class JsonViewerComponent {
     });
   }
 
-  initExpansionState(obj: any, path: string): void {
+  initExpansionState(obj: unknown, path: string): void {
     const shouldCollapse = [...this.excludedPaths].some(ex => path.endsWith(ex));
     if (this.isObject(obj)) {
       this.expandedMap.set(path, !shouldCollapse);
-      for (const key of Object.keys(obj)) {
+      for (const [key, value] of Object.entries(obj)) {
         const nextPath = this.pathKey(path, key);
-        this.initExpansionState(obj[key], nextPath);
+        this.initExpansionState(value, nextPath);
       }
     }
     else {
@@ -46,15 +47,15 @@ export class JsonViewerComponent {
     return parent ? `${parent}.${key}` : key;
   }
 
-  isObject(value: any): boolean {
+  isObject(value: unknown): value is object {
     return typeof value === 'object' && value !== null;
   }
 
-  isArray(value: any): boolean {
+  isArray(value: unknown): value is unknown[] {
     return Array.isArray(value);
   }
 
-  isCollapsible(value: any): boolean {
+  isCollapsible(value: unknown): boolean {
     return this.isObject(value);
   }
 
@@ -67,22 +68,28 @@ export class JsonViewerComponent {
     return this.expandedMap.get(path) ?? false;
   }
 
-  keys(obj: any): string[] {
+  keys(obj: unknown): string[] {
     if (!obj || typeof obj !== 'object') {
       return [];
     }
     return Object.keys(obj);
   }
 
-  openToken(value: any): string {
+  valueAt(key: string): unknown {
+    return this.isObject(this.json)
+      ? getOwnProperty((this.json as Record<string, unknown>), key)
+      : undefined;
+  }
+
+  openToken(value: unknown): string {
     return this.isArray(value) ? '[' : '{';
   }
 
-  closeToken(value: any): string {
+  closeToken(value: unknown): string {
     return this.isArray(value) ? ']' : '}';
   }
 
-  collapsedSummary(value: any): string {
+  collapsedSummary(value: unknown): string {
     if (!this.isObject(value)) {
       return '';
     }
@@ -93,7 +100,7 @@ export class JsonViewerComponent {
     return `${count} key${count === 1 ? '' : 's'}`;
   }
 
-  formatPrimitive(value: any): string {
+  formatPrimitive(value: unknown): string {
     if (value === null) {
       return 'null';
     }
@@ -109,7 +116,7 @@ export class JsonViewerComponent {
     return String(value);
   }
 
-  primitiveClass(value: any): string {
+  primitiveClass(value: unknown): string {
     if (value === null) {
       return 'text-[var(--color-text4)]';
     }
@@ -122,7 +129,7 @@ export class JsonViewerComponent {
     return 'text-[var(--color-text1)]';
   }
 
-  primitiveSummary(value: any): string {
+  primitiveSummary(value: unknown): string {
     if (value === null) {
       return 'null';
     }

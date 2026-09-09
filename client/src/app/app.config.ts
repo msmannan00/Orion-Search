@@ -22,7 +22,9 @@ export const appConfig: ApplicationConfig = {
       return firstValueFrom(appService.loadConfig()).then(() => translationService.initialize());
     }),
     provideAppInitializer(() => inject(AppService).loadSession()),
-    provideAppInitializer(() => inject(ProxyController).initialize()),
+    provideAppInitializer(() => {
+      inject(ProxyController).initialize();
+    }),
     provideRouter(routes, withRouterConfig({ onSameUrlNavigation: 'reload' })),
     provideAnimationsAsync()
   ],

@@ -1,0 +1,106 @@
+<ng-container>
+  <span id="top"></span>
+  <div class="w-full max-w-[2400px] rounded-[12px] p-5">
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-consolidated-primary)] [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#f9fbff] [body.light-theme_&]:shadow-none p-5">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-[20px] font-semibold leading-[1.2] text-[var(--color-text1)]">{{ 'Backup & Restore' | translate }}</h1>
+          <p class="mt-1 text-[12px] font-normal text-[var(--color-text6)]">{{ 'Manage system backups and scheduled backup status.' | translate }}</p>
+        </div>
+        <button type="button" data-testid="instant-backup-button" [disabled]="isCreating" class="inline-flex h-7 shrink-0 appearance-none items-center justify-center gap-1.5 border-0 rounded-[8px] px-3 text-[11px] font-semibold leading-none transition-[background-color] duration-150 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] disabled:cursor-not-allowed disabled:opacity-65" (click)="openInstantConfirmation()">
+          @if (isCreating) { <svg class="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path></svg> }
+          {{ (isCreating ? 'Creating...' : 'Instant Backup') | translate }}
+        </button>
+      </div>
+
+      @if (job && job.status === 'running') {
+        <div data-testid="backup-progress" class="mb-4">
+          <div class="mb-1 flex items-center justify-between text-[11px] font-medium text-[var(--color-text6)]">
+            <span data-testid="backup-progress-message">{{ (job.operation === 'restore' ? 'Restoring backup' : 'Creating backup') | translate }} - {{ job.message | translate }}</span>
+            <span data-testid="backup-progress-value">{{ job.progress }}%</span>
+          </div>
+          <progress data-testid="backup-progress-bar" class="h-1.5 w-full overflow-hidden rounded-full border-0 bg-[var(--color-blue-820-light)] [&::-webkit-progress-bar]:bg-[var(--color-blue-820-light)] [&::-webkit-progress-value]:bg-[#2c7ac5] [&::-moz-progress-bar]:bg-[#2c7ac5]" max="100" [value]="job.progress"></progress>
+        </div>
+      }
+
+      <div class="my-5 hidden h-px w-full bg-[var(--color-divider)] md:block"></div>
+
+      <div class="m-0 overflow-hidden rounded-none border-0 [box-shadow:rgba(0,0,0,0.06)_0_4px_6px_-1px,rgba(0,0,0,0.035)_0_2px_4px_-1px] md:rounded-[8px] md:border md:!border-[var(--tenant-line)]">
+        @if (!isLoading) {
+          <div class="relative hidden overflow-x-auto overflow-y-visible md:block [.light-theme_&]:!shadow-none">
+            <table class="w-full min-w-[860px] table-fixed border-collapse text-left text-[15px] text-[var(--color-text1)]">
+              @if ((backups?.length || 0) > 0) {
+                <thead class="sticky top-0 z-[1] border-b-2 border-b-[rgba(87,165,235,.3764705882)] bg-[var(--color-blue-820-light)] [.light-theme_&]:!shadow-none">
+                  <tr class="text-[12px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text3)]">
+                    <th class="w-[70px] overflow-clip align-middle px-4 py-3.5">{{ 'Sr #' | translate }}</th>
+                    <th class="w-[300px] overflow-clip align-middle px-4 py-3.5">{{ 'Backup Name' | translate }}</th>
+                    <th class="w-[140px] overflow-clip align-middle px-4 py-3.5">{{ 'Type' | translate }}</th>
+                    <th class="w-[220px] overflow-clip align-middle px-4 py-3.5">{{ 'Created Date' | translate }}</th>
+                    <th class="w-[190px] overflow-clip align-middle px-4 py-3.5 text-right">{{ 'Actions' | translate }}</th>
+                  </tr>
+                </thead>
+              }
+              @if ((backups?.length || 0) > 0) {
+                <tbody class="text-[15px] font-normal text-[var(--color-text3)]" @fadeInDashboardItem>
+                  @for (backup of backups; track backup.id; let i = $index) {
+                    <tr data-testid="backup-row" class="border-t !border-[var(--tenant-line)] bg-[var(--tenant-row-bg)] transition-colors hover:!border-[var(--tenant-line)] hover:bg-[var(--ui-table-row-hover)]">
+                      <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5 text-[14px] font-medium text-[var(--color-text2)]">{{ i + 1 }}</td>
+                      <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5">
+                        <span class="inline-block max-w-full truncate font-medium text-[var(--color-text1)]" [attr.title]="backup.filename">{{ backup.filename }}</span>
+                      </td>
+                      <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5 capitalize">
+                        <span class="inline-flex rounded-[6px] bg-sky-500/10 px-3 py-1.5 text-[12px] font-semibold text-sky-300 [body.light-theme_&]:bg-sky-100 [body.light-theme_&]:text-sky-800">{{ backup.backup_type | translate }}</span>
+                      </td>
+                      <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5">{{ formatDate(backup.created_at) }}</td>
+                      <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5">
+                        <div class="flex justify-end gap-2">
+                          <button type="button" [disabled]="isRestoring" class="group inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border px-2.5 text-[10px] font-semibold outline-none transition-[background-color,border-color,color] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-65 border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] text-[var(--color-text1)] hover:border-[#28557d] hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc] [.light-theme_&]:hover:border-[#8fb3d8] [.light-theme_&]:hover:bg-[#e4effa]" (click)="openRestoreConfirmation(backup)">{{ (isRestoring && backupToRestore?.id === backup.id ? 'Restoring...' : 'Restore') | translate }}</button>
+                          <button type="button" class="group inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border px-2.5 text-[10px] font-semibold outline-none transition-[background-color,border-color,color] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-65 border-[#5c2424] bg-[linear-gradient(135deg,rgba(235,107,107,0.22),rgba(224,72,72,0.12))] text-[var(--color-text1)] hover:border-[#7d2c2c] hover:bg-[linear-gradient(135deg,rgba(235,107,107,0.30),rgba(224,72,72,0.18))] [.light-theme_&]:border-[#e1bcbc] [.light-theme_&]:bg-[#fcefef] [.light-theme_&]:hover:border-[#d89898] [.light-theme_&]:hover:bg-[#fae5e5]" (click)="openDeleteConfirmation(backup)">{{ 'Delete' | translate }}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              }
+              @if ((backups?.length || 0) === 0) {
+                <tbody>
+                  <tr class="border-t !border-[var(--tenant-line)] bg-[var(--color-blue-820-light)]">
+                    <td class="px-4 py-12 text-center text-sm text-[var(--color-text4)]" colspan="5">{{ 'No backups available.' | translate }}</td>
+                  </tr>
+                </tbody>
+              }
+            </table>
+          </div>
+          <div class="space-y-3 p-0 md:hidden [.light-theme_&]:[&>div]:!shadow-none" @fadeInDashboardItem>
+            @if ((backups?.length || 0) > 0) {
+              @for (backup of backups; track backup.id; let i = $index) {
+                <div data-testid="backup-row" class="overflow-hidden rounded-[10px] bg-[var(--tenant-row-bg)] p-3">
+                  <div class="truncate text-sm font-semibold text-[var(--color-text1)]">{{ backup.filename }}</div>
+                  <div class="mt-1 text-[11px] text-[var(--color-text4)]">#{{ i + 1 }} • {{ backup.backup_type | translate }} • {{ formatDate(backup.created_at) }}</div>
+                  <div class="mt-3 flex justify-end gap-2">
+                    <button type="button" [disabled]="isRestoring" class="group inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border px-2.5 text-[10px] font-semibold outline-none transition-[background-color,border-color,color] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-65 border-[#213f5c] bg-[linear-gradient(135deg,rgba(87,165,235,0.22),rgba(43,144,238,0.12))] text-[var(--color-text1)] hover:border-[#28557d] hover:bg-[linear-gradient(135deg,rgba(87,165,235,0.30),rgba(43,144,238,0.18))] [.light-theme_&]:border-[#b7cbe1] [.light-theme_&]:bg-[#eef5fc] [.light-theme_&]:hover:border-[#8fb3d8] [.light-theme_&]:hover:bg-[#e4effa]" (click)="openRestoreConfirmation(backup)">{{ (isRestoring && backupToRestore?.id === backup.id ? 'Restoring...' : 'Restore') | translate }}</button>
+                    <button type="button" class="group inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border px-2.5 text-[10px] font-semibold outline-none transition-[background-color,border-color,color] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-65 border-[#5c2424] bg-[linear-gradient(135deg,rgba(235,107,107,0.22),rgba(224,72,72,0.12))] text-[var(--color-text1)] hover:border-[#7d2c2c] hover:bg-[linear-gradient(135deg,rgba(235,107,107,0.30),rgba(224,72,72,0.18))] [.light-theme_&]:border-[#e1bcbc] [.light-theme_&]:bg-[#fcefef] [.light-theme_&]:hover:border-[#d89898] [.light-theme_&]:hover:bg-[#fae5e5]" (click)="openDeleteConfirmation(backup)">{{ 'Delete' | translate }}</button>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div data-testid="backup-empty-state" class="rounded-xl border border-[var(--tenant-line)] bg-[var(--color-blue-830)] px-3 py-8 text-center text-sm text-[var(--color-text4)]">{{ 'No backups available.' | translate }}</div>
+            }
+          </div>
+        } @else {
+          <div class="px-4 py-12 text-center text-sm text-[var(--color-text4)]">{{ 'Loading...' | translate }}</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (isInstantConfirmationOpen()) {
+    <app-confirmation-popup [message]="instantConfirmationMessage" [warning]="backups.length >= MAX_BACKUPS" [confirmLabel]="'Instant Backup'" (confirmed)="confirmInstantBackup($event)"></app-confirmation-popup>
+  }
+  @if (isDeleteConfirmationOpen()) {
+    <app-confirmation-popup [message]="'Delete this backup?'" [warning]="true" [confirmLabel]="'Delete'" (confirmed)="confirmDeleteBackup($event)"></app-confirmation-popup>
+  }
+  @if (isRestoreConfirmationOpen()) {
+    <app-confirmation-popup [message]="'Restore this backup? The site will enter maintenance mode until the restore completes.'" [warning]="true" [confirmLabel]="'Restore'" (confirmed)="confirmRestoreBackup($event)"></app-confirmation-popup>
+  }
+</ng-container>

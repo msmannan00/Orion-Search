@@ -1,11 +1,11 @@
 <div [ngClass]="isConsolidatedView ? 'w-full min-w-0' : 'w-full max-w-[910px] min-w-0 px-2 sm:px-0 max-[640px]:px-0'">
   @for (item of searchResults().slice(0, getResultDisplayLimit()); track item.m_message_id || item.m_hash || item.m_message_sharable_link || $index) {
-    <div class="mb-[20px]" [@fadeInDashboardItem]>
+    <div class="fade-in-dashboard-item mb-[20px]">
       <div data-testid="result-card" [attr.data-result-index]="$index" [id]="'item-' + item.m_message_id" [ngClass]="isConsolidatedView ? 'ui-consolidated-sub [&&&]:![background:var(--ui-consolidated-sub-bg,#fff)] [&&&]:![border-color:var(--ui-consolidated-border,#d7e2ef)] hover:[&&&]:![background:var(--ui-consolidated-sub-hover,#fbfdff)] [&&&&]:![background-image:repeating-linear-gradient(135deg,rgb(255_255_255/1.4%)_0,rgb(255_255_255/1.4%)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&&&]:![background-image:repeating-linear-gradient(135deg,rgb(15_23_42/2.2%)_0,rgb(15_23_42/2.2%)_1px,transparent_1px,transparent_12px)]' : ''" class="mb-5 w-full overflow-hidden rounded-[15px] border border-[var(--color-border)] ui-result-card [&&]:!bg-[var(--color-blue-700)] [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-white [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)] [body.light-theme_&]:transition-[background-color,border-color,box-shadow] [body.light-theme_&]:duration-200 [body.light-theme_&]:ease-[ease] [body.light-theme_&]:hover:!border-[#b8cde4] [body.light-theme_&]:hover:!bg-[#f7fbff] [body.light-theme_&]:hover:!shadow-[0_10px_24px_rgba(15,23,42,0.10)] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] px-[20px] pb-[20px] pt-[15px] transition-all duration-300 ease-in-out hover:bg-[var(--color-blue-810)] dark:bg-[var(--color-consolidated-secondary)] max-[640px]:px-[12px] max-[640px]:pt-[12px] max-[640px]:pb-[14px]" (click)="openExternalUrl(item?.m_message_sharable_link)">
         <div class="mb-[10px] flex items-start gap-[10px]">
           <div class="flex min-w-0 flex-1 flex-wrap gap-[10px]">
-            @if (item.m_content_type?.length) {
-              @for (tag of item.m_content_type | slice:0:15; track $index) {
+            @if (getContentTypes(item).length) {
+              @for (tag of getContentTypes(item) | slice:0:15; track $index) {
                 <span class="inline-flex h-[31px] items-center rounded-full bg-[var(--color-tags)] px-[13px] text-[12px] font-normal text-[var(--color-text3)]">{{
                 tag }}</span>
               }

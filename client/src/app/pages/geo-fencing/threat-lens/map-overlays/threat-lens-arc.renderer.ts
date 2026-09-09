@@ -1,13 +1,15 @@
 import { NgZone } from '@angular/core';
 import { AnimatedArcDescriptor, ArcDrawState, ThreatLensCategoryMapData, ThreatLensCategoryModelKey } from '../../models/geo-fencing.models';
 import { ThreatLensMapUtils } from '../map-utils/threat-lens-map.utils';
-import { ArcCategoryBatch, LngLat, ThreatLensArcBatchStatus, ThreatLensArcRenderResult } from '../models/threat-lens-map.types';
+import { ArcCategoryBatch, EsriGeometry, EsriGeometryEngine, EsriGraphicsLayer, EsriWebMercatorUtils, LngLat, ThreatLensArcBatchStatus, ThreatLensArcRenderResult, ThreatLensMapGraphic } from '../models/threat-lens-map.types';
 import { ThreatLensCountryLayerRenderer } from './threat-lens-country-layer.renderer';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 export class ThreatLensArcRenderer {
   private animatedArcs: AnimatedArcDescriptor[] = [];
   private arcBatches: ArcCategoryBatch[] = [];
-  private arcDrawStates: ArcDrawState[] = [];
+  private arcDrawStates: ArcDrawState<ThreatLensMapGraphic>[] = [];
   private animationFrame: number | null = null;
   private lastAnimationTick = 0;
   private visibleBatchDrawStartTime = 0;
@@ -16,12 +18,12 @@ export class ThreatLensArcRenderer {
   private selectedBatchIndex = 0;
   private animationPaused = false;
   private activeCategoryKey: ThreatLensCategoryModelKey | null = null;
-  private movingDotGraphics: any[] = [];
-  private receiverPulseGraphics: any[] = [];
-  private endpointHitTargetGraphics: any[] = [];
-  private startMarkerGraphics: any[] = [];
-  private endMarkerGraphics: any[] = [];
-  private hoveredEndpointGraphic: any | null = null;
+  private movingDotGraphics: ThreatLensMapGraphic[] = [];
+  private receiverPulseGraphics: ThreatLensMapGraphic[] = [];
+  private endpointHitTargetGraphics: ThreatLensMapGraphic[] = [];
+  private startMarkerGraphics: ThreatLensMapGraphic[] = [];
+  private endMarkerGraphics: ThreatLensMapGraphic[] = [];
+  private hoveredEndpointGraphic: ThreatLensMapGraphic | null = null;
   private loggedCoordinateValidationKeys = new Set<string>();
   private loggedSkippedArcKeys = new Set<string>();
   private readonly maxArcCount = 1000;
@@ -35,7 +37,7 @@ export class ThreatLensArcRenderer {
   private readonly endpointHitTargetSize = 46;
   private readonly arcElevationMeters = 98000;
 
-  constructor( private ngZone: NgZone, private countryRenderer: ThreatLensCountryLayerRenderer, private arcGraphicsLayer: any, private animatedArcGraphicsLayer: any, private geometryEngine: any, private webMercatorUtils: any, private toCountryKey: (value: string) => string, private onVisibleArcCountChange: (count: number) => void, private onBatchStatusChange: (status: ThreatLensArcBatchStatus | null) => void, ) {}
+  constructor( private ngZone: NgZone, private countryRenderer: ThreatLensCountryLayerRenderer, private arcGraphicsLayer: EsriGraphicsLayer, private animatedArcGraphicsLayer: EsriGraphicsLayer, private geometryEngine: EsriGeometryEngine, private webMercatorUtils: EsriWebMercatorUtils, private toCountryKey: (value: string) => string, private onVisibleArcCountChange: (count: number) => void, private onBatchStatusChange: (status: ThreatLensArcBatchStatus | null) => void, ) {}
 
   render(categoryData: ThreatLensCategoryMapData[], activeCountryFilterKey: string): ThreatLensArcRenderResult {
     if (!this.arcGraphicsLayer || !this.animatedArcGraphicsLayer) {
@@ -198,17 +200,17 @@ export class ThreatLensArcRenderer {
     this.hoveredEndpointGraphic = null;
   }
 
-  isTooltipGraphic(graphic: any): boolean {
+  isTooltipGraphic(graphic: ThreatLensMapGraphic | null | undefined): boolean {
     const role = graphic?.attributes?.role;
     return role === 'arc' || role === 'arc-surface' || role === 'arc-start' || role === 'arc-end' || role === 'arc-start-hit' || role === 'arc-end-hit' || role === 'arc-traveler';
   }
 
-  isEndpointGraphic(graphic: any): boolean {
+  isEndpointGraphic(graphic: ThreatLensMapGraphic | null | undefined): boolean {
     const role = graphic?.attributes?.role;
     return role === 'arc-start' || role === 'arc-end' || role === 'arc-start-hit' || role === 'arc-end-hit';
   }
 
-  setHoveredEndpointGraphic(graphic: any | null): void {
+  setHoveredEndpointGraphic(graphic: ThreatLensMapGraphic | null): void {
     const nextGraphic = this.resolveEndpointIconGraphic(graphic);
     if (this.hoveredEndpointGraphic === nextGraphic) {
       return;
@@ -281,8 +283,8 @@ export class ThreatLensArcRenderer {
         for (const arc of batch.batch?.items ?? []) {
           const progress = ((timestamp + (arc.animationOffset * arc.animationDuration)) % arc.animationDuration) / arc.animationDuration;
           const point = ThreatLensMapUtils.getSurfacePointAtProgress(arc.arcPoints, progress);
-          const graphic = this.movingDotGraphics[index];
-          const receiverGraphic = this.receiverPulseGraphics[index];
+          const graphic = getOwnProperty(this.movingDotGraphics, index);
+          const receiverGraphic = getOwnProperty(this.receiverPulseGraphics, index);
 
           if (point && graphic) {
             const [lon, lat] = point;
@@ -313,7 +315,7 @@ export class ThreatLensArcRenderer {
     const index = this.getClampedBatchIndex(batches);
     return {
       index,
-      batch: batches[index],
+      batch: getOwnProperty(batches, index),
     };
   }
 
@@ -328,7 +330,7 @@ export class ThreatLensArcRenderer {
     this.visibleBatchDrawStartTime = renderedAt;
     this.hoveredEndpointGraphic = null;
     const batches = this.getVisibleBatchSequence();
-    const batch = batchOverride ?? (index >= 0 ? batches[index] ?? null : null);
+    const batch = batchOverride ?? (index >= 0 ? getOwnProperty(batches, index) ?? null : null);
     const items = batch?.items ?? [];
     this.visibleBatchIndex = index;
     this.arcGraphicsLayer.removeAll();
@@ -336,7 +338,9 @@ export class ThreatLensArcRenderer {
 
     if (!items.length) {
       this.countryRenderer.setConnectedCountryKeys([]);
-      this.ngZone.run(() => this.onVisibleArcCountChange(0));
+      this.ngZone.run(() => {
+        this.onVisibleArcCountChange(0);
+      });
       this.emitBatchStatus(null);
       return;
     }
@@ -345,15 +349,17 @@ export class ThreatLensArcRenderer {
     this.arcGraphicsLayer.addMany(items.flatMap((arc) => [this.buildSurfaceGraphic(arc), this.buildArcGraphic(arc, 0)]));
     const arcLayerGraphics = this.arcGraphicsLayer.graphics?.toArray?.() ?? [];
     this.arcDrawStates = arcLayerGraphics
-      .filter((graphic: any) => graphic?.attributes?.role === 'arc')
-      .reduce((states: ArcDrawState[], graphic: any, drawIndex: number) => {
-        const arc = items[drawIndex];
+      .filter((graphic) => graphic?.attributes?.role === 'arc')
+      .reduce((states: ArcDrawState<ThreatLensMapGraphic>[], graphic, drawIndex: number) => {
+        const arc = getOwnProperty(items, drawIndex);
         if (arc) {
           states.push({ arc, graphic, completed: false });
         }
         return states;
       }, []);
-    this.ngZone.run(() => this.onVisibleArcCountChange(items.length));
+    this.ngZone.run(() => {
+      this.onVisibleArcCountChange(items.length);
+    });
     this.emitBatchStatus(batch);
     this.movingDotGraphics = [];
     this.receiverPulseGraphics = [];
@@ -379,11 +385,11 @@ export class ThreatLensArcRenderer {
     ]);
 
     const layerGraphics = this.animatedArcGraphicsLayer.graphics?.toArray?.() ?? [];
-    this.endpointHitTargetGraphics = layerGraphics.filter((graphic: any) => graphic?.attributes?.role === 'arc-start-hit' || graphic?.attributes?.role === 'arc-end-hit');
-    this.startMarkerGraphics = layerGraphics.filter((graphic: any) => graphic?.attributes?.role === 'arc-start');
-    this.endMarkerGraphics = layerGraphics.filter((graphic: any) => graphic?.attributes?.role === 'arc-end');
-    this.receiverPulseGraphics = layerGraphics.filter((graphic: any) => graphic?.attributes?.role === 'arc-receiver-pulse');
-    this.movingDotGraphics = layerGraphics.filter((graphic: any) => graphic?.attributes?.role === 'arc-traveler');
+    this.endpointHitTargetGraphics = layerGraphics.filter((graphic) => graphic?.attributes?.role === 'arc-start-hit' || graphic?.attributes?.role === 'arc-end-hit');
+    this.startMarkerGraphics = layerGraphics.filter((graphic) => graphic?.attributes?.role === 'arc-start');
+    this.endMarkerGraphics = layerGraphics.filter((graphic) => graphic?.attributes?.role === 'arc-end');
+    this.receiverPulseGraphics = layerGraphics.filter((graphic) => graphic?.attributes?.role === 'arc-receiver-pulse');
+    this.movingDotGraphics = layerGraphics.filter((graphic) => graphic?.attributes?.role === 'arc-traveler');
   }
 
   private rebuildBatches(): void {
@@ -464,7 +470,9 @@ export class ThreatLensArcRenderer {
       }
       : null;
 
-    this.ngZone.run(() => this.onBatchStatusChange(status));
+    this.ngZone.run(() => {
+      this.onBatchStatusChange(status);
+    });
   }
 
   private logCountryCoordinateValidation(countryKey: string, coordinates: LngLat): void {
@@ -493,7 +501,7 @@ export class ThreatLensArcRenderer {
     }
 
     for (let index = 0; index < this.arcDrawStates.length; index += 1) {
-      const state = this.arcDrawStates[index];
+      const state = getOwnProperty(this.arcDrawStates, index);
       if (state.completed) {
         continue;
       }
@@ -512,7 +520,7 @@ export class ThreatLensArcRenderer {
     }
   }
 
-  private buildArcGraphic(arc: AnimatedArcDescriptor, drawProgress = 1): any {
+  private buildArcGraphic(arc: AnimatedArcDescriptor, drawProgress = 1): ThreatLensMapGraphic {
     return {
       geometry: this.buildPolylineGeometry(this.getArcDrawPaths(arc, drawProgress)),
       attributes: this.buildArcAttributes(arc, 'arc'),
@@ -534,7 +542,7 @@ export class ThreatLensArcRenderer {
     return ThreatLensMapUtils.extractSurfaceSegment(arc.arcPoints, 0, Math.max(0.001, progress));
   }
 
-  private buildPolylineGeometry(paths: [number, number][][]): Record<string, unknown> {
+  private buildPolylineGeometry(paths: [number, number][][]): EsriGeometry {
     return {
       type: 'polyline',
       hasZ: true,
@@ -543,7 +551,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private buildPointGeometry(point: [number, number], elevation = this.arcElevationMeters): Record<string, unknown> {
+  private buildPointGeometry(point: [number, number], elevation = this.arcElevationMeters): EsriGeometry {
     return {
       type: 'point',
       longitude: point[0],
@@ -558,7 +566,7 @@ export class ThreatLensArcRenderer {
     return 1 - Math.pow(1 - progress, 3);
   }
 
-  private buildSurfaceGraphic(arc: AnimatedArcDescriptor): any {
+  private buildSurfaceGraphic(arc: AnimatedArcDescriptor): ThreatLensMapGraphic {
     return {
       geometry: this.buildPolylineGeometry(arc.surfacePaths),
       attributes: this.buildArcAttributes(arc, 'arc-surface'),
@@ -572,7 +580,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private buildEndpointGraphic(arc: AnimatedArcDescriptor, point: [number, number], role: string, elevation: number, opacity: number): any {
+  private buildEndpointGraphic(arc: AnimatedArcDescriptor, point: [number, number], role: string, elevation: number, opacity: number): ThreatLensMapGraphic {
     return {
       geometry: this.buildPointGeometry(point, elevation),
       attributes: {
@@ -594,7 +602,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private buildEndpointHitTargetGraphic(arc: AnimatedArcDescriptor, point: [number, number], role: string, endpointRole: 'arc-start' | 'arc-end'): any {
+  private buildEndpointHitTargetGraphic(arc: AnimatedArcDescriptor, point: [number, number], role: string, endpointRole: 'arc-start' | 'arc-end'): ThreatLensMapGraphic {
     return {
       geometry: this.buildPointGeometry(point),
       attributes: {
@@ -617,7 +625,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private buildMovingDotGraphic(arc: AnimatedArcDescriptor, point: [number, number]): any {
+  private buildMovingDotGraphic(arc: AnimatedArcDescriptor, point: [number, number]): ThreatLensMapGraphic {
     return {
       geometry: this.buildPointGeometry(point),
       attributes: this.buildArcAttributes(arc, 'arc-traveler'),
@@ -634,7 +642,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private buildReceiverPulseGraphic(arc: AnimatedArcDescriptor, point: [number, number]): any {
+  private buildReceiverPulseGraphic(arc: AnimatedArcDescriptor, point: [number, number]): ThreatLensMapGraphic {
     return {
       geometry: this.buildPointGeometry(point),
       attributes: this.buildArcAttributes(arc, 'arc-receiver-pulse'),
@@ -664,7 +672,7 @@ export class ThreatLensArcRenderer {
     };
   }
 
-  private setEndpointHoverState(graphic: any, hovered: boolean): void {
+  private setEndpointHoverState(graphic: ThreatLensMapGraphic, hovered: boolean): void {
     if (!this.isEndpointGraphic(graphic) || !graphic.symbol) {
       return;
     }
@@ -673,7 +681,7 @@ export class ThreatLensArcRenderer {
     const baseColor = Array.isArray(graphic.attributes?.endpoint_color) ? graphic.attributes.endpoint_color : [255, 255, 255];
     const baseOpacity = Number(graphic.attributes?.endpoint_opacity);
     const opacity = Number.isFinite(baseOpacity) ? baseOpacity : 1;
-    const endpointId = String(graphic.attributes?.endpoint_id || '');
+    const endpointId = String(graphic.attributes?.endpoint_id ?? '');
 
     delete symbol.color;
     symbol.opacity = hovered ? 1 : opacity;
@@ -685,7 +693,7 @@ export class ThreatLensArcRenderer {
     this.setEndpointHitTargetHoverState(endpointId, baseColor, hovered);
   }
 
-  private resolveEndpointIconGraphic(graphic: any | null): any | null {
+  private resolveEndpointIconGraphic(graphic: ThreatLensMapGraphic | null): ThreatLensMapGraphic | null {
     if (!this.isEndpointGraphic(graphic)) {
       return null;
     }
@@ -695,7 +703,7 @@ export class ThreatLensArcRenderer {
       return graphic;
     }
 
-    const endpointId = String(graphic?.attributes?.endpoint_id || '');
+    const endpointId = String(graphic?.attributes?.endpoint_id ?? '');
     if (!endpointId) {
       return null;
     }
@@ -704,7 +712,7 @@ export class ThreatLensArcRenderer {
       ...this.startMarkerGraphics,
       ...this.endMarkerGraphics,
     ];
-    return endpointGraphics.find((endpointGraphic) => endpointGraphic?.attributes?.endpoint_id === endpointId) || null;
+    return endpointGraphics.find((endpointGraphic) => endpointGraphic?.attributes?.endpoint_id === endpointId) ?? null;
   }
 
   private getEndpointId(arc: AnimatedArcDescriptor, role: string): string {
@@ -734,8 +742,9 @@ export class ThreatLensArcRenderer {
     }
   }
 
-  private updateDataPacketSymbol(graphic: any, arc: AnimatedArcDescriptor, progress: number): void {
-    const symbol = graphic.symbol.clone?.() ?? { ...graphic.symbol, outline: graphic.symbol?.outline ? { ...graphic.symbol.outline } : undefined };
+  private updateDataPacketSymbol(graphic: ThreatLensMapGraphic, arc: AnimatedArcDescriptor, progress: number): void {
+    const currentSymbol = graphic.symbol ?? {};
+    const symbol = currentSymbol.clone?.() ?? { ...currentSymbol, outline: currentSymbol.outline ? { ...currentSymbol.outline } : undefined };
     const arrivalLift = progress > 0.88 ? (progress - 0.88) / 0.12 : 0;
 
     symbol.size = this.getDataPacketSize(progress, arc.weight);
@@ -748,7 +757,7 @@ export class ThreatLensArcRenderer {
     graphic.symbol = symbol;
   }
 
-  private updateReceiverPulseSymbol(graphic: any, arc: AnimatedArcDescriptor, progress: number): void {
+  private updateReceiverPulseSymbol(graphic: ThreatLensMapGraphic, arc: AnimatedArcDescriptor, progress: number): void {
     const arrivalProgress = progress > 0.82 ? (progress - 0.82) / 0.18 : 0;
     const pulse = this.easeOutCubic(arrivalProgress);
     const opacity = arrivalProgress > 0 ? 0.78 * (1 - pulse) : 0;

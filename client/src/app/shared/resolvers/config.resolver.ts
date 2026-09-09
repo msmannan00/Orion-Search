@@ -9,7 +9,7 @@ export class ConfigResolver implements Resolve<boolean> {
   constructor(private appService: AppService, private apiService: ApiService) { }
 
   resolve(): Observable<boolean> {
-    return this.apiService.get<any>('public').pipe(map(response => {
+    return this.apiService.get<{ settings?: Partial<ConfigSettings['appSettings']> }>('public').pipe(map(response => {
       if (response?.settings) {
         const current = this.appService.configData();
         this.appService.configData.set(new ConfigSettings(response.settings, current.localSettings));

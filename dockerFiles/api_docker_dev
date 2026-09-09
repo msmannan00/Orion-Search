@@ -19,6 +19,6 @@ COPY pyproject.toml /app/pyproject.toml
 COPY README.md /app/s.md
 COPY docs/ /app/docs/
 
-RUN mkdir -p /app/build/assets
+RUN mkdir -p /app/workspace/build/assets
 
 EXPOSE 8070

@@ -1,3 +1,5 @@
+import type { CameraInfo, GeoQueryInfo } from './network-intel.model';
+
 export interface ResolveIpResponse {
   status?:   string;
   progress?: number;
@@ -17,10 +19,10 @@ export interface NetworkIntelScanResponse {
   result?: {
     status?: string;
     ip:      string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   ip?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface GeoCameraResponse {
@@ -30,16 +32,18 @@ export interface GeoCameraResponse {
   ips_extracted?: number;
   ips_scanned?:   number;
   cameras_found?: number;
-  ip_locations?:  any[];
+  ip_locations?:  Record<string, unknown>[];
   result?: {
     status?:        string;
-    cameras?:       any[];
-    ip_locations?:  any[];
+    progress?:      number;
+    step?:          string;
+    cameras?:       CameraInfo[];
+    ip_locations?:  Record<string, unknown>[];
     ips_extracted?: number;
     ips_scanned?:   number;
     cameras_found?: number;
-    query?:         any;
+    query?:         GeoQueryInfo;
   };
-  cameras?: any[];
-  query?:   any;
+  cameras?: CameraInfo[];
+  query?:   GeoQueryInfo;
 }

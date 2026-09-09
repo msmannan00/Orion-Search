@@ -35,7 +35,9 @@ export class ReportUserSidebarComponent {
     this.userId = userId;
     this.isMounted = true;
     this.isVisible = false;
-    window.requestAnimationFrame(() => this.loadUser());
+    window.requestAnimationFrame(() => {
+      this.loadUser();
+    });
     window.requestAnimationFrame(() => {
       this.isVisible = true;
     });
@@ -56,7 +58,7 @@ export class ReportUserSidebarComponent {
     const userId = this.userId;
     sessionStorage.setItem('profileUserBackUrl', this.router.url);
     this.closeSidebar();
-    this.router.navigate(['/dashboard/profile/user', userId]);
+    void this.router.navigate(['/dashboard/profile/user', userId]);
   }
 
   private loadUser(): void {

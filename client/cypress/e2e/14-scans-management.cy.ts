@@ -1,4 +1,5 @@
 import {clickSearch, fillPrimaryScanInput, fillSecondaryScanInput, makeFileInputInteractable} from './controllers/14-scans-management.controller';
+import type { ScanManagementTestData } from './model/14-scans-management.model';
 
 describe('Scans Management - Web Scans Flow', () => {
   beforeEach(() => {
@@ -30,11 +31,11 @@ describe('Scans Management - Web Scans Flow', () => {
 });
 
 describe('Scans Management - Entity Lookup Flow', () => {
-  let testData: any = {};
+  let testData = {} as ScanManagementTestData;
 
   before(() => {
     cy.env(['TEST_DATA']).then(({TEST_DATA}) => {
-      testData = TEST_DATA || {};
+      testData = (TEST_DATA || {}) as ScanManagementTestData;
     });
   });
 

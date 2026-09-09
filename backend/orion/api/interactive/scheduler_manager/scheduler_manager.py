@@ -62,7 +62,7 @@ class SchedulerManager:
             log.g().i(f"Scheduler job lock not acquired: job_key={config.job_key}, "f"scheduled_for={scheduled_for.isoformat()}")
             return False
 
-        run_id = run_doc.get("_id")
+        run_id = run_doc["_id"]
         log.g().i(f"Scheduler job started: job_key={config.job_key}, reason={reason}, "f"scheduled_for={scheduled_for.isoformat()}, run_id={run_id}")
 
         heartbeat_task = asyncio.create_task(self._heartbeat(config.job_key, run_id, config.heartbeat_interval))

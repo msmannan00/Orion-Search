@@ -2,7 +2,12 @@
   <div data-testid="world-heatmap-map" class="map-container relative aspect-[100/52] max-h-[80vh] min-h-[400px] w-[calc(100%+60px)] -ml-[30px] -mr-[30px] [mask-image:linear-gradient(to_bottom,transparent_0%,black_12%,black_88%,transparent_100%)] max-[768px]:w-screen max-[768px]:max-w-screen [body.light-theme_&]:[mask-image:none]">
     <div #mapContainer class="absolute inset-0"></div>
     @if (isMapLoading()) {
-      <app-map-loading-badges [items]="[('Map loading...' | translate)]"></app-map-loading-badges>
+      <div @mapLoaderFade class="pointer-events-none absolute inset-0 z-[10] flex flex-col items-center justify-center gap-2.5">
+        <span class="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--color-border)] border-t-[var(--color-blue-640)]"></span>
+        <span class="text-[11px] font-medium tracking-[0.04em] text-[var(--color-text4)]">{{ 'Loading map...' | translate }}</span>
+      </div>
+    } @else if (appService.backendWarmingUp()) {
+      <app-map-loading-badges [items]="[('Indexing data...' | translate)]"></app-map-loading-badges>
     }
   </div>
 

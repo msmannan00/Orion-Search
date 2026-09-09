@@ -3,23 +3,24 @@ import { HttpParams } from '@angular/common/http';
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { ApiService } from '../../../shared/services/api.service';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../shared/services/translation.service';
 import { ConfirmationPopupComponent } from '../../../shared/partials/confirmation-popup/confirmation-popup.component';
 import { DatePickerComponent } from '../../../shared/partials/filters/date-picker/date-picker.component';
-import { SystemLogFile, SystemLogResponse } from './model/system-log.models';
+import { SystemLogResponse } from './model/system-log.models';
 import { UiDropdownComponent, UiDropdownOption } from '../../../shared/partials/ui-dropdown/ui-dropdown.component';
+import { getOwnProperty } from '../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-sidebar-user-log-manager',
   standalone: true,
   imports: [CommonModule, TranslatePipe, ConfirmationPopupComponent, DatePickerComponent, UiDropdownComponent],
   templateUrl: './sidebar-user-log-manager.component.html',
+  styleUrls: ['./sidebar-user-log-manager.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
 })
 export class SidebarUserLogManagerComponent implements OnInit {
   logType = '';
@@ -37,7 +38,7 @@ export class SidebarUserLogManagerComponent implements OnInit {
 
   get typeOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [{ key: '', label: this.translationService.translate('All') }, { key: 'INFO', label: 'INFO' }, { key: 'WARNING', label: 'WARNING' }, { key: 'ERROR', label: 'ERROR' }];
+    return [{ key: '', label: this.translationService.translate('All') }, { key: 'INFO', label: 'INFO' }, { key: 'SUCCESS', label: 'SUCCESS' }, { key: 'WARNING', label: 'WARNING' }, { key: 'ERROR', label: 'ERROR' }, { key: 'CRITICAL', label: 'CRITICAL' }];
   }
 
   ngOnInit(): void {
@@ -68,7 +69,7 @@ export class SidebarUserLogManagerComponent implements OnInit {
           this.response = response ?? this.emptyResponse();
         },
         error: (error) => {
-          this.errorMessage = error?.error?.detail || this.translationService.translate('Failed to load logs');
+          this.errorMessage = error?.error?.detail ?? this.translationService.translate('Failed to load logs');
         }
       });
   }
@@ -105,24 +106,6 @@ export class SidebarUserLogManagerComponent implements OnInit {
     this.loadLogs();
   }
 
-  deleteFile(file: SystemLogFile): void {
-    const confirmation = this.translationService.translate('Delete {file} from {date}?')
-      .replace('{file}', file.file)
-      .replace('{date}', file.date);
-    if (!confirm(confirmation)) {
-      return;
-    }
-    this.apiService.delete<{ success: boolean }>(`profile/system-logs/${file.date}/${file.file}`).subscribe({
-      next: () => {
-        this.page = 1;
-        this.loadLogs();
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.detail || this.translationService.translate('Failed to delete log file');
-      }
-    });
-  }
-
   flushLogs(): void {
     this.isFlushAllConfirmationOpen = true;
   }
@@ -141,14 +124,17 @@ export class SidebarUserLogManagerComponent implements OnInit {
         this.response = this.emptyResponse();
       },
       error: (error) => {
-        this.errorMessage = error?.error?.detail || this.translationService.translate('Failed to flush logs');
+        this.errorMessage = error?.error?.detail ?? this.translationService.translate('Failed to flush logs');
       }
     });
   }
 
   getTypeClass(type: string): string {
-    if (type === 'ERROR') {
+    if (type === 'ERROR' || type === 'CRITICAL') {
       return 'border-red-400/30 bg-red-500/10 text-red-300 [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800';
+    }
+    if (type === 'SUCCESS') {
+      return 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:border-emerald-600/30 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800';
     }
     if (type === 'WARNING') {
       return 'border-amber-400/30 bg-amber-500/10 text-amber-300 [body.light-theme_&]:border-amber-600/30 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800';
@@ -167,7 +153,7 @@ export class SidebarUserLogManagerComponent implements OnInit {
       size /= 1024;
       unit += 1;
     }
-    return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+    return `${size.toFixed(unit ? 1 : 0)} ${getOwnProperty(units, unit)}`;
   }
 
   private emptyResponse(): SystemLogResponse {

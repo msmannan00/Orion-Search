@@ -31,7 +31,7 @@ export class ReportFeedbackCommentsComponent implements OnChanges {
   constructor(private appService: AppService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['docId']) {
+    if (changes.docId) {
       this.draft = '';
     }
   }

@@ -34,7 +34,7 @@ for (const set of sets) {
     if (i >= base.length) {
       break;
     }
-    map[ch] = base[i];
+    setOwnProperty(map, ch, getOwnProperty(base, i));
     i++;
   }
 }
@@ -45,11 +45,13 @@ export function normalizeUnicode(input: string): string {
   }
   let out = "";
   for (const c of input) {
-    out += map[c] ?? c;
+    out += getOwnProperty(map, c) ?? c;
   }
   return out;
 }
 import { Pipe, PipeTransform } from '@angular/core';
+import { getOwnProperty, setOwnProperty } from '../utils/type-guards.util';
+
 @Pipe({
   name: 'normalizeUnicode'
 })

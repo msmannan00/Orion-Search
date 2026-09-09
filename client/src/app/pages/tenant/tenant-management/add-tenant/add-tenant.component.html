@@ -1,6 +1,6 @@
 <div class="fixed inset-0 z-[1500]">
   <div class="absolute inset-0 bg-black/50 transition-opacity duration-300 [body.light-theme_&]:bg-[rgba(23,34,53,0.18)]" [ngClass]="isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'" (click)="onClose()"></div>
-  <aside data-testid="tenant-add-user-modal" class="absolute right-0 top-0 flex h-full w-full max-w-2xl transform-gpu flex-col border-l border-[var(--color-border)] bg-[var(--color-blue-830)] text-[var(--color-text1)] shadow-[-18px_0_40px_rgba(0,0,0,0.34)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-none" [class.translate-x-0]="isOpen" [class.translate-x-[102%]]="!isOpen" (click)="$event.stopPropagation()">
+  <aside data-testid="tenant-add-user-modal" class="absolute right-0 top-0 flex h-full w-full max-w-2xl transform-gpu flex-col border-l border-[var(--color-border)] bg-[var(--color-blue-830)] text-[var(--color-text1)] shadow-[-18px_0_40px_rgba(0,0,0,0.34)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-none" [ngClass]="isOpen ? 'translate-x-0' : 'translate-x-[102%]'" (click)="$event.stopPropagation()">
     <div class="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-blue-830)]/95 px-6 py-3 backdrop-blur [body.light-theme_&]:bg-white/95">
       <h2 class="text-[16px] font-semibold leading-tight text-[var(--color-text1)]">{{ 'Add User' | translate }}</h2>
     </div>

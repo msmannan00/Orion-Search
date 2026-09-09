@@ -1,5 +1,5 @@
-<div class="flex h-full flex-col bg-[var(--color-blue-900)] transition-[width,padding] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [scrollbar-color:var(--color-blue-880)_transparent] [body.light-theme_&]:bg-[#f9fbff]" [class.w-[70px]]="isCollapsed()" [class.min-w-[70px]]="isCollapsed()" [class.overflow-hidden]="isCollapsed()" [class.px-[7px]]="isCollapsed()" [class.py-[8px]]="isCollapsed()" [class.w-[300px]]="!isCollapsed()" [class.min-w-[300px]]="!isCollapsed()" [class.overflow-y-auto]="!isCollapsed()" [class.p-0]="!isCollapsed()">
-  <app-graph-sidebar-shell [isCollapsed]="isCollapsed()" (toggleClicked)="toggle.emit(undefined)">
+<div class="dark-theme flex h-full flex-col bg-[var(--color-blue-900)] transition-[width,padding] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [scrollbar-color:var(--color-blue-880)_transparent]" [class]="isCollapsed() ? 'w-[70px] min-w-[70px] overflow-hidden px-[7px] py-[8px]' : 'w-[300px] min-w-[300px] overflow-y-auto p-0'">
+  <app-graph-sidebar-shell [isCollapsed]="isCollapsed()" [forceDarkLogo]="true" (toggleClicked)="toggle.emit(undefined)">
 
     <div data-sidebar-expanded class="flex h-full flex-col bg-[var(--color-blue-820-light)]">
 
@@ -10,7 +10,7 @@
             <span class="mt-0.5 block truncate text-sm font-semibold text-[var(--color-text1)]">{{ 'Scan History' | translate }}</span>
           </span>
         </div>
-        <div class="mx-3 h-px bg-white/5 [body.light-theme_&]:bg-[var(--color-divider)]"></div>
+        <div class="mx-3 h-px bg-white/5"></div>
       </div>
 
       <div class="flex-grow overflow-y-auto px-3 py-3 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-thumb]:rounded-[3px] [&::-webkit-scrollbar-thumb]:bg-[var(--color-blue-720)] [&::-webkit-scrollbar-thumb:hover]:bg-[var(--color-blue-710)] [&::-webkit-scrollbar-track]:bg-transparent">
@@ -18,7 +18,7 @@
         <div class="flex flex-col gap-2">
 
           @for (job of displayJobs(); track job.id) {
-            <div data-testid="social-history-job" [attr.data-selected]="activeUsername()?.toLowerCase() === job.id.toLowerCase() ? 'true' : null" (click)="jobClicked.emit(job)" class="ui-social-history-job relative cursor-pointer rounded-[10px] border p-3 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--color-blue-640)] hover:bg-[var(--color-blue-710)] [&[data-selected='true']]:!bg-[var(--color-blue-870)]" [class.border-[var(--color-border)]]="job.status === 'completed'" [class.bg-[var(--color-blue-820-light)]]="job.status === 'completed'" [class.border-[#57a5eb]/50]="job.status === 'in_progress' || job.status === 'queued'" [class.bg-[#57a5eb]/5]="job.status === 'in_progress' || job.status === 'queued'" [class.border-red-500/50]="job.status === 'failed'" [class.bg-red-500/5]="job.status === 'failed'">
+            <div data-testid="social-history-job" [attr.data-selected]="activeUsername()?.toLowerCase() === job.id.toLowerCase() ? 'true' : null" (click)="jobClicked.emit(job)" class="ui-social-history-job relative cursor-pointer rounded-[10px] border p-3 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--color-blue-640)] hover:bg-[var(--color-blue-710)] [&[data-selected='true']]:!bg-[var(--color-blue-870)]" [class]="job.status === 'completed' ? 'border-[var(--color-border)] bg-[var(--color-blue-820-light)]' : job.status === 'in_progress' || job.status === 'queued' ? 'border-[#57a5eb]/50 bg-[#57a5eb]/5' : job.status === 'failed' ? 'border-red-500/50 bg-red-500/5' : ''">
 
                   <div class="flex items-start justify-between gap-2">
                     <div class="flex min-w-0 flex-1 items-center gap-2">
@@ -29,16 +29,16 @@
                         } @else {
                           @switch (job.status) {
                             @case ('queued') {
-                              <i class="bi bi-hourglass-split text-amber-400 text-base leading-none [body.light-theme_&]:text-amber-700"></i>
+                              <i class="bi bi-hourglass-split text-amber-400 text-base leading-none"></i>
                             }
                             @case ('in_progress') {
                               <div class="h-4 w-4 animate-spin rounded-full border-b-2 border-[var(--color-blue-640)]"></div>
                             }
                             @case ('completed') {
-                              <i class="bi bi-check-circle-fill text-green-500 text-base leading-none [body.light-theme_&]:text-green-700"></i>
+                              <i class="bi bi-check-circle-fill text-green-500 text-base leading-none"></i>
                             }
                             @case ('failed') {
-                              <i class="bi bi-x-circle-fill text-red-400 text-base leading-none [body.light-theme_&]:text-red-600"></i>
+                              <i class="bi bi-x-circle-fill text-red-400 text-base leading-none"></i>
                             }
                           }
                         }
@@ -75,7 +75,7 @@
                     <div class="mt-2.5 flex items-center justify-between">
 
                       @if (hasResults(job.id)) {
-                        <span class="inline-flex items-center gap-1 rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-500 [body.light-theme_&]:text-green-700">
+                        <span class="inline-flex items-center gap-1 rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-500">
                           <i class="bi bi-check-circle-fill text-[10px]"></i> {{ 'Results Ready' | translate }}
                         </span>
                       } @else {

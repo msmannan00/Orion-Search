@@ -91,51 +91,51 @@
 
                         @if ((filteredCases?.length || 0) > 0) {
                         <tbody class="text-[15px] font-normal text-[var(--color-text3)]">
-                            @for (case of filteredCases; track case.caseId || $index; let i = $index) {
-                            <tr class="border-t !border-[var(--tenant-line)] bg-[var(--tenant-row-bg)] transition-colors hover:!border-[var(--tenant-line)] hover:bg-[var(--ui-table-row-hover)] last:border-b-0 max-[1300px]:last:border-b max-[1300px]:last:border-[var(--tenant-line)]" [attr.data-testid]="'case-row-' + case.caseId">
+                            @for (caseItem of filteredCases; track caseItem.caseId || $index) {
+                            <tr class="border-t !border-[var(--tenant-line)] bg-[var(--tenant-row-bg)] transition-colors hover:!border-[var(--tenant-line)] hover:bg-[var(--ui-table-row-hover)] last:border-b-0 max-[1300px]:last:border-b max-[1300px]:last:border-[var(--tenant-line)]" [attr.data-testid]="'case-row-' + caseItem.caseId">
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5 text-[14px] font-medium text-[var(--color-text2)]">
-                                    {{ case.caseId }}</td>
-                                <td class="overflow-hidden text-ellipsis align-middle whitespace-nowrap px-4 py-3.5" [title]="case.title">{{ case.title }}
+                                    {{ caseItem.caseId }}</td>
+                                <td class="overflow-hidden text-ellipsis align-middle whitespace-nowrap px-4 py-3.5" [title]="caseItem.title">{{ caseItem.title }}
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5">{{
-                                    formatLabel(case.caseType) }}
+                                    formatLabel(caseItem.caseType) }}
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5">
-                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold" [ngClass]="{ 'bg-blue-500/10 text-blue-300 [body.light-theme_&]:bg-blue-100 [body.light-theme_&]:text-blue-800': case.status === 'new' || case.status === 'intake_review', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.status === 'under_investigation' || case.status === 'evidence_collection' || case.status === 'verification' || case.status === 'regulatory_action' || case.status === 'legal_review', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.status === 'resolved', 'bg-slate-500/10 text-slate-300 [body.light-theme_&]:bg-slate-100 [body.light-theme_&]:text-slate-700': case.status === 'closed' }">
-                                        {{ formatLabel(case.status) }}
+                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold" [ngClass]="{ 'bg-blue-500/10 text-blue-300 [body.light-theme_&]:bg-blue-100 [body.light-theme_&]:text-blue-800': caseItem.status === 'new' || caseItem.status === 'intake_review', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.status === 'under_investigation' || caseItem.status === 'evidence_collection' || caseItem.status === 'verification' || caseItem.status === 'regulatory_action' || caseItem.status === 'legal_review', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.status === 'resolved', 'bg-slate-500/10 text-slate-300 [body.light-theme_&]:bg-slate-100 [body.light-theme_&]:text-slate-700': caseItem.status === 'closed' }">
+                                        {{ formatLabel(caseItem.status) }}
                                     </span>
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5">
-                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': case.severity === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': case.severity === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.severity === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.severity !== 'critical' && case.severity !== 'high' && case.severity !== 'medium' }">
-                                        {{ case.severity }}
+                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': caseItem.severity === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': caseItem.severity === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.severity === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.severity !== 'critical' && caseItem.severity !== 'high' && caseItem.severity !== 'medium' }">
+                                        {{ caseItem.severity }}
                                     </span>
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5">
-                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': case.priority === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': case.priority === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.priority === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.priority !== 'critical' && case.priority !== 'high' && case.priority !== 'medium' }">
-                                        {{ case.priority }}
+                                    <span class="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': caseItem.priority === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': caseItem.priority === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.priority === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.priority !== 'critical' && caseItem.priority !== 'high' && caseItem.priority !== 'medium' }">
+                                        {{ caseItem.priority }}
                                     </span>
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5">
                                     <div class="text-sm font-medium text-[var(--color-text1)]">{{
-                                        getFormattedDate(case.updatedAt) }}</div>
+                                        getFormattedDate(caseItem.updatedAt) }}</div>
                                     <div class="mt-1 text-xs text-[var(--color-text4)]">{{
-                                        getFormattedTime(case.updatedAt) }}</div>
+                                        getFormattedTime(caseItem.updatedAt) }}</div>
                                 </td>
                                 <td class="overflow-clip align-middle whitespace-nowrap px-4 py-3.5 text-center">
                                     <div class="inline-flex items-center justify-center gap-2">
                                         @if (canManageCases()) {
-                                        <button type="button" [attr.data-testid]="'case-assign-analyst-' + case.caseId" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [title]="'Assign Analyst' | translate" (click)="openAssignAnalystDialog(case)">
+                                        <button type="button" [attr.data-testid]="'case-assign-analyst-' + caseItem.caseId" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [title]="'Assign Analyst' | translate" (click)="openAssignAnalystDialog(caseItem)">
                                             <svg viewBox="0 0 16 16" class="h-[16px] w-[16px] fill-current" aria-hidden="true">
                                                 <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
                                                 <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3z"></path>
                                             </svg>
                                         </button>
                                         }
-                                        <button type="button" (click)="viewCase(case.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [attr.aria-label]="'View case' | translate" [attr.data-testid]="'case-view-' + case.caseId">
+                                        <button type="button" (click)="viewCase(caseItem.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [attr.aria-label]="'View case' | translate" [attr.data-testid]="'case-view-' + caseItem.caseId">
                                             <img src="assets/images/shared/view.svg" width="18" alt="" class="case-action-icon ui-action-icon cursor-pointer" />
                                         </button>
                                         @if (canDeleteCases()) {
-                                        <button type="button" (click)="openDeleteConfirmation(case.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text2)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [attr.aria-label]="'Delete case' | translate" [attr.data-testid]="'case-delete-' + case.caseId">
+                                        <button type="button" (click)="openDeleteConfirmation(caseItem.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text2)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [attr.aria-label]="'Delete case' | translate" [attr.data-testid]="'case-delete-' + caseItem.caseId">
                                             <img src="assets/images/shared/theme/bin.svg" width="18" alt="" class="case-action-icon cursor-pointer" />
                                         </button>
                                         }
@@ -158,29 +158,29 @@
                 </div>
                 <div class="space-y-3 md:hidden">
                     @if ((filteredCases?.length || 0) > 0) {
-                    @for (case of filteredCases; track case.caseId || $index; let i = $index) {
-                    <div class="overflow-hidden rounded-[10px] border border-[var(--tenant-line)] bg-[var(--tenant-row-bg)]" [attr.data-testid]="'case-mobile-card-' + case.caseId">
+                    @for (caseItem of filteredCases; track caseItem.caseId || $index) {
+                    <div class="overflow-hidden rounded-[10px] border border-[var(--tenant-line)] bg-[var(--tenant-row-bg)]" [attr.data-testid]="'case-mobile-card-' + caseItem.caseId">
                         <div class="flex items-start justify-between gap-3 border-b border-[var(--tenant-line)] bg-[var(--color-blue-820-light)] px-3 py-2.5">
                             <div class="min-w-0">
-                                <div class="truncate text-sm font-semibold text-[var(--color-text1)]">{{ case.title }}
+                                <div class="truncate text-sm font-semibold text-[var(--color-text1)]">{{ caseItem.title }}
                                 </div>
-                                <div class="mt-0.5 text-[11px] font-medium text-[var(--color-text4)]">{{ case.caseId }}
-                                    &middot; {{ formatLabel(case.caseType) }}</div>
+                                <div class="mt-0.5 text-[11px] font-medium text-[var(--color-text4)]">{{ caseItem.caseId }}
+                                    &middot; {{ formatLabel(caseItem.caseType) }}</div>
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
                                 @if (canManageCases()) {
-                                <button type="button" [attr.data-testid]="'case-mobile-assign-analyst-' + case.caseId" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [title]="'Assign Analyst' | translate" (click)="openAssignAnalystDialog(case)">
+                                <button type="button" [attr.data-testid]="'case-mobile-assign-analyst-' + caseItem.caseId" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [title]="'Assign Analyst' | translate" (click)="openAssignAnalystDialog(caseItem)">
                                     <svg viewBox="0 0 16 16" class="h-[16px] w-[16px] fill-current" aria-hidden="true">
                                         <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
                                         <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3z"></path>
                                     </svg>
                                 </button>
                                 }
-                                <button type="button" (click)="viewCase(case.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [attr.aria-label]="'View case' | translate" [attr.data-testid]="'case-mobile-view-' + case.caseId">
+                                <button type="button" (click)="viewCase(caseItem.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] text-[var(--color-text2)] transition hover:bg-[var(--tenant-chip-hover)]" [attr.aria-label]="'View case' | translate" [attr.data-testid]="'case-mobile-view-' + caseItem.caseId">
                                     <img src="assets/images/shared/view.svg" width="18" alt="" class="case-action-icon ui-action-icon cursor-pointer" />
                                 </button>
                                 @if (canDeleteCases()) {
-                                <button type="button" (click)="openDeleteConfirmation(case.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text2)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [attr.aria-label]="'Delete case' | translate" [attr.data-testid]="'case-mobile-delete-' + case.caseId">
+                                <button type="button" (click)="openDeleteConfirmation(caseItem.caseId)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(239,68,68,0.28)] bg-[rgba(127,29,29,0.22)] text-[var(--color-text2)] transition hover:border-[rgba(239,68,68,0.42)] hover:bg-[rgba(127,29,29,0.34)] [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70" [attr.aria-label]="'Delete case' | translate" [attr.data-testid]="'case-mobile-delete-' + caseItem.caseId">
                                     <img src="assets/images/shared/theme/bin.svg" width="18" alt="" class="case-action-icon cursor-pointer" />
                                 </button>
                                 }
@@ -190,29 +190,29 @@
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
                                     'Status' | translate }}</span>
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold" [ngClass]="{ 'bg-blue-500/10 text-blue-300 [body.light-theme_&]:bg-blue-100 [body.light-theme_&]:text-blue-800': case.status === 'new' || case.status === 'intake_review', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.status === 'under_investigation' || case.status === 'evidence_collection' || case.status === 'verification' || case.status === 'regulatory_action' || case.status === 'legal_review', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.status === 'resolved', 'bg-slate-500/10 text-slate-300 [body.light-theme_&]:bg-slate-100 [body.light-theme_&]:text-slate-700': case.status === 'closed' }">
-                                    {{ formatLabel(case.status) }}
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold" [ngClass]="{ 'bg-blue-500/10 text-blue-300 [body.light-theme_&]:bg-blue-100 [body.light-theme_&]:text-blue-800': caseItem.status === 'new' || caseItem.status === 'intake_review', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.status === 'under_investigation' || caseItem.status === 'evidence_collection' || caseItem.status === 'verification' || caseItem.status === 'regulatory_action' || caseItem.status === 'legal_review', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.status === 'resolved', 'bg-slate-500/10 text-slate-300 [body.light-theme_&]:bg-slate-100 [body.light-theme_&]:text-slate-700': caseItem.status === 'closed' }">
+                                    {{ formatLabel(caseItem.status) }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
                                     'Severity' | translate }}</span>
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': case.severity === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': case.severity === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.severity === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.severity !== 'critical' && case.severity !== 'high' && case.severity !== 'medium' }">
-                                    {{ case.severity }}
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': caseItem.severity === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': caseItem.severity === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.severity === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.severity !== 'critical' && caseItem.severity !== 'high' && caseItem.severity !== 'medium' }">
+                                    {{ caseItem.severity }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
                                     'Priority' | translate }}</span>
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': case.priority === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': case.priority === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': case.priority === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': case.priority !== 'critical' && case.priority !== 'high' && case.priority !== 'medium' }">
-                                    {{ case.priority }}
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize" [ngClass]="{ 'bg-red-500/10 text-red-300 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800': caseItem.priority === 'critical', 'bg-orange-500/10 text-orange-300 [body.light-theme_&]:bg-orange-100 [body.light-theme_&]:text-orange-800': caseItem.priority === 'high', 'bg-amber-500/10 text-amber-300 [body.light-theme_&]:bg-amber-100 [body.light-theme_&]:text-amber-800': caseItem.priority === 'medium', 'bg-emerald-500/10 text-emerald-300 [body.light-theme_&]:bg-emerald-100 [body.light-theme_&]:text-emerald-800': caseItem.priority !== 'critical' && caseItem.priority !== 'high' && caseItem.priority !== 'medium' }">
+                                    {{ caseItem.priority }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
                                     'Updated' | translate }}</span>
                                 <span class="text-right text-xs font-medium text-[var(--color-text1)]">{{
-                                    getFormattedDate(case.updatedAt) }} &middot; {{ getFormattedTime(case.updatedAt)
+                                    getFormattedDate(caseItem.updatedAt) }} &middot; {{ getFormattedTime(caseItem.updatedAt)
                                     }}</span>
                             </div>
                         </div>

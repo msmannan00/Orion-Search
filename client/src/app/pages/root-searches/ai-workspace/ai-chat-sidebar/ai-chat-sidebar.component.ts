@@ -35,8 +35,8 @@ export class AiChatSidebarComponent {
   readonly busySessionId = input<string | null>(null);
   readonly creatingChat = input(false);
   readonly clearingChats = input(false);
-  readonly newChat = output<void>();
-  readonly clearChats = output<void>();
+  readonly newChat = output();
+  readonly clearChats = output();
   readonly chatSelected = output<AiChatSession>();
   readonly sessionUpdated = output<AiChatSession>();
   readonly sessionDeleted = output<string>();
@@ -116,7 +116,7 @@ export class AiChatSidebarComponent {
 
   shareChat(chat: AiChatSession, event: Event): void {
     event.stopPropagation();
-    if (this.sharingSessionId || this.isChatBusy(chat)) {
+    if (Boolean(this.sharingSessionId) || this.isChatBusy(chat)) {
       return;
     }
     this.sharingSessionId = chat.sessionId;
@@ -136,10 +136,14 @@ export class AiChatSidebarComponent {
             window.open(new URL(share.path, window.location.origin).toString(), '_blank', 'noopener');
             this.finishSharing();
           },
-          error: () => this.finishSharing(),
+          error: () => {
+            this.finishSharing();
+          },
         });
       },
-      error: () => this.finishSharing(),
+      error: () => {
+        this.finishSharing();
+      },
     });
   }
 
@@ -173,8 +177,8 @@ export class AiChatSidebarComponent {
   }
 
   onRenameBackdrop(event: MouseEvent): void {
-    const target = event.target as HTMLElement | null;
-    if (target?.dataset?.['role'] === 'backdrop') {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.dataset.role === 'backdrop') {
       this.closeRenameChatPopup();
     }
   }
@@ -195,7 +199,9 @@ export class AiChatSidebarComponent {
       return;
     }
     this.nexusChatService.deleteChatSession(chat.sessionId).subscribe({
-      next: () => this.sessionDeleted.emit(chat.sessionId),
+      next: () => {
+        this.sessionDeleted.emit(chat.sessionId);
+      },
     });
   }
 

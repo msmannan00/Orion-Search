@@ -1,0 +1,109 @@
+.manage-profile-logo-tile {
+  --manage-profile-logo-color: #57a5eb;
+
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--manage-profile-logo-color) 42%, #213a57),
+    color-mix(in srgb, var(--manage-profile-logo-color) 18%, #172a42)
+  );
+}
+
+:host-context(.light-theme) .manage-profile-logo-tile {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--manage-profile-logo-color) 16%, #fff),
+    color-mix(in srgb, var(--manage-profile-logo-color) 9%, #e4eef9)
+  );
+}
+
+.manage-profile-logo-tile[data-platform='facebook'] {
+  --manage-profile-logo-color: #0866ff;
+}
+
+.manage-profile-logo-tile:is([data-platform='x'], [data-platform='twitter']) {
+  --manage-profile-logo-color: #6f7d90;
+}
+
+.manage-profile-logo-tile[data-platform='instagram'] {
+  --manage-profile-logo-color: #e4405f;
+}
+
+.manage-profile-logo-tile[data-platform='linkedin'] {
+  --manage-profile-logo-color: #0a66c2;
+}
+
+.manage-profile-logo-tile:is([data-platform='tiktok'], [data-platform='tiktokcom']) {
+  --manage-profile-logo-color: #25f4ee;
+}
+
+.manage-profile-logo-tile[data-platform='youtube'] {
+  --manage-profile-logo-color: #f00;
+}
+
+.manage-profile-logo-tile[data-platform='reddit'] {
+  --manage-profile-logo-color: #ff4500;
+}
+
+.manage-profile-logo-tile[data-platform='pinterest'] {
+  --manage-profile-logo-color: #bd081c;
+}
+
+.manage-profile-logo-tile[data-platform='telegram'] {
+  --manage-profile-logo-color: #26a5e4;
+}
+
+.manage-profile-logo-tile[data-platform='discord'] {
+  --manage-profile-logo-color: #5865f2;
+}
+
+.manage-profile-logo-tile:is([data-platform='github'], [data-platform='codepen'], [data-platform='medium']) {
+  --manage-profile-logo-color: #65758b;
+}
+
+.manage-profile-logo-tile:is([data-platform='docker'], [data-platform='hub'], [data-platform='dockerhub']) {
+  --manage-profile-logo-color: #2496ed;
+}
+
+.manage-profile-logo-tile:is([data-platform='gitlab'], [data-platform='replit']) {
+  --manage-profile-logo-color: #fc6d26;
+}
+
+.manage-profile-logo-tile:is([data-platform='spotify'], [data-platform='nodejs'], [data-platform='deviantart']) {
+  --manage-profile-logo-color: #1ed760;
+}
+
+.manage-profile-logo-tile:is([data-platform='twitch'], [data-platform='tumblr']) {
+  --manage-profile-logo-color: #9146ff;
+}
+
+.manage-profile-logo-tile:is([data-platform='dribbble'], [data-platform='flickr']) {
+  --manage-profile-logo-color: #ea4c89;
+}
+
+.manage-profile-logo-tile:is([data-platform='soundcloud'], [data-platform='patreon']) {
+  --manage-profile-logo-color: #f50;
+}
+
+.manage-profile-logo-tile:is([data-platform='vimeo'], [data-platform='vk'], [data-platform='foursquare']) {
+  --manage-profile-logo-color: #1ab7ea;
+}
+
+.manage-profile-logo-tile:is([data-platform='bitbucket'], [data-platform='bitbucketorg'], [data-platform='atlassianbitbucket']) {
+  --manage-profile-logo-color: #0052cc;
+}
+
+.manage-profile-logo-tile:is([data-platform='wordpress'], [data-platform='gravatar'], [data-platform='en']) {
+  --manage-profile-logo-color: #21759b;
+}
+
+.manage-profile-logo-tile:is([data-platform='behance'], [data-platform='artstation']) {
+  --manage-profile-logo-color: #1769ff;
+}
+
+.manage-profile-logo-tile:is([data-platform='envato'], [data-platform='themeforest'], [data-platform='audiojungle']) {
+  --manage-profile-logo-color: #81b441;
+}
+
+.manage-profile-logo-tile[data-platform='snapchat'] {
+  --manage-profile-logo-color: #fffc00;
+}

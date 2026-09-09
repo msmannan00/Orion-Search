@@ -13,6 +13,8 @@ import { ScrollService } from '../../../../shared/services/scroll.service';
 import { ReportInteractionHostComponent } from '../../../../shared/partials/report-interactions/report-interaction-host/report-interaction-host.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TakedownActionComponent } from '../../../../shared/partials/takedown-action/takedown-action.component';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-report-defacement',
@@ -35,18 +37,18 @@ import { TakedownActionComponent } from '../../../../shared/partials/takedown-ac
 })
 export class ReportDefacementComponent implements OnInit, AfterViewInit {
   defacementData: DefacementResultItem | null = null;
-  isExpandedMetadata: boolean = true;
-  activeTab: string = '';
-  content: string = '';
-  listItems: any[] = [];
+  isExpandedMetadata = true;
+  activeTab = '';
+  content = '';
+  listItems: string[] = [];
   arrayKeys: string[] = [];
 
   constructor(private route: ActivatedRoute, private scrollService: ScrollService, private elementRef: ElementRef<HTMLElement>) {}
 
   ngOnInit(): void {
     this.route.data.subscribe(data => {
-      if (data['reportdata']) {
-        this.defacementData = data['reportdata'] as DefacementResultItem;
+      if (data.reportdata) {
+        this.defacementData = data.reportdata as DefacementResultItem;
         this.prepareMetadata();
         this.scrollToTop();
       }
@@ -64,7 +66,7 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
 
   get filteredArrayKeys(): string[] {
     return this.arrayKeys.filter(key => {
-      const val = (this.defacementData as any)?.[key];
+      const val = getOwnProperty(this.defacementData, key);
       return !isHiddenReportMetadataKey(key) && val != null && (!Array.isArray(val) || val.length > 0);
     });
   }
@@ -80,8 +82,8 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
       return;
     }
     this.activeTab = tab;
-    if (this.defacementData && Array.isArray((this.defacementData as any)[tab])) {
-      this.listItems = (this.defacementData as any)[tab];
+    if (this.defacementData && Array.isArray(getOwnProperty(this.defacementData, tab))) {
+      this.listItems = getOwnProperty(this.defacementData, tab) as string[];
     }
     else {
       this.listItems = [];
@@ -96,14 +98,14 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
     if (key === 'm_content') {
       return this.content ? 1 : 0;
     }
-    const value = (this.defacementData as any)?.[key];
+    const value = getOwnProperty(this.defacementData, key);
     return Array.isArray(value) ? value.length : value ? 1 : 0;
   }
 
   private prepareMetadata(): void {
-    this.content = this.defacementData?.m_content || '';
+    this.content = this.defacementData?.m_content ?? '';
     this.arrayKeys = [];
-    if (Array.isArray((this.defacementData as any)?.m_section) && (this.defacementData as any).m_section.length > 0) {
+    if (Array.isArray(this.defacementData?.m_section) && this.defacementData.m_section.length > 0) {
       this.arrayKeys.push('m_section');
     }
     if (this.defacementData?.m_content && this.defacementData.m_content.trim() !== '') {
@@ -111,7 +113,7 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
     }
     if (this.defacementData) {
       Object.keys(this.defacementData).forEach(key => {
-        const value = (this.defacementData as any)[key];
+        const value = getOwnProperty(this.defacementData, key);
         if (Array.isArray(value) && value.length > 0 && key !== 'm_section' && !isHiddenReportMetadataKey(key)) {
           this.arrayKeys.push(key);
         }
@@ -128,16 +130,16 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
   }
 
   normalizeDisplayUrl(url?: string | string[] | null): string {
-    const rawUrl = Array.isArray(url) ? (url[0] || '') : (url || '');
+    const rawUrl = Array.isArray(url) ? (url[0] || '') : (url ?? '');
     return normalizeDisplayUrlUtil(rawUrl, '-');
   }
 
   get reportDocId(): string {
-    return (this.defacementData as any)?.m_hash
-      || (this.defacementData as any)?._id
-      || (this.defacementData as any)?.doc_id
-      || (this.defacementData as any)?.m_document_id
-      || this.route.snapshot.paramMap.get('m_hash')
-      || '';
+    return this.defacementData?.m_hash
+      ?? this.defacementData?._id
+      ?? this.defacementData?.doc_id
+      ?? this.defacementData?.m_document_id
+      ?? this.route.snapshot.paramMap.get('m_hash')
+      ?? '';
   }
 }

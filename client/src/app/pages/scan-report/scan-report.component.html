@@ -42,7 +42,7 @@
       <p class="text-[13px] text-[var(--color-text4)]">{{ 'File Processing Results' | translate }}</p>
     </div>
 
-    <div data-testid="scan-report-summary" class="flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] [.light-theme_&]:bg-white [.light-theme_&]:shadow-[0_4px_14px_rgba(15,23,42,0.05)] max-[640px]:gap-3" @fadeInDashboardItem>
+    <div data-testid="scan-report-summary" class="flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] [.light-theme_&]:bg-white [.light-theme_&]:shadow-[0_4px_14px_rgba(15,23,42,0.05)] max-[640px]:gap-3 scan-report-fade-in">
       <div class="flex items-center gap-2">
         <img alt="" aria-hidden="true" src="assets/images/shared/search_elapsed_time.svg" class="h-5 w-5">
         <div class="text-sm font-semibold capitalize text-[var(--color-text1)]">{{ apiType }}</div>
@@ -89,20 +89,20 @@
     </div>
 
     @if (isHostReconReport) {
-      <section data-testid="scan-report-results" class="mt-4 w-full" @fadeInDashboardItem>
+      <section data-testid="scan-report-results" class="mt-4 w-full scan-report-fade-in">
         <app-network-intel-dns-section [dnsResult]="dnsReportResult" [ipRows]="dnsReportRows" [hasSearched]="true"></app-network-intel-dns-section>
       </section>
     } @else if (isIpScanReport) {
-      <section data-testid="scan-report-results" class="mt-4 w-full" @fadeInDashboardItem>
+      <section data-testid="scan-report-results" class="mt-4 w-full scan-report-fade-in">
         <app-network-intel-shodan-section [shodanResult]="shodanReportResult" [hasSearched]="true"></app-network-intel-shodan-section>
       </section>
     } @else if (isVulnerabilityReport) {
-      <section data-testid="scan-report-results" class="mt-4 w-full" @fadeInDashboardItem>
-        <app-network-intel-vulnerability-section class="block w-full" [targets]="vulnerabilityReportTargets" [activeTarget]="vulnerabilityReportTarget" [defaultDepth]="vulnerabilityReportDepth" [readOnly]="true" [searchDomain]="vulnerabilityReportTarget || ''" [vulnerabilityResult]="result" [hasSearched]="true"></app-network-intel-vulnerability-section>
+      <section data-testid="scan-report-results" class="mt-4 w-full scan-report-fade-in">
+        <app-network-intel-vulnerability-section class="block w-full" [targets]="vulnerabilityReportTargets" [activeTarget]="vulnerabilityReportTarget" [defaultDepth]="vulnerabilityReportDepth" [readOnly]="true" [searchDomain]="vulnerabilityReportTarget || ''" [vulnerabilityResult]="vulnerabilityResult" [hasSearched]="true"></app-network-intel-vulnerability-section>
       </section>
     } @else if (resultSections.length > 0) {
-      <section data-testid="scan-report-results" class="mt-4 w-full space-y-4" @fadeInDashboardItem>
-        @for (section of resultSections; track trackByIndex($index); let sectionIdx = $index) {
+      <section data-testid="scan-report-results" class="mt-4 w-full space-y-4 scan-report-fade-in">
+        @for (section of resultSections; track trackByIndex($index)) {
           <div>
             <div class="my-[10px] flex items-center gap-[12px] text-[12px] font-semibold uppercase tracking-[1px] text-[#10b981] [body.light-theme_&]:text-emerald-700">
               <span>{{ section.title | translate }}</span>

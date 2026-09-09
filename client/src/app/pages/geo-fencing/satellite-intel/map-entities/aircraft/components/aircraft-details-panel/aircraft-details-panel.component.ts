@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '../../../../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-aircraft-details-panel',
@@ -10,9 +12,9 @@ import { TranslatePipe } from '../../../../../../../shared/pipes/translate.pipe'
   templateUrl: './aircraft-details-panel.component.html',
 })
 export class AircraftDetailsPanelComponent {
-  @Input() aircraft: Record<string, any> | null = null;
+  @Input() aircraft: Record<string, unknown> | null = null;
 
-  get fields(): Array<{ label: string; value: string; mono?: boolean }> {
+  get fields(): { label: string; value: string; mono?: boolean }[] {
     return [
       { label: 'ICAO24', value: this.display(this.pick('icao24')), mono: true },
       { label: 'Callsign', value: this.display(this.pick('callsign')) },
@@ -49,8 +51,8 @@ export class AircraftDetailsPanelComponent {
   }
 
   get coordinates(): string {
-    const latitude = this.aircraft?.['latitude'];
-    const longitude = this.aircraft?.['longitude'];
+    const latitude = this.aircraft?.latitude;
+    const longitude = this.aircraft?.longitude;
     if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
       return `${Number(latitude).toFixed(3)}, ${Number(longitude).toFixed(3)}`;
     }
@@ -59,7 +61,7 @@ export class AircraftDetailsPanelComponent {
 
   private pick(...keys: string[]): unknown {
     for (const key of keys) {
-      const value = this.aircraft?.[key];
+      const value = getOwnProperty(this.aircraft, key);
       if (value !== null && value !== undefined && value !== '') {
         return value;
       }

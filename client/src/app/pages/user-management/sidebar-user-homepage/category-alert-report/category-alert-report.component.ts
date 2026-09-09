@@ -1,31 +1,43 @@
-import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CategoryAlerts } from '../../../../shared/partials/alert-notification/model/alert.notification.model';
-import { AlertAllIoc, AlertModel } from '../../../../shared/model/company-profile/node.model';
 import { map, Observable } from 'rxjs';
 import { AppService } from '../../../../services/core/app/app.service';
-import { search_filter_labels } from '../../../../shared/constants/shared-enums';
-import { AddCustomAlertComponent } from "../add-custom-alert/add-custom-alert.component";
-import { SidebarService } from '../../../../shared/services/sidebar.service';
-import { FilterModel } from '../../../../shared/model/filter/filter.model';
-import { alert_filters } from '../../../../shared/constants/filters';
-import { FiltersComponent } from "../../../../shared/partials/filters/filters.component";
-import { ApiService } from '../../../../shared/services/api.service';
-import { MessageNotificationService } from '../../../../services/message_notification/message-notification.service';
+import { SidebarHomepageService } from '../../../../services/dashboard/sidebar.service';
 import { LicenseService } from '../../../../services/licenses/licenses.service';
-import { ConfirmationPopupComponent } from "../../../../shared/partials/confirmation-popup/confirmation-popup.component";
-import { HelperService } from '../../../../shared/services/helper.service';
+import { MessageNotificationService } from '../../../../services/message_notification/message-notification.service';
+import { alert_filters } from '../../../../shared/constants/filters';
+import { search_filter_labels } from '../../../../shared/constants/shared-enums';
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
+import { AlertAllIoc, AlertModel } from '../../../../shared/model/company-profile/node.model';
+import { FilterModel } from '../../../../shared/model/filter/filter.model';
+import { buildStandardExportOptions } from '../../../../shared/model/report/export-choice.model';
+import { CategoryAlerts } from '../../../../shared/partials/alert-notification/model/alert.notification.model';
+import { AlertExportService } from '../../../../shared/partials/alert-notification/services/alert-export.service';
+import { ConfirmationPopupComponent } from "../../../../shared/partials/confirmation-popup/confirmation-popup.component";
 import { EmptyResultComponent } from '../../../../shared/partials/empty-result/empty-result.component';
 import { ExportChoiceModalComponent } from '../../../../shared/partials/export-choice-modal/export-choice-modal.component';
-import { buildStandardExportOptions } from '../../../../shared/model/report/export-choice.model';
-import { AlertExportService } from '../../../../shared/partials/alert-notification/services/alert-export.service';
-import { SidebarHomepageService } from '../../../../services/dashboard/sidebar.service';
+import { FiltersComponent } from "../../../../shared/partials/filters/filters.component";
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { ApiService } from '../../../../shared/services/api.service';
+import { HelperService } from '../../../../shared/services/helper.service';
+import { SidebarService } from '../../../../shared/services/sidebar.service';
 import { TranslationService } from '../../../../shared/services/translation.service';
+import { getOwnProperty, isUnknownRecord } from '../../../../shared/utils/type-guards.util';
+import { AddCustomAlertComponent } from "../add-custom-alert/add-custom-alert.component";
 import { CategoryAlertDetailDrawerComponent } from './alert-detail-drawer/category-alert-detail-drawer.component';
+import type { AlertPageResponse, StixBundle, StixReportObject } from './model/category-alert-report.model';
+export type { AlertPageResponse,StixBundle,StixExternalReference,StixReportObject } from './model/category-alert-report.model';
+
+
+
+
+
+
+
+
+
 
 @Component({
   selector: 'app-category-alert-report',
@@ -43,37 +55,36 @@ export class CategoryAlertReportComponent implements OnInit {
   visibleFilteredAlerts: CategoryAlerts[] = [];
   readonly serverPageSize: number = 20;
   readonly incrementalDelayMs: number = 90;
-  currentPage: number = 0;
-  hasMoreAlerts: boolean = false;
-  isLoadingMoreAlerts: boolean = false;
-  isInitialLoading: boolean = false;
+  currentPage = 0;
+  hasMoreAlerts = false;
+  isLoadingMoreAlerts = false;
+  isInitialLoading = false;
   activeDateRange: string | null = null;
   activeAlertFilters: Record<string, string | null> = {};
-  searchText: string = '';
-  category: string = '';
+  searchText = '';
+  category = '';
   iocTypes: Record<string, string> = { ...search_filter_labels };
-  showCustomAlertPopup: boolean = false;
-  showEditAlertPopup: boolean = false;
+  showCustomAlertPopup = false;
+  showEditAlertPopup = false;
   isFilterOpen$: Observable<boolean>;
   selectedAlert!: AlertModel;
   isFlushAllConfirmationOpen = signal(false);
   isDeleteAlertConfirmationOpen = signal(false);
-  selectedDeleteAlertId: string = '';
+  selectedDeleteAlertId = '';
   importedAlert: AlertModel | null = null;
   alertToShowReport: AlertModel | null = null;
   activeDetailAlert: CategoryAlerts | null = null;
   alertExportScope: 'selected' | 'category' = 'selected';
-  isExportChoiceOpen: boolean = false;
-  isAdminTenantAlertReport: boolean = false;
+  isExportChoiceOpen = false;
+  isAdminTenantAlertReport = false;
   adminTenantId: string | null = null;
   readonly alertExportOptions = buildStandardExportOptions('category-alert-export-option', 'report', 'Generate PDF export for selected alert.');
-  expandedAlertIds = new Set<string>();
 
   constructor( private router: Router, private route: ActivatedRoute, public appService: AppService, public sidebarService: SidebarService, private apiService: ApiService, private messageNotificationService: MessageNotificationService, protected licenseService: LicenseService, private helperService: HelperService, private alertExportService: AlertExportService, private sidebarHomepageService: SidebarHomepageService, private translationService: TranslationService ) {
     this.isFilterOpen$ = this.sidebarService.sidebarState$;
   }
 
-  private decrementUnseenSummary(by: number = 1): void {
+  private decrementUnseenSummary(by = 1): void {
     const summary = this.appService.userSessionData().alert_summary;
     if (!summary) {
       return;
@@ -94,15 +105,15 @@ export class CategoryAlertReportComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.isAdminTenantAlertReport = this.route.snapshot.data['adminTenantAlerts'] === true;
+    this.isAdminTenantAlertReport = this.route.snapshot.data.adminTenantAlerts === true;
     this.route.url.pipe(map(segments => {
       if (segments && segments.length > 0) {
         return segments[segments.length - 1].path;
       }
       return '';
     })).subscribe(lastSegment => {
-      this.adminTenantId = this.route.snapshot.paramMap.get('tenantId') || this.route.snapshot.queryParamMap.get('tenantId');
-      this.category = this.route.snapshot.paramMap.get('type') || lastSegment;
+      this.adminTenantId = this.route.snapshot.paramMap.get('tenantId') ?? this.route.snapshot.queryParamMap.get('tenantId');
+      this.category = this.route.snapshot.paramMap.get('type') ?? lastSegment;
       this.getLatestAlerts();
     });
   }
@@ -131,7 +142,7 @@ export class CategoryAlertReportComponent implements OnInit {
         return;
       }
 
-      this.visibleFilteredAlerts = [...this.visibleFilteredAlerts, items[index]];
+      this.visibleFilteredAlerts = [...this.visibleFilteredAlerts, getOwnProperty(items, index)];
       index += 1;
       this.appendTimer = setTimeout(appendNext, this.incrementalDelayMs);
     };
@@ -156,9 +167,9 @@ export class CategoryAlertReportComponent implements OnInit {
       return;
     }
 
-    this.apiService.get<any>(endpoint).subscribe({
+    this.apiService.get<AlertPageResponse>(endpoint).subscribe({
       next: response => {
-        const rawItems: AlertModel[] = response?.items || [];
+        const rawItems: AlertModel[] = response?.items ?? [];
         for (const item of rawItems) {
           if (item?.alert_id) {
             this.alertLookupById.set(item.alert_id, item);
@@ -166,13 +177,13 @@ export class CategoryAlertReportComponent implements OnInit {
         }
         const convertedItems = this.convertAlertsList(rawItems, this.category);
 
-        this.currentPage = response?.page || nextPage;
+        this.currentPage = response?.page ?? nextPage;
         this.hasMoreAlerts = !!response?.has_more;
         this.alerts = reset ? convertedItems : [...this.alerts, ...convertedItems];
         this.refreshAlertFilterOptions();
         this.isInitialLoading = false;
 
-        if (this.activeDateRange || this.searchText.trim()) {
+        if (Boolean(this.activeDateRange) || Boolean(this.searchText.trim())) {
           this.applyCurrentFilters();
           this.isLoadingMoreAlerts = false;
           return;
@@ -220,10 +231,10 @@ export class CategoryAlertReportComponent implements OnInit {
       this.apiService.post(`profile/alerts/delete/${this.category}`, null).subscribe({
         next: () => {
           this.getLatestAlerts();
-          this.router.navigate(["/dashboard"], {});
+          void this.router.navigate(["/dashboard"], {});
         },
         error: (err) => {
-          this.messageNotificationService.show(err?.error?.detail || this.translationService.translate('Failed to delete'))
+          this.messageNotificationService.show(err?.error?.detail ?? this.translationService.translate('Failed to delete'))
         },
       });
     }
@@ -231,13 +242,14 @@ export class CategoryAlertReportComponent implements OnInit {
 
   showAlertPopup(action: string, id: string) {
     switch (action) {
-      case 'edit':
+      case 'edit': {
         const alert = this.alertLookupById.get(id);
         if (alert) {
           this.selectedAlert = alert;
           this.showEditAlertPopup = true;
         }
         break;
+      }
 
       case 'add':
         this.showCustomAlertPopup = true;
@@ -246,18 +258,6 @@ export class CategoryAlertReportComponent implements OnInit {
       default:
         break;
     }
-  }
-
-  isAlertExpanded(id: string): boolean {
-    return this.expandedAlertIds.has(id);
-  }
-
-  toggleAlertExpanded(id: string): void {
-    if (this.expandedAlertIds.has(id)) {
-      this.expandedAlertIds.delete(id);
-      return;
-    }
-    this.expandedAlertIds.add(id);
   }
 
   exportAlert(hash: string) {
@@ -286,7 +286,7 @@ export class CategoryAlertReportComponent implements OnInit {
     }
 
 
-    this.apiService.get<any>(apiUrl).subscribe({
+    this.apiService.get<unknown>(apiUrl).subscribe({
       next: (response) => {
         if (response) {
           this.helperService.downloadstixJson(response);
@@ -341,7 +341,7 @@ export class CategoryAlertReportComponent implements OnInit {
         this.getLatestAlerts();
       },
       error: (err) => {
-        const mess = err?.error?.detail || this.translationService.translate('Failed to delete alert');
+        const mess = err?.error?.detail ?? this.translationService.translate('Failed to delete alert');
         this.messageNotificationService.show(mess)
       },
     });
@@ -360,7 +360,7 @@ export class CategoryAlertReportComponent implements OnInit {
   }
 
   seeDetailReprot(alertId: string) {
-    this.alertToShowReport = this.alertLookupById.get(alertId) || null;
+    this.alertToShowReport = this.alertLookupById.get(alertId) ?? null;
 
     if (!this.alertToShowReport) {
       return;
@@ -416,7 +416,7 @@ export class CategoryAlertReportComponent implements OnInit {
       this.closeExportChoice();
       return;
     }
-    this.apiService.get<any>(endpoint).subscribe({
+    this.apiService.get<AlertModel[] | AlertPageResponse>(endpoint).subscribe({
       next: response => {
         const alerts: AlertModel[] = Array.isArray(response)
           ? response
@@ -455,15 +455,15 @@ export class CategoryAlertReportComponent implements OnInit {
 
         const _alert = this.alertLookupById.get(id);
         if (_alert?.type) {
-          const value = _alert.ioc_value || '-';
+          const value = _alert.ioc_value ?? '-';
           let scanType: string;
-          let route: string = '/dashboard/scanner/network-scan';
+          let route: string;
 
           switch (_alert.type.toLowerCase()) {
             case "advance scanning":
               scanType = "advance";
               route = "/dashboard/scanner/network-scan";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { page: 1, domain: encodeURIComponent(value), canType: scanType }
               });
               break;
@@ -471,7 +471,7 @@ export class CategoryAlertReportComponent implements OnInit {
             case "seo scanning":
               scanType = "seo";
               route = "/dashboard/scanner/network-scan";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { page: 1, q: value, scanType, section: 'seo-scan' }
               });
               break;
@@ -479,36 +479,34 @@ export class CategoryAlertReportComponent implements OnInit {
             case "repo scanning":
               scanType = "repo";
               route = "/dashboard/scanner/network-scan";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { page: 1, q: value, scanType, section: 'repository-scan' }
               });
               break;
 
-            case "email-breach":
+            case "email-breach": {
               const _username = value.split('@')[0];
-              scanType = "repo";
               route = "/dashboard/api/email-breach";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { username: _username, email: value }
               });
               break;
+            }
             case "playstore-scanning":
-              scanType = "repo";
               route = "/dashboard/api/playstore-scanner";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { playstore: value }
               });
               break;
             case "social-scanner":
-              scanType = "repo";
               route = "/dashboard/api/social-scanner";
-              this.router.navigate([route], {
+              void this.router.navigate([route], {
                 queryParams: { username: value }
               });
               break;
-            case "stealerlogs":
+            case "stealerlogs": {
               route = "/dashboard/stealerlogs";
-              const queryParams: any = {
+              const queryParams: Record<string, string | number | boolean> = {
                 q: "",
                 page: 1,
                 category: "credential",
@@ -522,10 +520,11 @@ export class CategoryAlertReportComponent implements OnInit {
               else {
                 queryParams.user = value;
               }
-              this.router.navigate([route], { queryParams });
+              void this.router.navigate([route], { queryParams });
               break;
+            }
             default:
-              this.router.navigate([`/dashboard/${this.category}/all/${hash}`]);
+              void this.router.navigate([`/dashboard/${this.category}/all/${hash}`]);
               break;
           }
 
@@ -556,39 +555,40 @@ export class CategoryAlertReportComponent implements OnInit {
   }
 
   convertToCategoryAlert(alert: AlertModel): CategoryAlerts {
-    const entity = alert.ioc_value || 'N/A';
-    const resultDate = this.extractAlertResultDate(alert.all_ioc || []);
+    const entity = alert.ioc_value ?? 'N/A';
+    const resultDate = this.extractAlertResultDate(alert.all_ioc ?? []);
     const password = this.extractAlertPassword(alert);
+    const category = alert.type ?? 'unknown';
 
     return {
-      id: alert.alert_id || '',
-      seen: alert.report_seen || false,
-      custom: alert.custom_alert || false,
-      risk: this.getRiskLevel(alert.type!, alert.risk),
-      category: alert.type || 'unknown',
-      title: alert.title || 'No Title',
-      description: alert.description || 'No description provided.',
-      hash: alert.data_hash || 'NO_HASH',
-      source: alert.source || 'N/A',
-      url: alert.url || 'N/A',
+      id: alert.alert_id ?? '',
+      seen: alert.report_seen ?? false,
+      custom: alert.custom_alert ?? false,
+      risk: this.getRiskLevel(category, alert.risk),
+      category,
+      title: alert.title ?? 'No Title',
+      description: alert.description ?? 'No description provided.',
+      hash: alert.data_hash ?? 'NO_HASH',
+      source: alert.source ?? 'N/A',
+      url: alert.url ?? 'N/A',
       entity: entity,
-      contentTypes: alert.content_types || [],
-      rawFindings: alert.raw_findings || {},
+      contentTypes: alert.content_types ?? [],
+      rawFindings: alert.raw_findings ?? {},
 
-      allIOC: alert.all_ioc || [],
-      detectedOn: alert.first_seen || new Date(),
+      allIOC: alert.all_ioc ?? [],
+      detectedOn: alert.first_seen ?? new Date(),
       resultDate,
       password,
     };
   }
 
   private extractAlertPassword(alert: AlertModel): string {
-    const fromIoc = this.getFirstAlertIocValue(alert.all_ioc || [], ['password', 'm_password']);
+    const fromIoc = this.getFirstAlertIocValue(alert.all_ioc ?? [], ['password', 'm_password']);
     if (fromIoc) {
       return fromIoc;
     }
-    if ((alert.type || '').toLowerCase() === 'stealerlogs') {
-      return this.cleanAlertValue(alert.description || '');
+    if ((alert.type ?? '').toLowerCase() === 'stealerlogs') {
+      return this.cleanAlertValue(alert.description ?? '');
     }
     return '';
   }
@@ -614,7 +614,7 @@ export class CategoryAlertReportComponent implements OnInit {
     const wanted = new Set(keys.map(key => key.toLowerCase()));
     const match = (allIOC || []).find(ioc => wanted.has(String(ioc?.name || '').toLowerCase()));
     const value = match?.values?.find(item => this.cleanAlertValue(item));
-    return this.cleanAlertValue(value || '');
+    return this.cleanAlertValue(value ?? '');
   }
 
   private cleanAlertValue(value: unknown): string {
@@ -671,23 +671,8 @@ export class CategoryAlertReportComponent implements OnInit {
     }
   }
 
-  sliceString(text: string, maxLength: number): string {
-    if (typeof text !== 'string' || text === null || text === undefined) {
-      return '';
-    }
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.slice(0, maxLength) + '...';
-  }
-
-  hasAlertUrl(url: string): boolean {
-    const normalizedUrl = (url || '').trim().toLowerCase();
-    return !!normalizedUrl && !['-', 'n/a', 'none', 'null'].includes(normalizedUrl);
-  }
-
   getAlertCardDate(alert: CategoryAlerts): Date {
-    return alert.resultDate || alert.detectedOn;
+    return alert.resultDate ?? alert.detectedOn;
   }
 
   getFilteredIocs(allIOC: AlertAllIoc[]): { label: string, count: number }[] {
@@ -733,7 +718,7 @@ export class CategoryAlertReportComponent implements OnInit {
       .map(alert => alert.detectedOn instanceof Date
         ? alert.detectedOn
         : new Date(alert.detectedOn))
-      .filter(date => !isNaN(date.getTime())); // ensures valid date
+      .filter(date => !isNaN(date.getTime()));
 
     if (validDates.length === 0) {
       return '-';
@@ -792,8 +777,8 @@ export class CategoryAlertReportComponent implements OnInit {
 
   applyFilter(filters: Record<string, string | null>) {
     this.activeAlertFilters = { ...filters };
-    const range = filters['daterange'];
-    this.activeDateRange = range || null;
+    const range = filters.daterange;
+    this.activeDateRange = range ?? null;
     this.applyCurrentFilters();
   }
 
@@ -815,13 +800,13 @@ export class CategoryAlertReportComponent implements OnInit {
       });
     }
 
-    const contentTypeFilter = this.normalizeFilterValue(this.activeAlertFilters['content_type']);
+    const contentTypeFilter = this.normalizeFilterValue(this.activeAlertFilters.content_type);
     if (contentTypeFilter && contentTypeFilter !== 'all') {
       result = result.filter(alert => (alert.contentTypes || []).some(value =>
         this.normalizeFilterValue(value).includes(contentTypeFilter)));
     }
 
-    const riskFilter = this.normalizeFilterValue(this.activeAlertFilters['risk']);
+    const riskFilter = this.normalizeFilterValue(this.activeAlertFilters.risk);
     if (riskFilter && riskFilter !== 'all') {
       result = result.filter(alert => this.normalizeFilterValue(alert.risk) === riskFilter);
     }
@@ -849,7 +834,7 @@ export class CategoryAlertReportComponent implements OnInit {
       filters: {
         ...this.filterModel.filters,
         content_type: {
-          ...this.filterModel.filters['content_type'],
+          ...this.filterModel.filters.content_type,
           options: this.toDropdownOptions(this.collectContentTypes()),
           suggestionEndpoint,
           suggestionParams
@@ -895,17 +880,6 @@ export class CategoryAlertReportComponent implements OnInit {
     ].join(' ').toLowerCase();
   }
 
-  filterByDate(start: Date, end: Date) {
-    const inclusiveEnd = new Date(end);
-    inclusiveEnd.setHours(23, 59, 59, 999);
-
-    this.filteredAlerts = this.alerts.filter(alert => {
-      const lastSeenDate = new Date(alert.detectedOn);
-      return lastSeenDate >= start && lastSeenDate <= inclusiveEnd;
-    });
-    this.visibleFilteredAlerts = [...this.filteredAlerts];
-  }
-
   isDomain(value: string): boolean {
     if (!value) {
       return false;
@@ -913,13 +887,16 @@ export class CategoryAlertReportComponent implements OnInit {
 
     value = value.replace(/https?:\/\//, "").replace(/^www\./, "");
 
-    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})*$/;
+    const labels = value.split('.');
 
-    return domainRegex.test(value);
+    return labels.length > 1 && /^[a-zA-Z0-9-]+$/.test(labels[0]) && labels.slice(1).every(label => /^[a-zA-Z]{2,}$/.test(label));
   }
 
-  onFileUpload(event: any) {
-    const file = event.target.files[0];
+  onFileUpload(event: Event) {
+    if (!(event.target instanceof HTMLInputElement)) {
+      return;
+    }
+    const file = event.target.files?.[0];
     if (!file) {
       return;
     }
@@ -944,30 +921,32 @@ export class CategoryAlertReportComponent implements OnInit {
             this.messageNotificationService.show(this.translationService.translate('Alert imported successfully!'), 'success');
           },
           error: (err) => {
-            const mess = err?.error?.detail || this.translationService.translate('Failed to add alert');
+            const mess = err?.error?.detail ?? this.translationService.translate('Failed to add alert');
             this.messageNotificationService.show(mess);
           },
         });
 
       }
-      catch (error: any) {
-        this.messageNotificationService.show(error.message || this.translationService.translate('Invalid JSON file'));
+      catch (error: unknown) {
+        this.messageNotificationService.show(error instanceof Error ? error.message : this.translationService.translate('Invalid JSON file'));
       }
     };
 
     reader.readAsText(file);
   }
 
-  validateAlert(data: any): AlertModel {
-    if (!data || typeof data !== 'object') {
+  validateAlert(data: unknown): AlertModel {
+    if (!isUnknownRecord(data)) {
       throw new Error('Invalid JSON structure');
     }
 
-    if (data.type !== 'bundle' || !Array.isArray(data.objects)) {
+    const bundle = data as StixBundle;
+
+    if (bundle.type !== 'bundle' || !Array.isArray(bundle.objects)) {
       throw new Error('Uploaded file must be a STIX 2.1 bundle');
     }
 
-    const report = data.objects.find((o: any) => o.type === 'report');
+    const report = bundle.objects.find((o: StixReportObject) => o.type === 'report');
 
     if (!report) {
       throw new Error('STIX bundle must contain a report object');
@@ -975,13 +954,18 @@ export class CategoryAlertReportComponent implements OnInit {
 
     const requiredReportFields = ['id', 'name', 'created', 'modified'];
     for (const field of requiredReportFields) {
-      if (!report[field]) {
+      if (!getOwnProperty(report, field)) {
         throw new Error(`Report missing required field: ${field}`);
       }
     }
 
-    const firstSeen = new Date(report.created);
-    const lastSeen = new Date(report.modified);
+    const created = report.created;
+    const modified = report.modified;
+    if (!created || !modified) {
+      throw new Error('Report timestamps are required');
+    }
+    const firstSeen = new Date(created);
+    const lastSeen = new Date(modified);
 
     if (isNaN(firstSeen.getTime()) || isNaN(lastSeen.getTime())) {
       throw new Error('Invalid report timestamps');
@@ -1003,12 +987,12 @@ export class CategoryAlertReportComponent implements OnInit {
       description: report.description ?? '',
 
       url:
-        report.external_references?.find((r: any) => r.url)?.url ?? '',
+        report.external_references?.find((r) => r.url)?.url ?? '',
 
       source:
         report.external_references?.[0]?.source_name ?? 'import',
 
-      all_ioc: data.objects,
+      all_ioc: bundle.objects as unknown as AlertAllIoc[],
       content_types: report.labels ?? [],
     };
   }

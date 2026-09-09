@@ -1,4 +1,4 @@
-export function buildSocialProfileUrl(platformName: string, username: string, fallbackUrl: string = ''): string {
+export function buildSocialProfileUrl(platformName: string, username: string, fallbackUrl = ''): string {
   if (!username) {
     return fallbackUrl || '#';
   }

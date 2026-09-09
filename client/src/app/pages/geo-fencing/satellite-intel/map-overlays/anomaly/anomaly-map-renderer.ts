@@ -2,13 +2,15 @@ import { ComponentRef } from '@angular/core';
 import { SatelliteAnomalyResponse } from '../../model/satellite-intel-api.models';
 import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-renderer';
 import { AnomalyMapPopupComponent } from './anomaly-map-popup.component';
+import type * as Leaflet from 'leaflet';
+import type { Nullable } from '../../../../../shared/utils/type-guards.util';
 
 export class AnomalyMapRenderer {
-  private layer: any = null;
-  private popupRef: ComponentRef<AnomalyMapPopupComponent> | null = null;
+  private layer: Nullable<Leaflet.LayerGroup> = null;
+  private popupRef: Nullable<ComponentRef<AnomalyMapPopupComponent>> = null;
   private renderKey = '';
 
-  constructor(private L: any, private map: any, private componentRenderer: LeafletComponentRenderer) {}
+  constructor(private L: typeof Leaflet, private map: Leaflet.Map, private componentRenderer: LeafletComponentRenderer) {}
 
   init(): void {
     if (!this.L || !this.map || this.layer) {
@@ -22,7 +24,7 @@ export class AnomalyMapRenderer {
       return;
     }
 
-    const renderKey = JSON.stringify(anomalyResult || null);
+    const renderKey = JSON.stringify(anomalyResult ?? null);
     if (renderKey === this.renderKey) {
       return;
     }
@@ -73,14 +75,14 @@ export class AnomalyMapRenderer {
     return [[mnLa, mnLo], [mxLa, mxLo]];
   }
 
-  private getRectangleOptions(alertLevel: string | undefined): Record<string, unknown> {
+  private getRectangleOptions(alertLevel: string | undefined): Leaflet.PathOptions {
     const colors: Record<string, string> = {
       critical: '#ef4444',
       warning: '#f59e0b',
       nominal: '#22c55e',
       unknown: '#3b82f6',
     };
-    const color = colors[alertLevel || 'unknown'] || colors['unknown'];
+    const color = colors[alertLevel ?? 'unknown'] || colors.unknown;
     return {
       color,
       weight: 2,

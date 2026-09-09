@@ -64,8 +64,9 @@ class AuditLogManager:
         skip = (page - 1) * page_size
 
         start = end = None
-        if getattr(param, "daterange", None):
-            parts = [p.strip() for p in param.daterange.split(",")]
+        daterange = getattr(param, "daterange", None)
+        if daterange:
+            parts = [p.strip() for p in daterange.split(",")]
             if len(parts) == 2:
                 start, end = self._parse_iso(parts[0]), self._parse_iso(parts[1])
             elif len(parts) == 1:
@@ -93,7 +94,7 @@ class AuditLogManager:
                 return {"items": [], "page": page}
             filters.append(db_audit_log.actor_id == str(actor.id))
 
-        query = {}
+        query: Any = {}
         for item in filters:
             query = item if query == {} else (query & item)
 

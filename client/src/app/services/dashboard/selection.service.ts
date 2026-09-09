@@ -30,10 +30,10 @@ export class SelectionStoreService {
 
   private setInitialSelectionFromUrl(url: string) {
     const pathOnly = url.split('?')[0].split('#')[0];
-    const match = pathOnly.match(/^\/dashboard\/([^\/]+)(?:\/([^\/]+))?(?:\/([^\/]+))?$/);
-    if (match) {
-      let section = match[1];
-      let option = match[2];
+    const segments = pathOnly.split('/').filter(Boolean);
+    if (pathOnly.startsWith('/dashboard/') && !pathOnly.includes('//') && segments.length >= 2 && segments.length <= 4 && !pathOnly.endsWith('/')) {
+      let section = segments[1];
+      let option = segments[2];
       const currentSection = this.getSelectedSection();
       const currentOption = this.selectedOptionSubject.value;
       const shouldRedirectToHome = !this.first_trigger &&

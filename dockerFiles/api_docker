@@ -33,8 +33,8 @@ COPY --chown=app:app backend/ /app/
 COPY --chown=app:app pyproject.toml /app/pyproject.toml
 COPY --chown=app:app README.md /app/s.md
 COPY --chown=app:app docs/ /app/docs/
-COPY --chown=app:app client/build/ /app/build/
-RUN test -d /app/build/assets \
+COPY --chown=app:app client/build/ /app/workspace/build/
+RUN test -d /app/workspace/build/assets \
     && mkdir -p /app/bloom_data \
     && chown app:app /app/bloom_data
 

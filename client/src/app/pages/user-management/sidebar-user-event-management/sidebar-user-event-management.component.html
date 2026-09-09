@@ -1,9 +1,9 @@
-<div class="mb-[200px] w-full px-[32px] max-[1200px]:px-[15px] max-[943px]:px-[10px]" @fadeInDashboardItem>
+<div class="fade-in-dashboard-item mb-[200px] w-full px-[32px] max-[1200px]:px-[15px] max-[943px]:px-[10px]">
   <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-consolidated-primary)] [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#f9fbff] [body.light-theme_&]:shadow-none p-5 w-full max-w-[2400px]">
     <h1 class="text-[20px] font-semibold leading-[1.2] text-[var(--color-text1)]">{{ 'Event Management' | translate }}</h1>
     <p class="mt-1 text-[12px] font-normal text-[var(--color-text6)]">{{ 'Search SIEM events for your own tenant only. Admin and maintainer access is tenant-scoped.' | translate }}</p>
 
-  <div class="mt-4" @fadeInDashboardItem>
+  <div class="fade-in-dashboard-item mt-4">
     <app-ioc-search
       [basicTags]="searchBuilderTags"
       [filterLabels]="searchBuilderLabels"
@@ -50,25 +50,25 @@
   }
 
   @if (loading) {
-    <div class="mt-4 w-full" @fadeInDashboardItem>
+    <div class="fade-in-dashboard-item mt-4 w-full">
       <app-loading-form></app-loading-form>
     </div>
   }
 
   @if (!queryTriggered && !loading) {
-    <div class="mt-4 w-full" @fadeInDashboardItem>
+    <div class="fade-in-dashboard-item mt-4 w-full">
       <app-empty-query></app-empty-query>
     </div>
   }
 
   @if (queryTriggered && !loading && !errorMessage && records.length === 0) {
-    <div class="mt-4 w-full" @fadeInDashboardItem>
+    <div class="fade-in-dashboard-item mt-4 w-full">
       <app-empty-result [searchQuery]="query"></app-empty-result>
     </div>
   }
 
   @if (queryTriggered && !loading && records.length > 0) {
-    <section class="mt-[15px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-770)] p-[15px]" @fadeInDashboardItem>
+    <section class="fade-in-dashboard-item mt-[15px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-770)] p-[15px]">
       <div class="flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3">
         <div class="flex items-center gap-2">
           <img alt="" src="assets/images/shared/search_elapsed_time.svg" class="h-5 w-5 [body.light-theme_&]:brightness-[0.65]">
@@ -146,7 +146,7 @@
                 </tr>
 
                 @if (expandedResultIndex === idx) {
-                  <tr @fadeInDashboardItem>
+                  <tr class="fade-in-dashboard-item">
                     <td colspan="6" class="!whitespace-normal bg-[var(--color-blue-720)] p-4 text-sm text-[var(--color-text1)]">
                       <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
                         <div class="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-4">

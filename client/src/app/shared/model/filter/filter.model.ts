@@ -6,7 +6,7 @@ export interface FilterOption {
     type: string;
     title: string;
     tooltip: string;
-    selected: string | string[];
+    selected?: string | string[];
     min?: number;
     max?: number;
     placeholder?: string;

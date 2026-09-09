@@ -1,13 +1,13 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgClass, NgOptimizedImage } from '@angular/common';
-import { DefacementModel, GenericModel, InsightMetric, LeakModel } from '../model/stats_insight.model';
+import { DefacementModel, GenericModel, InsightCallbackModel, InsightMetric, LeakModel } from '../model/stats_insight.model';
 import { TooltipDirective } from '../../../shared/directive/tooltip-directive.directive';
 import { LatestDocument, LatestDocumentCallbackModel } from '../model/document_insight.model';
-import { AppService } from '../../../services/core/app/app.service';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { InsightCacheService } from '../services/insight-cache.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { asUnknownRecord, getOwnProperty } from '../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-home-insight',
@@ -21,33 +21,47 @@ export class HomeInsightComponent implements OnInit {
 
   protected readonly String = String;
 
-  insights: any = { general: {}, leak: {}, defacement: {} };
+  insights: InsightCallbackModel = { general: {} as GenericModel, leak: {} as LeakModel, defacement: {} as DefacementModel };
   latestDocuments: LatestDocumentCallbackModel = { generic_model: [], leak_model: [], defacement_model: [], chat_model: [], exploit_model: [] };
   models: ("general" | "leak" | "defacement")[] = ["general", "leak", "defacement"];
   latestDocumentModelKeys: string[] = [];
   isLoading = true;
   readonly loadingCards = [1, 2, 3, 4];
 
-  constructor(private router: Router, private route: ActivatedRoute, public appService: AppService, protected licenseService: LicenseService, private insightCacheService: InsightCacheService) {
+  constructor(private router: Router, private route: ActivatedRoute, protected licenseService: LicenseService, private insightCacheService: InsightCacheService) {
   }
 
   ngOnInit() {
-    const data = this.route.snapshot.data['insights'];
+    const data = this.route.snapshot.data.insights;
     if (data) {
       this.applyInsightData(data);
       return;
     }
     this.insightCacheService.getInsight().subscribe(data => {
-      this.applyInsightData(data); 
+      this.applyInsightData(data);
     });
   }
 
-  private applyInsightData(data: any): void {
-    this.insights = data.insights;
-    this.latestDocuments = data.latestDocument;
-    this.latestDocumentModelKeys = (Object.keys(this.latestDocuments) as (keyof LatestDocumentCallbackModel)[]).filter(key => ['leak_model', 'chat_model', 'defacement_model'].includes(key) &&
-            this.latestDocuments[key] &&
-            this.latestDocuments[key].length > 0);
+  private applyInsightData(data: unknown): void {
+    const response = asUnknownRecord(data);
+    this.insights = {
+      general: {} as GenericModel,
+      leak: {} as LeakModel,
+      defacement: {} as DefacementModel,
+      ...asUnknownRecord(response.insights),
+    };
+    const latestDocuments = asUnknownRecord(response.latestDocument);
+    this.latestDocuments = {
+      generic_model: [],
+      leak_model: [],
+      defacement_model: [],
+      chat_model: [],
+      exploit_model: [],
+      ...latestDocuments,
+    };
+    this.latestDocumentModelKeys = Object.keys(this.latestDocuments).filter(key => ['leak_model', 'chat_model', 'defacement_model'].includes(key) &&
+            getOwnProperty(this.latestDocuments, key) &&
+            getOwnProperty(this.latestDocuments, key).length > 0);
     this.isLoading = false;
   }
 
@@ -57,7 +71,7 @@ export class HomeInsightComponent implements OnInit {
 
   getStatIcon(key: string, metric?: InsightMetric): string {
     const labelKey = (metric?.key ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    return this.statIconAliases[labelKey] ?? key;
+    return getOwnProperty(this.statIconAliases, labelKey) ?? key;
   }
 
   formatModelKey(key: string): string {
@@ -68,7 +82,7 @@ export class HomeInsightComponent implements OnInit {
   }
 
   getResultItems(modelKey: string): LatestDocument[] {
-    const model = (this.latestDocuments as any)[modelKey];
+    const model = this.latestDocuments[modelKey as keyof LatestDocumentCallbackModel];
     return Array.isArray(model) ? model.slice(0, 4) : [];
   }
 
@@ -87,13 +101,5 @@ export class HomeInsightComponent implements OnInit {
     segments.pop();
     const newBase = segments.join('/');
     return `${newBase}/consolidated/${model}/${hash}?ci=${model}&q=${title}`;
-  }
-
-  trimUrl(url: string, maxLength: number = 24): string {
-    if (!url) {
-      return '';
-    }
-    const cleanUrl = url.replace(/^(https?:\/\/)?(www\.)?/, '');
-    return cleanUrl.length > maxLength ? cleanUrl.slice(0, maxLength) + '...' : cleanUrl;
   }
 }

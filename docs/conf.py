@@ -46,7 +46,7 @@ html_css_files = [
 ]
 
 
-def _use_public_index(app, docname, source):
+def _use_public_index(_app, docname, source):
     if public_build and docname == master_doc:
         source[0] = (Path(__file__).parent / "public_index.md").read_text(encoding="utf-8")
 

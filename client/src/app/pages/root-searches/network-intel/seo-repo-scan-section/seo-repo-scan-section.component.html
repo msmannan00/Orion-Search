@@ -22,12 +22,12 @@
       </div>
 
       @if (isScanning() && !meta()) {
-        <div class="px-4 py-5" @fadeInDashboardItem>
+        <div class="px-4 py-5 seo-repo-scan-section-fade-in">
           <div class="mb-[6px] flex items-center justify-between gap-3">
             <span class="truncate text-[12px] font-medium text-[var(--color-text1)]">{{ loadingStepLabel | translate }}</span>
             <span class="text-[12px] font-semibold text-sky-400 [.light-theme_&]:!text-[#2d6f9f]">{{ progressValue }}%</span>
           </div>
-          <div class="relative overflow-hidden h-[8px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+          <div class="relative overflow-hidden h-[8px] w-full rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
             <div class="h-full rounded-full bg-[var(--color-blue-640)] transition-[width] duration-300 ease-out" [ngClass]="'ui-wpct-' + progressValue"></div>
           </div>
 
@@ -43,7 +43,7 @@
       }
 
       @if (meta()) {
-        <div class="px-4 py-4" @fadeInDashboardItem>
+        <div class="px-4 py-4 seo-repo-scan-section-fade-in">
           <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             @for (entry of summaryEntries; track entry.label) {
               <div class="flex min-h-[74px] flex-col justify-between rounded-lg border border-[var(--color-border)] border-t-sky-400/30 bg-[var(--color-blue-700)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">

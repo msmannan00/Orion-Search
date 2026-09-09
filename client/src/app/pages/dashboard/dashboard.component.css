@@ -1,0 +1,19 @@
+.dashboard-route-fade-a {
+  animation: dashboard-route-fade-a 350ms ease-out;
+}
+
+.dashboard-route-fade-b {
+  animation: dashboard-route-fade-b 350ms ease-out;
+}
+
+@keyframes dashboard-route-fade-a {
+  from { opacity: 50%; }
+
+  to { opacity: 100%; }
+}
+
+@keyframes dashboard-route-fade-b {
+  from { opacity: 50%; }
+
+  to { opacity: 100%; }
+}

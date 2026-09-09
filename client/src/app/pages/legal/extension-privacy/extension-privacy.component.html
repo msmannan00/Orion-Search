@@ -1,0 +1,195 @@
+<div class="min-h-screen bg-white text-[#475467] antialiased">
+
+  <header class="sticky top-0 z-50 border-b border-[#eaeef4] bg-white/85 backdrop-blur-md">
+    <div class="mx-auto flex h-[64px] max-w-[1120px] items-center justify-between px-6 max-[600px]:px-4">
+      <a href="/" aria-label="Go to homepage" class="flex items-center select-none">
+        <img [src]="logoSrc" (error)="onLogoError($event)" [alt]="appName" class="h-[30px] w-auto object-contain max-[600px]:h-[26px]">
+      </a>
+      <a href="/" class="text-[13.5px] font-medium text-[#2b90ee] transition-colors hover:text-[#1176d4] max-[600px]:text-[13px]">Back to {{ appName }} &rarr;</a>
+    </div>
+  </header>
+
+  <div class="border-b border-[#eef2f7] bg-gradient-to-b from-[#f6faff] to-white">
+    <div class="mx-auto max-w-[1120px] px-6 py-14 max-[600px]:px-4 max-[600px]:py-10">
+      <p class="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-[#2b90ee]">{{ extensionName }} &middot; Browser Extension</p>
+      <h1 class="text-[36px] font-bold leading-[1.12] tracking-[-0.02em] text-[#101828] max-[600px]:text-[27px]">Privacy Policy</h1>
+      <p class="mt-4 max-w-[620px] text-[16.5px] leading-[1.65] text-[#667085] max-[600px]:text-[15px]">How the {{ extensionName }} extension for {{ appName }} accesses, uses, and protects your information.</p>
+      <p class="mt-4 text-[13.5px] font-medium text-[#98a2b3]">Last updated: {{ lastUpdated }}</p>
+    </div>
+  </div>
+
+  <div class="mx-auto flex max-w-[1120px] gap-14 px-6 py-14 max-[600px]:px-4 max-[600px]:py-9 max-[1023px]:gap-0">
+
+    <aside class="hidden w-[248px] shrink-0 lg:block">
+      <nav class="sticky top-[88px]" aria-label="On this page">
+        <p class="mb-3 pl-4 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#98a2b3]">On this page</p>
+        <ul class="border-l border-[#eaeef4]">
+          @for (item of toc; track item.id; let i = $index) {
+            <li>
+              <a [href]="'#' + item.id" (click)="scrollTo(item.id, $event)" [ngClass]="activeId === item.id ? 'border-[#2b90ee] font-semibold text-[#101828]' : 'border-transparent text-[#667085] hover:border-[#c8d6e6] hover:text-[#101828]'" class="-ml-px block border-l-2 py-[7px] pl-4 text-[13px] leading-snug transition-colors">
+                <span class="tabular-nums text-[#98a2b3]">{{ (i + 1) < 10 ? '0' : '' }}{{ i + 1 }}</span>&nbsp;&nbsp;{{ item.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+    </aside>
+
+    <article class="min-w-0 max-w-[740px] flex-1">
+
+      <section id="scope" class="scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">01</span>Who this policy covers</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          This policy explains how the {{ extensionName }} browser extension (the &ldquo;extension&rdquo;) handles information. The extension is a companion to the {{ appName }} web application and is intended for authenticated {{ appName }} users who use it to carry out data-collection tasks they initiate. It works together with the {{ appName }} backend you or your organization connect it to; that backend is the destination for everything the extension collects.
+        </p>
+      </section>
+
+      <section id="what" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">02</span>What the extension does</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          When a signed-in {{ appName }} user starts a social-media data-collection task, the extension runs that task inside the user&rsquo;s own browser. It connects to the user&rsquo;s {{ appName }} account, receives the platform and profile the user selected, opens the corresponding pages, extracts the requested information, and returns the results to the user&rsquo;s {{ appName }} account. It has no other function, and it never acts on its own &mdash; only in response to tasks you start.
+        </p>
+      </section>
+
+      <section id="collect" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">03</span>Information we access and collect</h2>
+        <p class="mb-5 text-[15.5px] leading-[1.75] text-[#475467]">Depending on the task you run, the extension may access and transmit the following to your {{ appName }} account:</p>
+        <div class="space-y-4">
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Your {{ appName }} connection</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">The address of your {{ appName }} instance and the session token that authenticates the extension to your account. These are stored locally in the browser and sent only to your {{ appName }} instance so the extension can receive tasks and return results.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Public page content</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">The content of the public pages a task targets &mdash; for example a profile&rsquo;s public videos, posts, media, and profile details &mdash; which the extension reads and parses in the browser and returns to your {{ appName }} account.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Authenticated platform sessions <span class="font-normal text-[#98a2b3]">&mdash; only when you choose to sign in</span></p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">Some tasks let you authorize collection by signing in to a platform yourself, in a window the extension opens for that purpose. When, and only when, you complete that step, the extension captures that platform&rsquo;s session state &mdash; its cookies, local storage, session storage, IndexedDB data, the page origin, the signed-in username, and your browser&rsquo;s user-agent string &mdash; and sends it to your {{ appName }} account so the task can run under your own signed-in session. If you do not perform this sign-in step, this data is not collected.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Existing site cookies</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">To let a task read the same pages you can already see while signed in, the extension may read the relevant site&rsquo;s cookies for the specific hosts a task targets. This is used to access those pages on your behalf; it is not used to build any profile of your browsing.</p>
+          </div>
+        </div>
+        <p class="mt-5 text-[15.5px] leading-[1.75] text-[#475467]">The extension does not read pages, cookies, or storage for sites that are not part of a task you started, and it has no background tracking, analytics, or telemetry.</p>
+      </section>
+
+      <section id="use" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">04</span>How the information is used</h2>
+        <ul class="mb-4 space-y-2.5 pl-5 text-[15.5px] leading-[1.7] text-[#475467] marker:text-[#c0ccdb] [&>li]:list-disc">
+          <li>To authenticate the extension to your {{ appName }} account and receive the tasks you start.</li>
+          <li>To open the pages a task targets and extract the information the task requested.</li>
+          <li>To run tasks under your own signed-in session when you have chosen to authenticate to a platform.</li>
+          <li>To return the collected results to your {{ appName }} account.</li>
+        </ul>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">The information is used only to perform the tasks you initiate. It is not used for advertising, profiling, or any purpose unrelated to the extension&rsquo;s single purpose.</p>
+      </section>
+
+      <section id="storage" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">05</span>Where your data is sent and stored</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          All data the extension collects is sent only to the {{ appName }} instance you connect it to, over an encrypted connection, and is stored there under that instance&rsquo;s own data-handling and retention terms. The extension does not send your data to any third party and does not operate its own separate servers. Your {{ appName }} connection address and session token are kept in the browser&rsquo;s local extension storage on your device and are removed when you disconnect or remove the extension.
+        </p>
+      </section>
+
+      <section id="not" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">06</span>What the extension does not do</h2>
+        <ul class="space-y-3">
+          @for (line of [
+            'It does not sell or transfer your data to third parties.',
+            'It does not use or transfer your data for any purpose unrelated to its single purpose.',
+            'It does not use or transfer your data to determine creditworthiness or for lending purposes.',
+            'It does not load or execute any remotely-hosted code — all executable code ships inside the package.',
+            'It does not show advertising and does not run analytics or tracking of your browsing.'
+          ]; track line) {
+            <li class="flex gap-3">
+              <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e7f6ec]">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3 w-3 text-[#177245]"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="text-[15.5px] leading-[1.6] text-[#475467]">{{ line }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section id="permissions" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">07</span>Browser permissions</h2>
+        <p class="mb-5 text-[15.5px] leading-[1.75] text-[#475467]">The extension requests only the permissions its single purpose requires:</p>
+        <div class="overflow-x-auto rounded-xl border border-[#eaeef4]">
+          <table class="w-full border-collapse text-left align-top">
+            <thead>
+              <tr class="bg-[#f6faff]">
+                <th class="w-[150px] border-b border-[#eaeef4] px-4 py-3 text-[13px] font-semibold text-[#101828]">Permission</th>
+                <th class="border-b border-[#eaeef4] px-4 py-3 text-[13px] font-semibold text-[#101828]">Why it is needed</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (perm of [
+                { name: 'alarms', why: 'Keeps the background service worker alive and periodically reconnects to your account and checks for new tasks, since the browser suspends idle workers.' },
+                { name: 'cookies', why: 'Reads the relevant site cookies so tasks can access the same pages you can already see while signed in, and reads your account session cookie to authenticate.' },
+                { name: 'offscreen', why: 'Runs the task and parsing logic that needs a DOM, which a service worker does not have. No user interface is shown from the offscreen document.' },
+                { name: 'scripting', why: 'Injects the extension\'s own bundled functions into the pages a task targets to read and extract the requested content. Only the extension\'s own code is injected.' },
+                { name: 'storage', why: 'Stores the extension\'s settings and your ' + appName + ' connection locally on your device.' },
+                { name: 'host access (all sites)', why: 'The platforms a task targets are chosen by you at run time across many sites, so the specific hosts are not known in advance. Broad host access is required to open and read the pages for whichever platform your task specifies, and to communicate with your ' + appName + ' instance.' }
+              ]; track perm.name; let last = $last) {
+                <tr>
+                  <td class="px-4 py-3.5 font-mono text-[12.5px] font-medium text-[#2b90ee]" [ngClass]="last ? '' : 'border-b border-[#f0f3f8]'">{{ perm.name }}</td>
+                  <td class="px-4 py-3.5 text-[13.5px] leading-[1.65] text-[#5a6b7e]" [ngClass]="last ? '' : 'border-b border-[#f0f3f8]'">{{ perm.why }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="retention" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">08</span>Retention and your control</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          Data returned to your {{ appName }} account is retained and managed within that account. You control what runs and what is collected by choosing which tasks to start and whether to authenticate to a platform. You can disconnect the extension at any time, and removing it from your browser deletes its locally stored settings and connection details. To have data the extension returned removed, use your {{ appName }} account&rsquo;s data controls or contact the operator of your {{ appName }} instance.
+        </p>
+      </section>
+
+      <section id="security" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">09</span>Security</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          The extension communicates with your {{ appName }} instance over encrypted connections and keeps sensitive values, such as your session token, in local extension storage rather than transmitting them to any third party. No method of transmission or storage is completely secure, but we work to protect your information in line with the {{ appName }} platform&rsquo;s security practices.
+        </p>
+      </section>
+
+      <section id="children" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">10</span>Children&rsquo;s privacy</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          The extension is a professional tool intended for use by authenticated {{ appName }} users and is not directed to children. It is not intended for use by anyone under the age of majority in their jurisdiction.
+        </p>
+      </section>
+
+      <section id="changes" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">11</span>Changes to this policy</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          We may update this policy from time to time. When we do, we will revise the &ldquo;Last updated&rdquo; date at the top of this page. Material changes will be reflected here before they take effect.
+        </p>
+      </section>
+
+      <section id="contact" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">12</span>Contact us</h2>
+        <div class="rounded-2xl border border-[#eaeef4] bg-[#f6faff] p-6 max-[600px]:p-5">
+          <p class="mb-4 text-[15.5px] leading-[1.7] text-[#475467]">Have questions about this policy or about how the {{ extensionName }} extension handles your information? We&rsquo;re happy to help.</p>
+          <a [href]="'mailto:' + contactEmail" class="inline-flex items-center gap-2 rounded-lg bg-[#2b90ee] px-4 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#1176d4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2b90ee]">
+            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {{ contactEmail }}
+          </a>
+        </div>
+      </section>
+
+    </article>
+  </div>
+
+  <footer class="border-t border-[#eef2f7] bg-[#fafbfd]">
+    <div class="mx-auto flex max-w-[1120px] flex-wrap items-center justify-between gap-3 px-6 py-7 text-[13px] text-[#98a2b3] max-[600px]:px-4">
+      <span>&copy; {{ year }} {{ appName }}. All rights reserved.</span>
+      <span>{{ extensionName }} extension &middot; Privacy Policy</span>
+    </div>
+  </footer>
+
+</div>

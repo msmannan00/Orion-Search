@@ -1,28 +1,25 @@
 import type jsPDF from 'jspdf';
+import type { PdfExportFontData } from './model/pdf-export-fonts.model';
+export type { PdfExportFontData } from './model/pdf-export-fonts.model';
 
-export interface PdfExportFontData {
-  interBold: string;
-  interRegular: string;
-  monoRegular: string;
-}
+
+
 
 let fontDataPromise: Promise<PdfExportFontData | null> | null = null;
 
 export function loadPdfExportFontData(): Promise<PdfExportFontData | null> {
-  if (!fontDataPromise) {
-    fontDataPromise = Promise.all([
-      fetchFont('assets/fonts/Pdf/Inter-Regular.ttf'),
-      fetchFont('assets/fonts/Pdf/Inter-Bold.ttf'),
-      fetchFont('assets/fonts/Pdf/DejaVuSansMono.ttf')
-    ]).then(([interRegular, interBold, monoRegular]) => ({
-      interRegular,
-      interBold,
-      monoRegular
-    })).catch(() => {
-      fontDataPromise = null;
-      return null;
-    });
-  }
+  fontDataPromise ??= Promise.all([
+    fetchFont('assets/fonts/Pdf/Inter-Regular.ttf'),
+    fetchFont('assets/fonts/Pdf/Inter-Bold.ttf'),
+    fetchFont('assets/fonts/Pdf/DejaVuSansMono.ttf')
+  ]).then(([interRegular, interBold, monoRegular]) => ({
+    interRegular,
+    interBold,
+    monoRegular
+  })).catch(() => {
+    fontDataPromise = null;
+    return null;
+  });
   return fontDataPromise;
 }
 
@@ -39,7 +36,7 @@ export function registerPdfExportFonts(doc: jsPDF, fontData: PdfExportFontData |
     doc.addFont('DejaVuSansMono.ttf', 'courier', 'normal');
   }
   catch {
-    // jsPDF keeps its built-in Helvetica and Courier faces as a safe fallback.
+    return;
   }
 }
 

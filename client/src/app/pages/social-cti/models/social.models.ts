@@ -15,6 +15,7 @@ export interface social_meta {
     timestamp?: string;
     description?: string;
     avatar?: string;
+    [key: string]: unknown;
 }
 
 export interface social_profile_details {
@@ -25,12 +26,12 @@ export interface social_profile_details {
     profile_url?: string;
     total_posts?: string;
     total_followers?: string;
-    total_following?: string;
     total_likes?: string;
     avatar?: string;
     banner?: string;
     crawl_type?: string[];
     is_parsed?: boolean;
+    [key: string]: unknown;
 }
 
 export interface social_post_hate_speech {
@@ -46,6 +47,7 @@ export interface social_resource {
     resource_id?: string;
     url?: string;
     parent_url?: string;
+    parent_urls?: string[];
     title?: string;
     caption?: string;
     author?: string;
@@ -57,12 +59,17 @@ export interface social_resource {
     shares?: string;
     views?: string;
     hate_speech?: social_post_hate_speech | null;
+    [key: string]: unknown;
 }
 
 export interface social_resource_collection {
     id?: string;
     is_parsed?: boolean;
     resources?: social_resource[];
+    next_cursor?: string;
+    has_more?: boolean;
+    last_synced?: string;
+    [key: string]: unknown;
 }
 
 export interface social_online_presence_hit {
@@ -88,7 +95,7 @@ export interface social_stealer_log {
     created_at?: string;
     updated_at?: string;
     raw?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface social_wanted {
@@ -106,7 +113,42 @@ export interface social_wanted {
     summary?: string;
     notes?: string;
     source_url?: string;
-    [key: string]: any;
+    [key: string]: unknown;
+}
+
+export interface social_phone_knowledge_graph extends Record<string, unknown> {
+    description?: string;
+    detailed_desc?: string;
+}
+
+export interface social_phone_web_footprint extends Record<string, unknown> {
+    link?: string;
+    title?: string;
+    snippet?: string;
+}
+
+export interface social_phone_lookup_result extends Record<string, unknown> {
+    knowledge_graph?: social_phone_knowledge_graph;
+    name?: string;
+    formatted_address?: string;
+    rating?: string | number;
+    user_ratings_total?: string | number;
+    website?: string;
+    phone_numbers?: (string | number)[];
+    emails?: string[];
+    web_footprints?: social_phone_web_footprint[];
+}
+
+export interface social_phone_lookup {
+    query: string;
+    result: social_phone_lookup_result;
+    [key: string]: unknown;
+}
+
+export interface social_exposure_signals {
+    query: string;
+    records: social_stealer_log[];
+    [key: string]: unknown;
 }
 
 export interface social_profile_config {
@@ -123,6 +165,10 @@ export interface social_profile {
     online_presence?: social_online_presence_hit[] | null;
     stealer_logs?: social_stealer_log[] | null;
     wanted?: social_wanted[] | null;
+    wanted_query?: string | null;
+    exposure_signals?: social_exposure_signals | null;
+    phone_lookup?: social_phone_lookup | null;
+    [key: string]: unknown;
 }
 
 export interface db_social_model {

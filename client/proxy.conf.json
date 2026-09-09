@@ -1,19 +1,10 @@
 [
   {
-    "context": ["/api", "/admin", "/static", "/maintenance-assets", "/v1", "/documentation"],
-    "pathFilter": ["/api", "/admin", "/static", "/maintenance-assets", "/v1", "/documentation"],
-    "router": {
-      "/api": "https://127.0.0.1:8443",
-      "/admin": "https://127.0.0.1:8443",
-      "/static": "https://127.0.0.1:8443",
-      "/maintenance-assets": "https://127.0.0.1:8443",
-      "/v1": "https://127.0.0.1:8443",
-      "/documentation": "https://127.0.0.1:8443"
-    },
+    "context": ["/api", "/admin", "/static", "/maintenance-assets", "/v1", "/documentation", "/ext"],
+    "target": "https://127.0.0.1:8443",
     "secure": false,
     "ws": true,
     "changeOrigin": true,
-    "xfwd": true,
-    "logLevel": "debug"
+    "xfwd": true
   }
 ]

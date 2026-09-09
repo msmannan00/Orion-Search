@@ -4,6 +4,16 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class LowerPipe implements PipeTransform {
   transform(value: unknown): string {
-    return (value ?? '').toString().toLowerCase();
+    if (value === null || value === undefined) {
+      return '';
+    }
+    let text: string;
+    try {
+      text = typeof value === 'object' ? JSON.stringify(value) ?? '' : String(value);
+    }
+    catch {
+      text = '';
+    }
+    return text.toLowerCase();
   }
 }

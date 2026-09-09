@@ -42,7 +42,9 @@ export class BotMessageActionsComponent implements OnDestroy {
       if (this.copyFeedbackTimer) {
         clearTimeout(this.copyFeedbackTimer);
       }
-      this.copyFeedbackTimer = setTimeout(() => this.copied.set(false), 1400);
+      this.copyFeedbackTimer = setTimeout(() => {
+        this.copied.set(false);
+      }, 1400);
     });
   }
 }

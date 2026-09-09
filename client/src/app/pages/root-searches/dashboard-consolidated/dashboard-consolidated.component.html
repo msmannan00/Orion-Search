@@ -1,10 +1,10 @@
 <div id="dashboard-consolidated" class="relative flex h-full min-h-0 flex-col">
   @if (!isGeoFencing) {
     <app-result [showSorting]="false" [consolidated]="true" [shrinkmenu]="false" [showNoResult]="false"
-    (reloadData)="fetchSearchResults(true)" (onToggleSwitch)="onToggleMenu($event, true)" (updateQuery)="onUpdateQuery($event)"
+    (reloadData)="fetchSearchResults()" (onToggleSwitch)="onToggleMenu($event, true)" (updateQuery)="onUpdateQuery($event)"
     [activeTab]="isIOC ? 'IOCs' : (isNetworkIntel ? 'Network Intelligence' : 'Deep Search')" [isLoading]="isLoading()" [searchQuery]="query"
     [result_count]="getTotalResultCount()" [filterModel]="consolidated_filters"
-  (reloadFilters)="reloadFilters($event)" [showSelectedFilters]="true"></app-result>
+  (reloadFilters)="reloadFilters()" [showSelectedFilters]="true"></app-result>
   }
 <div [class]="isGeoFencing ? 'ui-consolidated-theme [--ui-consolidated-main-bg:#f9fbff] [--ui-consolidated-sub-bg:#fff] [--ui-consolidated-border:#d4e0ed] [--ui-consolidated-divider:#dde7f2] [--ui-consolidated-sub-hover:#fbfdff] [.dark-theme_&]:[--ui-consolidated-main-bg:#101A2B] [.dark-theme_&]:[--ui-consolidated-sub-bg:#172235] [.dark-theme_&]:[--ui-consolidated-border:#ffffff1a] [.dark-theme_&]:[--ui-consolidated-divider:#ffffff14] [.dark-theme_&]:[--ui-consolidated-sub-hover:#172235] mx-0 min-h-0 min-w-0 w-full flex-1 overflow-hidden max-[1200px]:mx-[20px] max-[1000px]:mx-[15px] max-[943px]:!mx-0' : 'ui-consolidated-theme [--ui-consolidated-main-bg:#f9fbff] [--ui-consolidated-sub-bg:#fff] [--ui-consolidated-border:#d4e0ed] [--ui-consolidated-divider:#dde7f2] [--ui-consolidated-sub-hover:#fbfdff] [.dark-theme_&]:[--ui-consolidated-main-bg:#101A2B] [.dark-theme_&]:[--ui-consolidated-sub-bg:#172235] [.dark-theme_&]:[--ui-consolidated-border:#ffffff1a] [.dark-theme_&]:[--ui-consolidated-divider:#ffffff14] [.dark-theme_&]:[--ui-consolidated-sub-hover:#172235] mt-4 mx-[30px] w-auto space-y-4 pb-16 max-[1200px]:mx-[20px] max-[1000px]:mx-[15px] max-[640px]:mx-[10px]'">
   @if (isNetworkIntel) {
@@ -18,7 +18,7 @@
       <app-consolidated-scan [isLoading]="isLoading()" #domainScan></app-consolidated-scan>
     }
     @if (!isLoading()) {
-      <div @fadeInDashboardItem>
+      <div class="fade-in-dashboard-item">
         <div class="grid gap-5 xl:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] max-[640px]:gap-4">
           <div class="min-w-0 space-y-4">
             @if (isGrouped) {
@@ -69,7 +69,7 @@
                         </span>
                       }
                     </div>
-                    <app-dashboard-result-apt @fadeInDashboardItem
+                    <app-dashboard-result-apt class="fade-in-dashboard-item"
                     [isExpandAble]="true" [directResults]="true" [searchResults]="externalConsolidatedFeedService.actorMalwareResults()"></app-dashboard-result-apt>
                   </div>
                 }
@@ -94,21 +94,21 @@
                     @if (index.value.length > 0) {
                       @if (index.key === 'leak_model' || index.key === 'generic_model' || index.key === 'tracking_model' || index.key === 'news_model') {
                         <app-dashboard-results-general-grid
-                          @fadeInDashboardItem [query]="query" [searchResults]="index.value" [isExpandAble]="true"
+                          class="fade-in-dashboard-item" [query]="query" [searchResults]="asGeneralResults(index.value)" [isExpandAble]="true"
                           [type]="index.key === 'leak_model' ? 'leak' : index.key === 'tracking_model' ? 'tracking' : index.key === 'news_model' ? 'news' : 'general'">
                         </app-dashboard-results-general-grid>
                       }
                       @if (index.key === 'exploit_model') {
-                        <app-dashboard-result-exploit @fadeInDashboardItem
-                        [isExpandAble]="true" [searchResults]="index.value"></app-dashboard-result-exploit>
+                        <app-dashboard-result-exploit class="fade-in-dashboard-item"
+                        [isExpandAble]="true" [searchResults]="asExploitResults(index.value)"></app-dashboard-result-exploit>
                       }
                       @if (index.key === 'social_model') {
-                        <app-dashboard-result-social @fadeInDashboardItem
-                        [isExpandAble]="true" [searchResults]="index.value"></app-dashboard-result-social>
+                        <app-dashboard-result-social class="fade-in-dashboard-item"
+                        [isExpandAble]="true" [searchResults]="asSocialResults(index.value)"></app-dashboard-result-social>
                       }
                       @if (index.key === 'chat_model') {
-                        <app-dashboard-result-chat @fadeInDashboardItem
-                        [isExpandAble]="true" [searchResults]="index.value"></app-dashboard-result-chat>
+                        <app-dashboard-result-chat class="fade-in-dashboard-item"
+                        [isExpandAble]="true" [searchResults]="asChatResults(index.value)"></app-dashboard-result-chat>
                       }
                     } @else {
                     }
@@ -122,24 +122,24 @@
                     @if (item.rank_index === 'leak_model' || item.rank_index === 'generic_model') {
                       <app-dashboard-results-general-grid
                         [query]="query"
-                        [searchResults]="[item]" [isExpandAble]="false"
+                        [searchResults]="asGeneralResults([item])" [isExpandAble]="false"
                       [type]="item.rank_index === 'leak_model' ? 'leak' : 'general'"></app-dashboard-results-general-grid>
                     }
                     @if (item.rank_index === 'apt_model' || item.rank_index === 'malware_model') {
                       <app-dashboard-result-apt [isExpandAble]="false" [directResults]="true"
-                      [searchResults]="[item]"></app-dashboard-result-apt>
+                      [searchResults]="asAptResults([item])"></app-dashboard-result-apt>
                     }
                     @if (item.rank_index === 'exploit_model') {
                       <app-dashboard-result-exploit [isExpandAble]="false"
-                      [searchResults]="[item]"></app-dashboard-result-exploit>
+                      [searchResults]="asExploitResults([item])"></app-dashboard-result-exploit>
                     }
                     @if (item.rank_index === 'social_model') {
                       <app-dashboard-result-social [isExpandAble]="false"
-                      [searchResults]="[item]"></app-dashboard-result-social>
+                      [searchResults]="asSocialResults([item])"></app-dashboard-result-social>
                     }
                     @if (item.rank_index === 'chat_model') {
                       <app-dashboard-result-chat [isExpandAble]="false"
-                      [searchResults]="[item]"></app-dashboard-result-chat>
+                      [searchResults]="asChatResults([item])"></app-dashboard-result-chat>
                     }
                   </div>
                 </div>

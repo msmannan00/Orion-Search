@@ -119,9 +119,11 @@ class ElasticsearchResultMapper:
 
         if category in ["stealerlogs", "email-breach"]:
             data_hash = helper_controller.extract_stealer_hash(result)
-            if result.get("username") and result.get("password"):
-                title = result.get("username")[0]
-                description = result.get("password")
+            username = result.get("username")
+            password = result.get("password")
+            if username and password:
+                title = username[0]
+                description = password
             elif raw:
                 cleaned = raw.split("://")[-1]
                 if ":" in cleaned:

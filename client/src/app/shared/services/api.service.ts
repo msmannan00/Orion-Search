@@ -12,11 +12,11 @@ export class ApiService {
     return this.http.get<T>(`${this.baseUrl}/${endpoint}`, options);
   }
 
-  post<T>( endpoint: string, body: any, options?: { headers?: HttpHeaders; } ): Observable<T> {
+  post<T>( endpoint: string, body: unknown, options?: { headers?: HttpHeaders; } ): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}/${endpoint}`, body, options);
   }
 
-  put<T>( endpoint: string, body: any, options?: { headers?: HttpHeaders; } ): Observable<T> {
+  put<T>( endpoint: string, body: unknown, options?: { headers?: HttpHeaders; } ): Observable<T> {
     return this.http.put<T>(`${this.baseUrl}/${endpoint}`, body, options);
   }
 

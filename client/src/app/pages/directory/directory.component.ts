@@ -5,12 +5,14 @@ import { FiltersComponent } from '../../shared/partials/filters/filters.componen
 import { DirectoryListComponent } from './directory-list/directory-list.component';
 import { PaginationComponent } from '../../shared/partials/pagination/pagination.component';
 import { AsyncPipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { FilterModel } from '../../shared/model/filter/filter.model';
+import { FilterModel, FilterOption } from '../../shared/model/filter/filter.model';
 import { directory_filters } from '../../shared/constants/filters';
 import { SidebarService } from '../../shared/services/sidebar.service';
 import { DirectoryService } from './services/directory.service';
 import { DirectoryCallbackModel } from './model/directory.model';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { getOwnProperty, setOwnProperty } from '../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-directory',
@@ -45,21 +47,21 @@ export class DirectoryComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
       const baseFilters = this.filterModel.filters;
-      const newFilters: any = {};
+      const newFilters: Record<string, FilterOption> = {};
       const initialSelectedFilters: Record<string, string> = {};
       for (const key of Object.keys(baseFilters)) {
-        const base = baseFilters[key];
-        const paramValue = params[key];
-        const match = base.options?.find((opt: any) => opt.key.toLowerCase() === paramValue?.toLowerCase());
+        const base = getOwnProperty(baseFilters, key);
+        const paramValue = getOwnProperty(params, key);
+        const match = base.options?.find((opt) => opt.key.toLowerCase() === paramValue?.toLowerCase());
         if (paramValue && match) {
-          newFilters[key] = {
+          setOwnProperty(newFilters, key, {
             ...base,
             selected: match.key
-          };
-          initialSelectedFilters[key] = match.key;
+          });
+          setOwnProperty(initialSelectedFilters, key, match.key);
         }
         else {
-          newFilters[key] = { ...base };
+          setOwnProperty(newFilters, key, { ...base });
         }
       }
       this.filterModel = {
@@ -67,7 +69,7 @@ export class DirectoryComponent implements OnInit {
         filters: newFilters
       };
       this.selectedFilters = initialSelectedFilters;
-      const currentPage = parseInt(params['page'], 10) || 1;
+      const currentPage = parseInt(params.page, 10) || 1;
       this.directoryService.setCurrentPage(currentPage);
       if (!this.isLoaded) {
         this.reloadDirectory();
@@ -93,7 +95,10 @@ export class DirectoryComponent implements OnInit {
   resetFilters() {
     this.selectedFilters = {};
     Object.keys(this.filterModel.filters).forEach(key => {
-      delete (this.filterModel.filters as any)[key].selected;
+      const filter = getOwnProperty(this.filterModel.filters, key);
+      if (filter) {
+        delete filter.selected;
+      }
     });
     this.router.navigate([], {
       relativeTo: this.route,

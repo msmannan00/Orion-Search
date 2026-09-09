@@ -1,30 +1,34 @@
 export class AppSettingsModel {
-  version: string = '1.0.0';
-  app_url: string = '';
-  language_allowed: string = 'en';
-  logo_url: string = '';
-  logo_wide_light: string = '';
-  logo_wide_dark: string = '';
-  auth_dashboard_icon:string='';
-  app_name: string = '';
-  meta_info: string = '';
-  home_header_data_sources: string = '';
-  home_header_adversaries: string = '';
-  home_header_pricing: string = '';
-  home_header_pricing_allowed: boolean = true;
-  home_header_whistle_blowing_allowed: boolean = false;
-  ai_endpoint_enabled: boolean = true;
-  admin_root_allowed: boolean = false;
-  smtp_configured: boolean = false;
-  s_onion: string = '';
+  version = '1.0.0';
+  app_url = '';
+  orion_mail_url = '';
+  language_allowed = 'en';
+  logo_url = '';
+  logo_wide_light = '';
+  logo_wide_dark = '';
+  auth_dashboard_icon='';
+  app_name = '';
+  meta_info = '';
+  home_header_data_sources = '';
+  home_header_adversaries = '';
+  home_header_pricing = '';
+  home_header_pricing_allowed = true;
+  home_header_whistle_blowing_allowed = false;
+  ai_endpoint_enabled = true;
+  backup_schedule = false;
+  admin_root_allowed = false;
+  smtp_configured = false;
+  s_onion = '';
 
   constructor(data?: Partial<Record<keyof AppSettingsModel, string | boolean>>) {
     if (data) {
       const hasAiEndpointEnabled = data.ai_endpoint_enabled !== undefined;
       this.ai_endpoint_enabled = data.ai_endpoint_enabled === true || data.ai_endpoint_enabled === '1' || (!hasAiEndpointEnabled && this.ai_endpoint_enabled);
+      this.backup_schedule = data.backup_schedule === true || data.backup_schedule === '1';
       this.admin_root_allowed = data.admin_root_allowed === true || data.admin_root_allowed === '1' || data.admin_root_allowed === 'true';
       this.version = (data.version as string) || this.version;
       this.app_url = (data.app_url as string) || this.app_url;
+      this.orion_mail_url = (data.orion_mail_url as string) || this.orion_mail_url;
       this.language_allowed = (data.language_allowed as string) || this.language_allowed;
       this.logo_url = (data.logo_url as string) || this.logo_url;
       this.logo_wide_light = (data.logo_wide_light as string) || this.logo_wide_light;
@@ -57,21 +61,21 @@ export class AppSettingsModel {
   }
 }
 export class LocalSettingsModel {
-  enable_advanced_tools: boolean = false;
-  advance_setting_toggle: boolean = true;
-  iocExpanded: boolean = true;
+  enable_advanced_tools = false;
+  advance_setting_toggle = true;
+  iocExpanded = true;
   entityfilterCategories: Record<string, string[]> = {};
-  entityFilterCondition: boolean = true;
-  isSidebarOpen: boolean = true;
-  matchType: string = "";
-  sortType: string = "";
+  entityFilterCondition = true;
+  isSidebarOpen = true;
+  matchType = "";
+  sortType = "";
 }
 export class ConfigSettings {
   appSettings: AppSettingsModel;
   localSettings: LocalSettingsModel;
 
   constructor(appSettings?: Partial<AppSettingsModel>, localSettings?: Partial<LocalSettingsModel>) {
-    this.appSettings = new AppSettingsModel(appSettings as Partial<Record<keyof AppSettingsModel, string | boolean>> | undefined);
+    this.appSettings = new AppSettingsModel(appSettings);
     this.localSettings = Object.assign(new LocalSettingsModel(), localSettings);
   }
 }

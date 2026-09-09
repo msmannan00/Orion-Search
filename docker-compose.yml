@@ -33,8 +33,12 @@ services:
       - ./backend/orion:/app/orion:cached
       - ./backend/routes:/app/routes:cached
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
+      - ./backend/tests:/app/tests:cached
       - ./backend/migrations:/app/migrations:cached
+      - ./backend/build/backups:/app/backups:delegated
       - ./client/build:/app/build:delegated
+      - ./client/build:/app/workspace/build:delegated
     expose:
       - "8070"
     extra_hosts:
@@ -44,11 +48,11 @@ services:
       - shared_bridge
       - orion_nexus_backend
     healthcheck:
-      test: [ "CMD-SHELL", "status=$$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8070/api/token || true); [ \"$$status\" = \"422\" ] || [ \"$$status\" = \"401\" ]" ]
+      test: [ "CMD-SHELL", "curl --fail --silent http://localhost:8070/api/public > /dev/null" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 300s
     command: >
       sh -c "python3 /app/cronjobs.py & exec uvicorn main:app --host 0.0.0.0 --port 8070 --reload --reload-dir /app/configs --reload-dir /app/orion --reload-dir /app/routes"
 
@@ -86,9 +90,14 @@ services:
       - ./backend/orion:/app/orion:cached
       - ./backend/routes:/app/routes:cached
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
+      - ./backend/tests:/app/tests:cached
       - ./backend/migrations:/app/migrations:cached
+      - ./backend/build/backups:/app/backups:delegated
       - ./client/build:/app/build:delegated
       - ./client/src/assets/data:/app/build/assets/data:ro
+      - ./client/build:/app/workspace/build:delegated
+      - ./client/src/assets/data:/app/workspace/build/assets/data:ro
     expose:
       - "8070"
     extra_hosts:
@@ -100,11 +109,11 @@ services:
       shared_bridge:
       orion_nexus_backend:
     healthcheck:
-      test: [ "CMD-SHELL", "status=$$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8070/api/token || true); [ \"$$status\" = \"422\" ] || [ \"$$status\" = \"401\" ]" ]
+      test: [ "CMD-SHELL", "curl --fail --silent http://localhost:8070/api/public > /dev/null" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 300s
     command: >
       sh -c "python3 /app/cronjobs.py & exec uvicorn main:app --host 0.0.0.0 --port 8070 --reload --reload-dir /app/configs --reload-dir /app/orion --reload-dir /app/routes"
 
@@ -136,7 +145,7 @@ services:
     networks:
       backend:
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8529/_admin/server/availability" ]
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8529/_admin/server/availability" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -155,8 +164,9 @@ services:
       - documentation
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./backend/.ssl:/etc/nginx/local-certs:ro
+      - ./backend/workspace/ssl:/etc/nginx/local-certs:ro
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
       - ./client/build:/client_build:ro
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -183,18 +193,20 @@ services:
       - documentation
     volumes:
       - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf:ro
-      - ./backend/.ssl:/etc/nginx/local-certs:ro
+      - ./backend/workspace/ssl:/etc/nginx/local-certs:ro
       - ./backend/static:/app/static:cached
+      - ./backend/workspace:/app/workspace:cached
       - ./client/build:/client_build:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       backend:
     healthcheck:
-      test: [ "CMD-SHELL", "status=$$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/api/token || true); [ \"$$status\" = \"422\" ] || [ \"$$status\" = \"401\" ]" ]
+      test: [ "CMD-SHELL", "status=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/admin/backups/status || true); [ \"$$status\" = \"401\" ] || [ \"$$status\" = \"200\" ]" ]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 300s
     environment:
       - ENABLE_BROTLI=1
 

@@ -1,29 +1,13 @@
-import { ApplicationRef, EnvironmentInjector } from '@angular/core';
-import { SatelliteAnomalyResponse, SatelliteLiveAircraft, SatelliteLiveShip } from '../model/satellite-intel-api.models';
-import { OrionSatelliteFeature, TrackingSidebarBridge } from '../../models/geo-fencing.models';
+import { SatelliteAnomalyResponse } from '../model/satellite-intel-api.models';
+import { OrionSatelliteFeature } from '../../models/geo-fencing.models';
 import { AnomalyMapRenderer } from '../map-overlays/anomaly/anomaly-map-renderer';
 import { AircraftMapRenderer } from './aircraft/aircraft-map-renderer';
-import { SatelliteAircraftTrackingService } from './aircraft/aircraft-tracking.service';
 import { FacilitiesMapRenderer } from './facilities/facilities-map-renderer';
 import { OrionFacilitiesMapRenderer } from './facilities/orion-facilities-map-renderer';
 import { LeafletComponentRenderer } from '../map-utils/leaflet-component-renderer';
 import { ShipMapRenderer } from './ships/ship-map-renderer';
-import { SatelliteShipTrackingService } from './ships/ship-tracking.service';
+import { EntityRendererConfig } from '../model/satellite-intel.model';
 
-type EntityRendererConfig = {
-  L: any;
-  map: any;
-  appRef: ApplicationRef;
-  environmentInjector: EnvironmentInjector;
-  aircraftService: SatelliteAircraftTrackingService;
-  shipService: SatelliteShipTrackingService;
-  sidebar: TrackingSidebarBridge;
-  getAircraftData: () => SatelliteLiveAircraft[];
-  getShipsData: () => SatelliteLiveShip[];
-  getOrionData: () => OrionSatelliteFeature[];
-  getFocusedFeature: () => OrionSatelliteFeature | null;
-  onFeatureSelected: (feature: OrionSatelliteFeature) => void;
-};
 
 export class EntityRenderer {
   private readonly componentRenderer: LeafletComponentRenderer;
@@ -34,7 +18,7 @@ export class EntityRenderer {
   private readonly anomalyRenderer: AnomalyMapRenderer;
 
   constructor(config: EntityRendererConfig) {
-    this.componentRenderer = new LeafletComponentRenderer(config.appRef, config.environmentInjector);
+    this.componentRenderer = new LeafletComponentRenderer(config.environmentInjector);
     this.facilitiesRenderer = new FacilitiesMapRenderer(config.L, config.map, this.componentRenderer);
     this.orionFacilitiesRenderer = new OrionFacilitiesMapRenderer({
       L: config.L,

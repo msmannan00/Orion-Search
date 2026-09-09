@@ -1319,12 +1319,12 @@ Orion Intelligence uses a multi-database architecture to support application dat
 
 The platform uses the following database components:
 
-| Database | Security-Relevant Purpose |
-| --- | --- |
-| MongoDB | Stores application records, user data, tenant settings, reports, audit logs, and operational records |
-| Elasticsearch | Stores indexed intelligence datasets for fast search and retrieval |
-| ArangoDB | Stores graph-based relationship data for CTI Graph and Social Intelligence workflows |
-| Redis | Supports caching, task coordination, temporary state, and queue-like workflows |
+| Database      | Security-Relevant Purpose                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| MongoDB       | Stores application records, user data, tenant settings, reports, audit logs, and operational records |
+| Elasticsearch | Stores indexed intelligence datasets for fast search and retrieval                                   |
+| ArangoDB      | Stores graph-based relationship data for CTI Graph and Social Intelligence workflows                 |
+| Redis         | Supports caching, task coordination, temporary state, and queue-like workflows                       |
 
 Each database serves a specific purpose within the Orion platform and is accessed through controlled backend services and authorized administrative access.
 

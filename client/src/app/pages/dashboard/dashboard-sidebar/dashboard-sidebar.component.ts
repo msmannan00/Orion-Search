@@ -26,7 +26,9 @@ import { SidebarShellComponent } from '../../../shared/partials/sidebar-shell/si
   templateUrl: './dashboard-sidebar.component.html',
 })
 export class DashboardSidebarComponent implements OnInit, OnDestroy {
-  private readonly resizeHandler = () => this.checkScreenWidth();
+  private readonly resizeHandler = () => {
+    this.checkScreenWidth();
+  };
   private readonly closeForSubscriptionHandler = () => {
     if (this.sidebar_default) {
       this.onToggleSidebar(this.mobile_menu_status);
@@ -169,7 +171,7 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
     this.scrollService.scrollReportToTop();
   }
 
-  onToggleSidebar(mobile_menu_status: boolean = false) {
+  onToggleSidebar(mobile_menu_status = false) {
     this.menuToggle.emit(undefined);
     this.sidebar_default = !this.sidebar_default;
     this.mobile_menu_status = mobile_menu_status;
@@ -196,8 +198,8 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
 
   getProfileCategories(): string[] {
     const categories = Object.values(ProfileSubCategory);
-    const canAccessFeeder = this.licenseService.getLicenses().some(license => ['feeder', 'enterprise'].includes(license));
-    const canAccessCaseManagement = this.isAdmin() || this.licenseService.isMaintainer() || (this.isAnalyst() && (this.appService.userSessionData().user.permissions || []).includes('case_management'));
+    const canAccessFeeder = this.isAdmin() && this.appService.userSessionData().tenant.isDefault && this.licenseService.getLicenses().some(license => ['feeder', 'enterprise'].includes(license));
+    const canAccessCaseManagement = this.isAdmin() || this.licenseService.isMaintainer() || ((this.isAnalyst() || this.isMember()) && (this.appService.userSessionData().user.permissions ?? []).includes('case_management'));
     const isMobileDemo = this.appService.isMobileMode();
 
     if (this.isAdmin()) {
@@ -215,6 +217,7 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
     }
     if (this.isMember() && this.licenseService.getLicenses().includes('maintainer')) {
       return categories.filter(c => c !== ProfileSubCategory.TENANT &&
+        c !== ProfileSubCategory.BACKUP_RESTORE &&
         c !== ProfileSubCategory.TAKEDOWN &&
         c !== ProfileSubCategory.EVENT_MANAGEMENT &&
         c !== ProfileSubCategory.LOG_MANAGER &&
@@ -227,6 +230,7 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
     if (this.isAnalyst()) {
       return categories.filter(c => c !== ProfileSubCategory.TENANT &&
         c !== ProfileSubCategory.SYSTEM_SETTINGS &&
+        c !== ProfileSubCategory.BACKUP_RESTORE &&
         c !== ProfileSubCategory.TAKEDOWN &&
         c !== ProfileSubCategory.MONITORING &&
         c !== ProfileSubCategory.EVENT_MANAGEMENT &&
@@ -241,6 +245,7 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
     }
     return categories.filter(c => c !== ProfileSubCategory.TENANT &&
       c !== ProfileSubCategory.SYSTEM_SETTINGS &&
+      c !== ProfileSubCategory.BACKUP_RESTORE &&
       c !== ProfileSubCategory.TAKEDOWN &&
       c !== ProfileSubCategory.MONITORING &&
       c !== ProfileSubCategory.EVENT_MANAGEMENT &&

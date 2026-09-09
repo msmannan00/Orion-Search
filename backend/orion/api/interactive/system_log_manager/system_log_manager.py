@@ -12,11 +12,12 @@ class SystemLogManager:
     __lock = threading.Lock()
 
     READ_CHUNK_SIZE = 64 * 1024
-    LOG_ROOT = Path(__file__).resolve().parents[3] / "logs"
+    LOG_ROOT = Path(__file__).resolve().parents[4] / "workspace" / "logs"
     LOG_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     LOG_FILE_PATTERN = re.compile(r"^log_\d+\.log$")
     LOG_LINE_PATTERN = re.compile(r"^(?:\[APP-LOG\]\s*)?(?P<type>[A-Z]+) - (?P<timestamp>\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}) : (?P<message>.*)$")
-    VISIBLE_LOG_TYPES = {"INFO", "WARNING", "ERROR"}
+    CALLER_PATTERN = re.compile(r"^(?P<message>.*) - (?P<caller>\S+ \([^()]*:\d+\))$", re.DOTALL)
+    VISIBLE_LOG_TYPES = {"INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"}
 
     @staticmethod
     def get_instance():
@@ -61,9 +62,19 @@ class SystemLogManager:
         total = 0
         has_more = False
         for path in files:
+            pending: list[str] = []
             for index, line in self._iter_log_lines_reverse(path):
                 item = self._parse_log_line(path, line, index)
-                if not item or (safe_type and item["type"] != safe_type):
+                if not item:
+                    pending.append(line)
+                    continue
+                if pending:
+                    item["raw"] = "\n".join([item["raw"], *reversed(pending)])
+                    merged, trailing_caller = self._split_caller("\n".join([item["message"], *reversed(pending)]))
+                    item["message"] = merged
+                    item["caller"] = item["caller"] or trailing_caller
+                    pending = []
+                if safe_type and item["type"] != safe_type:
                     continue
                 if flushed_at_dt and not self._entry_after_flush(item["timestamp"], flushed_at_dt):
                     continue
@@ -137,7 +148,6 @@ class SystemLogManager:
                     shutil.rmtree(path, onerror=self._make_writable_and_retry)
                 except OSError:
                     continue
-            self._remove_empty_dir(root)
         return {"success": True, "deleted": deleted}
 
     def _valid_log_date(self, log_date: str) -> bool:
@@ -160,6 +170,8 @@ class SystemLogManager:
                 for path in date_dir.rglob("*.log"):
                     if not path.is_file() or not self.LOG_FILE_PATTERN.fullmatch(path.name):
                         continue
+                    if path.parent.name == "error" and (path.parent.parent / "info").is_dir():
+                        continue
                     resolved = path.resolve()
                     if resolved in seen:
                         continue
@@ -171,9 +183,8 @@ class SystemLogManager:
         candidates = [
             self.LOG_ROOT,
             Path("/app/crawler_logs"),
-            Path.cwd() / "orion" / "logs",
-            Path.cwd() / "logs",
-            Path.cwd() / "backend" / "orion" / "logs",
+            Path.cwd() / "workspace" / "logs",
+            Path.cwd() / "backend" / "workspace" / "logs",
             Path.cwd().parent / "Orion-Crawler" / "app" / "logs",
         ]
         roots = []
@@ -193,12 +204,12 @@ class SystemLogManager:
         return self._log_date(path), path.stat().st_mtime, int(match.group(0)) if match else 0
 
     def _log_file_item(self, path: Path) -> dict:
-        stat = path.stat()
+        file_stat = path.stat()
         return {
             "date": self._log_date(path),
             "file": self._log_file_name(path),
-            "size": stat.st_size,
-            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            "size": file_stat.st_size,
+            "modified_at": datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
         }
 
     def _log_date(self, path: Path) -> str:
@@ -221,11 +232,7 @@ class SystemLogManager:
         log_type = match.group("type")
         if log_type not in self.VISIBLE_LOG_TYPES:
             return None
-        message = match.group("message")
-        caller = ""
-        separator = " - Function "
-        if separator in message:
-            message, caller = message.rsplit(" - ", 1)
+        message, caller = self._split_caller(match.group("message"))
         return {
             "id": f"{self._log_date(path)}:{self._log_file_name(path)}:{line_number}",
             "date": self._log_date(path),
@@ -237,6 +244,13 @@ class SystemLogManager:
             "caller": caller,
             "raw": line,
         }
+
+    @classmethod
+    def _split_caller(cls, message: str) -> tuple[str, str]:
+        match = cls.CALLER_PATTERN.match(message)
+        if not match:
+            return message, ""
+        return match.group("message"), match.group("caller")
 
     def _parse_flushed_at(self, flushed_at: str | None) -> datetime | None:
         if not flushed_at:

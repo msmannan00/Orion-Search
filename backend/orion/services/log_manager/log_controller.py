@@ -2,14 +2,17 @@ import datetime
 import inspect
 import logging
 import os
+import shutil
 import stat
+import subprocess
 import sys
+import traceback
 from threading import Lock
 
 from termcolor import colored
 
 if sys.platform == "win32":
-    os.system('color')
+    subprocess.call('color', shell=True)
 
 
 class log:
@@ -64,7 +67,7 @@ class log:
 
     def __write_to_file(self, log_message, lines_per_file=10000):
         try:
-            log_directory = os.path.join(os.getcwd(), 'orion/logs', datetime.datetime.now().strftime("%Y-%m-%d"))
+            log_directory = os.path.join(os.getcwd(), 'workspace/logs', datetime.datetime.now().strftime("%Y-%m-%d"))
             if not os.path.exists(log_directory):
                 os.makedirs(log_directory, exist_ok=True)
                 self.__cleanup_old_logs()
@@ -89,7 +92,7 @@ class log:
 
             os.chmod(log_filepath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
-        except Exception as e:
+        except Exception:
             pass
 
     def __format_log_message(self, log_type, p_log, include_caller=False):
@@ -103,30 +106,29 @@ class log:
 
     @staticmethod
     def __cleanup_old_logs(retention_days=30):
+        now = datetime.datetime.now().date()
+        if log.__last_cleanup_date == now:
+            return
+
+        log.__last_cleanup_date = now
+        cutoff_date = now - datetime.timedelta(days=retention_days)
+        log_root = os.path.join(os.getcwd(), 'workspace/logs')
+
         try:
-            now = datetime.datetime.now().date()
-            if log.__last_cleanup_date == now:
-                return
+            log_dirs = os.listdir(log_root)
+        except OSError:
+            return
 
-            log.__last_cleanup_date = now
-            cutoff_date = now - datetime.timedelta(days=retention_days)
-
-            log_root = os.path.join(os.getcwd(), 'logs')
-
-            for log_dir in os.listdir(log_root):
-                log_path = os.path.join(log_root, log_dir)
-                if os.path.isdir(log_path):
-                    try:
-                        log_date = datetime.datetime.strptime(log_dir, "%Y-%m-%d").date()
-                        if log_date < cutoff_date:
-                            for file in os.listdir(log_path):
-                                os.remove(os.path.join(log_path, file))
-                            os.rmdir(log_path)
-                    except ValueError:
-                        continue
-
-        except Exception as e:
-            pass
+        for log_dir in log_dirs:
+            log_path = os.path.join(log_root, log_dir)
+            if not os.path.isdir(log_path):
+                continue
+            try:
+                log_date = datetime.datetime.strptime(log_dir, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if log_date < cutoff_date:
+                shutil.rmtree(log_path, ignore_errors=True)
 
     def i(self, p_log):
         try:
@@ -170,3 +172,33 @@ class log:
             print(colored(console_log, 'red'))
         except Exception:
             pass
+
+
+class log_bridge(logging.Handler):
+    LEVEL = logging.WARNING
+
+    def emit(self, record):
+        try:
+            message = f"{record.name}: {record.getMessage()}"
+            if record.exc_info:
+                message += "\n" + "".join(traceback.format_exception(*record.exc_info)).strip()
+            if record.levelno >= logging.CRITICAL:
+                log.g().c(message)
+            elif record.levelno >= logging.ERROR:
+                log.g().e(message)
+            else:
+                log.g().w(message)
+        except Exception:
+            pass
+
+    @staticmethod
+    def install():
+        log.g()
+        root = logging.getLogger()
+        if any(isinstance(handler, log_bridge) for handler in root.handlers):
+            return
+        handler = log_bridge()
+        handler.setLevel(log_bridge.LEVEL)
+        root.addHandler(handler)
+        if root.level == logging.NOTSET or root.level > log_bridge.LEVEL:
+            root.setLevel(log_bridge.LEVEL)

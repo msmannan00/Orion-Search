@@ -2,10 +2,11 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/pages/app/app.component';
 import { bootstrapIconRegistry, BootstrapIconName } from './app/shared/icons/bootstrap-icon-registry';
-import '@angular/localize/init';
+import { getOwnProperty } from './app/shared/utils/type-guards.util';
 
 const PLACEHOLDER_SRC = '/assets/images/shared/placeholder.svg';
-const AUTH_ICON_SRC = '/assets/images/shared/auth_dashboard_icon.svg';
+const AUTH_FRAME_SRC = '/assets/images/shared/auth_dashboard_frame_base.svg';
+const AUTH_DASHBOARD_SRC = '/assets/images/shared/auth_dashboard_map.png';
 const SEARCH_LOGO_SRC = '/assets/images/shared/logo-wide-light.svg';
 const DEFAULT_DASHBOARD_LOGO_SRC = '/api/s/static/system/logo_wide_dark_default.png';
 const preloadImageHref = (href: string) => {
@@ -23,11 +24,8 @@ preload.rel = 'preload';
 preload.as = 'image';
 preload.href = PLACEHOLDER_SRC;
 document.head.prepend(preload);
-const preloadAuthIcon = document.createElement('link');
-preloadAuthIcon.rel = 'preload';
-preloadAuthIcon.as = 'image';
-preloadAuthIcon.href = AUTH_ICON_SRC;
-document.head.prepend(preloadAuthIcon);
+preloadImageHref(AUTH_FRAME_SRC);
+preloadImageHref(AUTH_DASHBOARD_SRC);
 const preloadSearchLogo = document.createElement('link');
 preloadSearchLogo.rel = 'preload';
 preloadSearchLogo.as = 'image';
@@ -36,15 +34,17 @@ document.head.prepend(preloadSearchLogo);
 preloadImageHref(DEFAULT_DASHBOARD_LOGO_SRC);
 const preloadPlaceholder = new Image();
 preloadPlaceholder.src = PLACEHOLDER_SRC;
-const preloadAuth = new Image();
-preloadAuth.src = AUTH_ICON_SRC;
+const preloadAuthFrame = new Image();
+preloadAuthFrame.src = AUTH_FRAME_SRC;
+const preloadAuthDashboard = new Image();
+preloadAuthDashboard.src = AUTH_DASHBOARD_SRC;
 const preloadSearch = new Image();
 preloadSearch.src = SEARCH_LOGO_SRC;
 const preloadDashboardLogo = new Image();
 preloadDashboardLogo.src = DEFAULT_DASHBOARD_LOGO_SRC;
 const bootstrapIconClassPattern = /(?:^|\s)(bi-[A-Za-z0-9-]+)(?=\s|$)/;
 const getBootstrapIconName = (element: Element): BootstrapIconName | null => {
-    const className = element.getAttribute('class') || '';
+    const className = element.getAttribute('class') ?? '';
     const match = className.match(bootstrapIconClassPattern);
     if (!match) {
         return null;
@@ -53,7 +53,7 @@ const getBootstrapIconName = (element: Element): BootstrapIconName | null => {
     return iconName in bootstrapIconRegistry ? iconName : null;
 };
 const buildBootstrapSvgElement = (iconName: BootstrapIconName): SVGSVGElement => {
-    const icon = bootstrapIconRegistry[iconName];
+    const icon = getOwnProperty(bootstrapIconRegistry, iconName);
     const parser = new DOMParser();
     const parsed = parser.parseFromString(
         `<svg xmlns="http://www.w3.org/2000/svg">${icon.markup}</svg>`,
@@ -70,24 +70,21 @@ const buildBootstrapSvgElement = (iconName: BootstrapIconName): SVGSVGElement =>
     return svg;
 };
 const renderBootstrapIcon = (element: Element) => {
-    if (!(element instanceof HTMLElement)) {
-        return;
-    }
     const iconName = getBootstrapIconName(element);
     if (!iconName) {
-        if (element.dataset['bootstrapIconRendered'] === '1') {
+        if (element.getAttribute('data-bootstrap-icon-rendered') === '1') {
             element.textContent = '';
-            delete element.dataset['bootstrapIconRendered'];
-            delete element.dataset['bootstrapIconName'];
+            element.removeAttribute('data-bootstrap-icon-rendered');
+            element.removeAttribute('data-bootstrap-icon-name');
         }
         return;
     }
-    if (element.dataset['bootstrapIconName'] === iconName) {
+    if (element.getAttribute('data-bootstrap-icon-name') === iconName) {
         return;
     }
     element.replaceChildren(buildBootstrapSvgElement(iconName));
-    element.dataset['bootstrapIconRendered'] = '1';
-    element.dataset['bootstrapIconName'] = iconName;
+    element.setAttribute('data-bootstrap-icon-rendered', '1');
+    element.setAttribute('data-bootstrap-icon-name', iconName);
 };
 const hydrateBootstrapIcons = (root: ParentNode | Element = document) => {
     if (root instanceof Element) {
@@ -97,23 +94,24 @@ const hydrateBootstrapIcons = (root: ParentNode | Element = document) => {
 };
 hydrateBootstrapIcons();
 const mark = (img: HTMLImageElement) => {
-    if (img.dataset['ph'] === '1') {
+    if (img.dataset.ph === '1') {
         return;
     }
-    const src = img.getAttribute('src') || '';
-    const alt = (img.getAttribute('alt') || '').toLowerCase();
+    const src = img.getAttribute('src') ?? '';
+    const alt = (img.getAttribute('alt') ?? '').toLowerCase();
     if (!/images\/(statistics|sidebar)\//.test(src)) {
         return;
     }
     if (alt === 'background' ||
         src.endsWith('Bg.webp') ||
         src.endsWith('hint.svg') ||
-        src.endsWith('auth_dashboard_icon.svg') ||
+        src.endsWith('auth_dashboard_frame_base.svg') ||
+        src.endsWith('auth_dashboard_map.png') ||
         src.includes('search_nav_logo.png') ||
         img.classList.contains('auth-wrapper__image')) {
         return;
     }
-    img.dataset['ph'] = '1';
+    img.dataset.ph = '1';
     img.setAttribute('data-ph', '');
     const onload = () => { img.removeAttribute('data-ph'); };
     img.addEventListener('load', onload, { once: true });

@@ -2,43 +2,41 @@
   "__all__": {
     "disallow": [
       "connections",
-      "followers",
-      "following"
+      "followers"
     ]
   },
   "blogger": {},
   "bluesky": {},
   "devto": {},
   "facebook": {},
+  "gettr": {},
   "habr": {},
   "hackernoon": {},
   "hashnode": {},
-  "instagram": {},
   "mastodon": {},
   "medium": {},
   "microblog": {},
   "misskey": {},
   "nostr": {},
+  "pinterest": {},
   "pleroma": {},
+  "plurk": {},
   "primal": {},
-  "quora": {},
   "reddit": {},
   "stackoverflow": {},
   "substack": {},
   "threads": {},
-  "tiktok": {
+  "twitter": {
     "allow": [
-      "shorts"
-    ],
-    "disallow": [
-      "posts"
+      "posts",
+      "comments"
     ]
   },
-  "twitter": {
-    "allow": ["posts", "comments"]
-  },
   "x": {
-    "allow": ["posts", "comments"]
+    "allow": [
+      "posts",
+      "comments"
+    ]
   },
   "youtube": {
     "allow": [

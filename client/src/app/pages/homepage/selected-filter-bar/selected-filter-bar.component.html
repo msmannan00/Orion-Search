@@ -1,4 +1,4 @@
-<div [ngClass]="{ 'mt-[10px]': showSorting() }" @fadeInDashboardItem>
+<div [ngClass]="{ 'mt-[10px]': showSorting() }" class="fade-in-dashboard-item">
   @if (sidebarFilterCount(true)>0 || entityFiltersCount()>0 || this.app_service.getConfig().localSettings.matchType && this.app_service.getConfig().localSettings.matchType!='or') {
     <div class="selected-filter-shell mt-[15px] w-full max-w-[910px] rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-890)] px-[24px] py-[8px] pl-[17px] font-[Inter] text-[var(--color-text1)] max-[900px]:max-w-full [.light-theme_&]:!border-[#d7dee8] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none">
       <div class="flex items-center justify-between gap-[10px] max-[640px]:flex-wrap max-[640px]:items-start">

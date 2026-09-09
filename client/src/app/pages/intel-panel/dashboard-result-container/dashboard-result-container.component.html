@@ -13,14 +13,14 @@
 </app-result>
 
 @if (!isResponseLoading() && currentResultModel?.length > 0) {
-  <div @fadeInDashboardItem>
+  <div class="dashboard-result-container-item-in">
     <div [class]="apiEndpoint === 'search/defacement' || apiEndpoint === 'search/exploit' || apiEndpoint === 'search/apt-intel' ? 'mx-[32px] max-w-none pb-[16px] max-[1000px]:mx-[15px]' : 'mx-[32px] max-w-[1220px] pb-[16px] max-[1000px]:mx-[15px]'">
       @for (item of currentResultModel; track (item.m_hash || item.m_message_id || item.id || item.m_url || 'item') + '-' + $index) {
         <div class="space-y-6">
           @if (item.rank_index === 'leak_model' || item.rank_index === 'generic_model') {
             <app-dashboard-results-general-grid
               [query]="currentQuery"
-              [searchResults]="[item]"
+              [searchResults]="asGeneralResults([item])"
               [isExpandAble]="false"
               [type]="item.rank_index === 'generic_model' ? 'Strategic' : 'leak'">
             </app-dashboard-results-general-grid>
@@ -28,32 +28,32 @@
           @if ((item.rank_index === 'apt_model' || item.rank_index === 'malware_model' || (apiEndpoint === 'search/apt-intel' && item.rank_index === 'defacement_model')) && (apiEndpoint !== 'search/apt-intel' || $index === 0)) {
             <app-dashboard-result-apt
               [isExpandAble]="false"
-              [searchResults]="apiEndpoint === 'search/apt-intel' ? currentResultModel : [item]">
+              [searchResults]="asAptResults(apiEndpoint === 'search/apt-intel' ? currentResultModel : [item])">
             </app-dashboard-result-apt>
           }
           @if (item.rank_index === 'exploit_model' && (apiEndpoint !== 'search/exploit' || $index === 0)) {
             <app-dashboard-result-exploit
               [isExpandAble]="false"
-              [searchResults]="apiEndpoint === 'search/exploit' ? currentResultModel : [item]">
+              [searchResults]="asExploitResults(apiEndpoint === 'search/exploit' ? currentResultModel : [item])">
             </app-dashboard-result-exploit>
           }
           @if (item.rank_index === 'social_model') {
             <app-dashboard-result-social
               [isExpandAble]="false"
-              [searchResults]="[item]">
+              [searchResults]="asSocialResults([item])">
             </app-dashboard-result-social>
           }
           @if (item.rank_index === 'chat_model') {
             <app-dashboard-result-chat
               [isExpandAble]="false"
-              [searchResults]="[item]">
+              [searchResults]="asChatResults([item])">
             </app-dashboard-result-chat>
           }
           @if (apiEndpoint === 'search/defacement' && item.rank_index === 'defacement_model' && $index === 0) {
             <app-dashboard-result-defacement
               [groupedResults]="defacementGroups"
               [searchQuery]="currentQuery"
-              [searchResults]="currentResultModel">
+              [searchResults]="asDefacementResults(currentResultModel)">
             </app-dashboard-result-defacement>
           }
           @if ($index === 1 && shouldShowCrossSearch) {
@@ -73,7 +73,7 @@
 }
 
 @if (!isResponseLoading() && currentResultModel?.length>0) {
-  <div @fadeInDashboardItem class="mt-4 mx-[32px] w-[calc(100%-64px)] max-w-[910px] pb-[100px] max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)]">
+  <div class="dashboard-result-container-item-in mt-4 mx-[32px] w-[calc(100%-64px)] max-w-[910px] pb-[100px] max-[1000px]:mx-[15px] max-[1000px]:w-[calc(100%-30px)]">
     <app-pagination
       (pageChange)="onPageChange($event)"
       [align]="'left'"

@@ -123,7 +123,7 @@ class search_defacement_controller:
         for group in groups.values():
             records_in_group = sorted(
                 group["records"],
-                key=lambda record: str(record.get("m_date") or record.get("m_update_date") or record.get("m_creation_date") or ""),
+                key=lambda entry: str(entry.get("m_date") or entry.get("m_update_date") or entry.get("m_creation_date") or ""),
                 reverse=True)
             sites = set()
             ips = set()
@@ -164,7 +164,7 @@ class search_defacement_controller:
 
         return sorted(
             groups.values(),
-            key=lambda group: (str(group["latest_seen"] or ""), group["record_count"]),
+            key=lambda team_group: (str(team_group["latest_seen"] or ""), team_group["record_count"]),
             reverse=True)
 
     async def search_grouped_result(self, param: search_consolidated_param_model, base_index):

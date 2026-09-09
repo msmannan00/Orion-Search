@@ -16,7 +16,7 @@
 <p align="left" aria-label="Orion project resources">
   <a href="https://orion-search.readthedocs.io" title="Read the Orion documentation"><img src="docs/_static/readme-documentation.svg" alt="Read the Orion documentation" width="232" height="38"></a>
   &nbsp;
-  <a href="https://stats.uptimerobot.com/xV0BS3KMq7" title="View Orion service health"><img src="docs/_static/readme-status.svg" alt="View Orion live service health" width="232" height="38"></a>
+  <a href="https://uptime.orionintelligence.org/status/orion-intelligence" title="View Orion service health"><img src="docs/_static/readme-status.svg" alt="View Orion live service health" width="232" height="38"></a>
 </p>
 
 Orion Platform is a comprehensive, web-based solution that combines the functionality of a browser, search engine, crawler, and data aggregation tools to empower OSINT (Open Source Intelligence) experts. Built on top of Docker, Orion provides a user-friendly interface to explore, search, and visualize data extracted by its powerful Orion Crawler.

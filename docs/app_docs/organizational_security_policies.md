@@ -19,15 +19,15 @@ Policy approval, effective dates, exceptions, and review records must be maintai
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Information Security Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                              |
+|------------------|--------------------------------------|
+| Document Name    | Information Security Policy          |
+| Company          | Genesis Technologies                 |
+| Product / System | Orion Intelligence                   |
+| Version          | 1.0                                  |
+| Owner            | Management / Security Owner          |
+| Approved By      | Management                           |
+| Effective Date   | To be defined                        |
 | Review Frequency | Annually or when major changes occur |
 
 ### 1. Purpose
@@ -106,15 +106,15 @@ Failure to comply with this policy may result in access removal, corrective acti
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Access Control Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                              |
+|------------------|--------------------------------------|
+| Document Name    | Access Control Policy                |
+| Company          | Genesis Technologies                 |
+| Product / System | Orion Intelligence                   |
+| Version          | 1.0                                  |
+| Owner            | Management / Security Owner          |
+| Approved By      | Management                           |
+| Effective Date   | To be defined                        |
 | Review Frequency | Annually or when major changes occur |
 
 ### 1. Purpose
@@ -171,12 +171,12 @@ Genesis Technologies requires that:
 
 Orion Intelligence uses role-based access control.
 
-| Role | Description |
-| --- | --- |
-| Admin | Platform-level administrative role |
-| Maintainer | Tenant-level administrator role |
-| Member | Standard tenant user role |
-| Analyst | Analysis-focused role with limited administrative access |
+| Role       | Description                                              |
+|------------|----------------------------------------------------------|
+| Admin      | Platform-level administrative role                       |
+| Maintainer | Tenant-level administrator role                          |
+| Member     | Standard tenant user role                                |
+| Analyst    | Analysis-focused role with limited administrative access |
 
 Access assigned to each role must match the user’s responsibility and approved business need.
 
@@ -230,15 +230,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Password Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                              |
+|------------------|--------------------------------------|
+| Document Name    | Password Policy                      |
+| Company          | Genesis Technologies                 |
+| Product / System | Orion Intelligence                   |
+| Version          | 1.0                                  |
+| Owner            | Management / Security Owner          |
+| Approved By      | Management                           |
+| Effective Date   | To be defined                        |
 | Review Frequency | Annually or when major changes occur |
 
 ### 1. Purpose
@@ -343,15 +343,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Acceptable Use Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                              |
+|------------------|--------------------------------------|
+| Document Name    | Acceptable Use Policy                |
+| Company          | Genesis Technologies                 |
+| Product / System | Orion Intelligence                   |
+| Version          | 1.0                                  |
+| Owner            | Management / Security Owner          |
+| Approved By      | Management                           |
+| Effective Date   | To be defined                        |
 | Review Frequency | Annually or when major changes occur |
 
 ### 1. Purpose
@@ -455,15 +455,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Data Classification Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                              |
+|------------------|--------------------------------------|
+| Document Name    | Data Classification Policy           |
+| Company          | Genesis Technologies                 |
+| Product / System | Orion Intelligence                   |
+| Version          | 1.0                                  |
+| Owner            | Management / Security Owner          |
+| Approved By      | Management                           |
+| Effective Date   | To be defined                        |
 | Review Frequency | Annually or when major changes occur |
 
 ### 1. Purpose
@@ -499,12 +499,12 @@ Users must handle data according to its classification and must not share sensit
 
 Genesis Technologies uses the following classification levels:
 
-| Classification | Description |
-| --- | --- |
-| Public | Information approved for public release |
-| Internal | Information intended for internal company use |
-| Confidential | Sensitive business, product, customer, or tenant information |
-| Restricted | Highly sensitive information requiring the strongest access control |
+| Classification | Description                                                         |
+|----------------|---------------------------------------------------------------------|
+| Public         | Information approved for public release                             |
+| Internal       | Information intended for internal company use                       |
+| Confidential   | Sensitive business, product, customer, or tenant information        |
+| Restricted     | Highly sensitive information requiring the strongest access control |
 
 ### 5. Public Data
 
@@ -578,15 +578,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Incident Response Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                |
+|------------------|----------------------------------------|
+| Document Name    | Incident Response Policy               |
+| Company          | Genesis Technologies                   |
+| Product / System | Orion Intelligence                     |
+| Version          | 1.0                                    |
+| Owner            | Management / Security Owner            |
+| Approved By      | Management                             |
+| Effective Date   | To be defined                          |
 | Review Frequency | Annually or when major incidents occur |
 
 ### 1. Purpose
@@ -671,15 +671,15 @@ Failure to report or properly handle security incidents may result in access rem
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Business Continuity Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                       |
+|------------------|-----------------------------------------------|
+| Document Name    | Business Continuity Policy                    |
+| Company          | Genesis Technologies                          |
+| Product / System | Orion Intelligence                            |
+| Version          | 1.0                                           |
+| Owner            | Management / Security Owner                   |
+| Approved By      | Management                                    |
+| Effective Date   | To be defined                                 |
 | Review Frequency | Annually or when major business changes occur |
 
 ### 1. Purpose
@@ -762,15 +762,15 @@ Failure to follow business continuity requirements may result in corrective acti
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Disaster Recovery Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                             |
+|------------------|-----------------------------------------------------|
+| Document Name    | Disaster Recovery Policy                            |
+| Company          | Genesis Technologies                                |
+| Product / System | Orion Intelligence                                  |
+| Version          | 1.0                                                 |
+| Owner            | Management / Security Owner                         |
+| Approved By      | Management                                          |
+| Effective Date   | To be defined                                       |
 | Review Frequency | Annually or when major infrastructure changes occur |
 
 ### 1. Purpose
@@ -850,15 +850,15 @@ Failure to follow disaster recovery requirements may result in corrective action
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Vendor Management Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                     |
+|------------------|---------------------------------------------|
+| Document Name    | Vendor Management Policy                    |
+| Company          | Genesis Technologies                        |
+| Product / System | Orion Intelligence                          |
+| Version          | 1.0                                         |
+| Owner            | Management / Security Owner                 |
+| Approved By      | Management                                  |
+| Effective Date   | To be defined                               |
 | Review Frequency | Annually or when major vendor changes occur |
 
 ### 1. Purpose
@@ -939,15 +939,15 @@ Failure to follow vendor management requirements may result in corrective action
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Risk Management Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                             |
+|------------------|-------------------------------------|
+| Document Name    | Risk Management Policy              |
+| Company          | Genesis Technologies                |
+| Product / System | Orion Intelligence                  |
+| Version          | 1.0                                 |
+| Owner            | Management / Security Owner         |
+| Approved By      | Management                          |
+| Effective Date   | To be defined                       |
 | Review Frequency | Annually or when major risks change |
 
 ### 1. Purpose
@@ -1025,15 +1025,15 @@ Failure to follow risk management requirements may result in corrective action a
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Cryptography and Encryption Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                       |
+|------------------|-----------------------------------------------|
+| Document Name    | Cryptography and Encryption Policy            |
+| Company          | Genesis Technologies                          |
+| Product / System | Orion Intelligence                            |
+| Version          | 1.0                                           |
+| Owner            | Management / Security Owner                   |
+| Approved By      | Management                                    |
+| Effective Date   | To be defined                                 |
 | Review Frequency | Annually or when major security changes occur |
 
 ### 1. Purpose
@@ -1113,15 +1113,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Physical Security Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                        |
+|------------------|------------------------------------------------|
+| Document Name    | Physical Security Policy                       |
+| Company          | Genesis Technologies                           |
+| Product / System | Orion Intelligence                             |
+| Version          | 1.0                                            |
+| Owner            | Management / Security Owner                    |
+| Approved By      | Management                                     |
+| Effective Date   | To be defined                                  |
 | Review Frequency | Annually or when major workplace changes occur |
 
 ### 1. Purpose
@@ -1197,15 +1197,15 @@ Failure to comply with this policy may result in corrective action approved by m
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Remote Access Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                       |
+|------------------|-----------------------------------------------|
+| Document Name    | Remote Access Policy                          |
+| Company          | Genesis Technologies                          |
+| Product / System | Orion Intelligence                            |
+| Version          | 1.0                                           |
+| Owner            | Management / Security Owner                   |
+| Approved By      | Management                                    |
+| Effective Date   | To be defined                                 |
 | Review Frequency | Annually or when remote access methods change |
 
 ### 1. Purpose
@@ -1280,15 +1280,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Change Management Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                          |
+|------------------|--------------------------------------------------|
+| Document Name    | Change Management Policy                         |
+| Company          | Genesis Technologies                             |
+| Product / System | Orion Intelligence                               |
+| Version          | 1.0                                              |
+| Owner            | Management / Security Owner                      |
+| Approved By      | Management                                       |
+| Effective Date   | To be defined                                    |
 | Review Frequency | Annually or when major development changes occur |
 
 ### 1. Purpose
@@ -1373,15 +1373,15 @@ Failure to comply with this policy may result in change rollback, access removal
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Secure Development Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                          |
+|------------------|--------------------------------------------------|
+| Document Name    | Secure Development Policy                        |
+| Company          | Genesis Technologies                             |
+| Product / System | Orion Intelligence                               |
+| Version          | 1.0                                              |
+| Owner            | Management / Security Owner                      |
+| Approved By      | Management                                       |
+| Effective Date   | To be defined                                    |
 | Review Frequency | Annually or when major development changes occur |
 
 ### 1. Purpose
@@ -1477,15 +1477,15 @@ Failure to comply with this policy may result in change rejection, access remova
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Logging and Monitoring Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                         |
+|------------------|-------------------------------------------------|
+| Document Name    | Logging and Monitoring Policy                   |
+| Company          | Genesis Technologies                            |
+| Product / System | Orion Intelligence                              |
+| Version          | 1.0                                             |
+| Owner            | Management / Security Owner                     |
+| Approved By      | Management                                      |
+| Effective Date   | To be defined                                   |
 | Review Frequency | Annually or when major monitoring changes occur |
 
 ### 1. Purpose
@@ -1561,15 +1561,15 @@ Failure to comply with this policy may result in investigation, corrective actio
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Backup Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                     |
+|------------------|---------------------------------------------|
+| Document Name    | Backup Policy                               |
+| Company          | Genesis Technologies                        |
+| Product / System | Orion Intelligence                          |
+| Version          | 1.0                                         |
+| Owner            | Management / Security Owner                 |
+| Approved By      | Management                                  |
+| Effective Date   | To be defined                               |
 | Review Frequency | Annually or when major backup changes occur |
 
 ### 1. Purpose
@@ -1612,9 +1612,15 @@ Genesis Technologies requires that:
 
 ### 5. Backup Frequency
 
-Orion Intelligence backups are supported through scheduled hosting-level backups.
+Orion Intelligence backups are supported through scheduled hosting-level backups and through application-level backups produced by the platform itself.
 
-Backup frequency must be reviewed periodically to ensure it remains appropriate for business and recovery needs.
+Application-level scheduled backups are controlled by the Scheduled Backup setting in System Settings. When enabled, Orion Intelligence creates a backup automatically every 3 days without administrator interaction. Administrators may also create an on-demand backup at any time from the Backup and Restore page.
+
+Each application-level backup captures MongoDB collections, ArangoDB collections, Elasticsearch indices, application logs, and static resource files.
+
+The platform retains only the 2 most recent backups. When a new backup would exceed that limit, the oldest existing backup is deleted automatically. This retention limit is shared between scheduled and on-demand backups, and must be accounted for when determining whether platform-managed backups alone satisfy recovery requirements. Where longer retention is required, hosting-level or off-platform backups must be used in addition to platform-managed backups.
+
+Backup frequency and retention must be reviewed periodically to ensure they remain appropriate for business and recovery needs.
 
 ### 6. Roles and Responsibilities
 
@@ -1642,15 +1648,15 @@ Failure to comply with this policy may result in corrective action approved by m
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Privacy and Data Protection Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                      |
+|------------------|----------------------------------------------|
+| Document Name    | Privacy and Data Protection Policy           |
+| Company          | Genesis Technologies                         |
+| Product / System | Orion Intelligence                           |
+| Version          | 1.0                                          |
+| Owner            | Management / Security Owner                  |
+| Approved By      | Management                                   |
+| Effective Date   | To be defined                                |
 | Review Frequency | Annually or when major privacy changes occur |
 
 ### 1. Purpose
@@ -1735,15 +1741,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Mobile Device / Endpoint Security Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                       |
+|------------------|-----------------------------------------------|
+| Document Name    | Mobile Device / Endpoint Security Policy      |
+| Company          | Genesis Technologies                          |
+| Product / System | Orion Intelligence                            |
+| Version          | 1.0                                           |
+| Owner            | Management / Security Owner                   |
+| Approved By      | Management                                    |
+| Effective Date   | To be defined                                 |
 | Review Frequency | Annually or when major endpoint changes occur |
 
 ### 1. Purpose
@@ -1818,15 +1824,15 @@ Failure to comply with this policy may result in access removal, investigation, 
 
 ### Document Control
 
-| Field | Details |
-| --- | --- |
-| Document Name | Vulnerability Management Policy |
-| Company | Genesis Technologies |
-| Product / System | Orion Intelligence |
-| Version | 1.0 |
-| Owner | Management / Security Owner |
-| Approved By | Management |
-| Effective Date | To be defined |
+| Field            | Details                                            |
+|------------------|----------------------------------------------------|
+| Document Name    | Vulnerability Management Policy                    |
+| Company          | Genesis Technologies                               |
+| Product / System | Orion Intelligence                                 |
+| Version          | 1.0                                                |
+| Owner            | Management / Security Owner                        |
+| Approved By      | Management                                         |
+| Effective Date   | To be defined                                      |
 | Review Frequency | Annually or when major vulnerability changes occur |
 
 ### 1. Purpose

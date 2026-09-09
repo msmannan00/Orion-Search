@@ -11,6 +11,8 @@ import { LicenseService } from '../../../../../services/licenses/licenses.servic
 import { TooltipDirective } from '../../../../../shared/directive/tooltip-directive.directive';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../../shared/services/translation.service';
+import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-case-tracking-board',
@@ -67,7 +69,7 @@ export class CaseTrackingBoard implements OnInit {
       },
       error: err => {
         this.isLoading = false;
-        this.messageNotificationService.show(err?.error?.detail || err?.message || this.translationService.translate('Failed to load cases'));
+        this.messageNotificationService.show(err?.error?.detail ?? err?.message ?? this.translationService.translate('Failed to load cases'));
       }
     });
   }
@@ -105,7 +107,7 @@ export class CaseTrackingBoard implements OnInit {
 
     for (let nextIndex = index + 2; nextIndex < this.workflow.length; nextIndex += 1) {
       const skippedStatuses = this.workflow.slice(index + 1, nextIndex);
-      const target = this.workflow[nextIndex]?.value || null;
+      const target = getOwnProperty(this.workflow, nextIndex)?.value || null;
       if (!target || target === 'closed' || !skippedStatuses.length || !skippedStatuses.every(item => item.skippable)) {
         break;
       }
@@ -114,7 +116,7 @@ export class CaseTrackingBoard implements OnInit {
 
     for (let previousIndex = index - 2; previousIndex >= 0; previousIndex -= 1) {
       const skippedStatuses = this.workflow.slice(previousIndex + 1, index);
-      const target = this.workflow[previousIndex]?.value || null;
+      const target = getOwnProperty(this.workflow, previousIndex)?.value || null;
       if (!target || target === 'new' || !skippedStatuses.length || !skippedStatuses.every(item => item.skippable)) {
         break;
       }
@@ -125,7 +127,7 @@ export class CaseTrackingBoard implements OnInit {
   }
 
   openBoardSettings(): void {
-    this.router.navigate(['/dashboard/profile/case-management/tracking-board/settings']);
+    void this.router.navigate(['/dashboard/profile/case-management/tracking-board/settings']);
   }
 
   canManageBoardSettings(): boolean {
@@ -167,7 +169,7 @@ export class CaseTrackingBoard implements OnInit {
           && event.pointerPosition.y >= rect.top
           && event.pointerPosition.y <= rect.bottom;
       });
-    const status = columnElement?.dataset['testid']?.replace('tracking-column-shell-', '') as CaseStatus | undefined;
+    const status = columnElement?.dataset.testid?.replace('tracking-column-shell-', '') as CaseStatus | undefined;
 
     this.hoveredDropStatus = status && this.getAllowedStatuses(this.draggedCase.status).includes(status)
       ? status
@@ -230,7 +232,7 @@ export class CaseTrackingBoard implements OnInit {
       },
       error: err => {
         this.isSavingMove = false;
-        this.messageNotificationService.show(err?.error?.detail || err?.message || this.translationService.translate('Failed to update case status'));
+        this.messageNotificationService.show(err?.error?.detail ?? err?.message ?? this.translationService.translate('Failed to update case status'));
       }
     });
   }
@@ -262,7 +264,7 @@ export class CaseTrackingBoard implements OnInit {
     if (!value) {
       return '-';
     }
-    return this.workflow.find(item => item.value === value)?.label || this.formatLabel(value);
+    return this.workflow.find(item => item.value === value)?.label ?? this.formatLabel(value);
   }
 
   getCaseTypeLabel(caseItem: Case): string {

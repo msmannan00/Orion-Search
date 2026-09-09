@@ -1,3 +1,5 @@
+
+export type { SatelliteIntelViewport } from './model/geo-fencing.enums.model';
 export enum OrionSatelliteFeatureTypeEnum {
   Hydro = 'hydro',
   Solar = 'solar',
@@ -37,9 +39,3 @@ export enum ThreatLensIpScanModeEnum {
 }
 
 export type SatelliteIntelPanel = SatelliteIntelPanelEnum;
-
-export interface SatelliteIntelViewport {
-  lat: number;
-  lon: number;
-  delta: number;
-}

@@ -71,8 +71,8 @@ class session_manager:
         return Fernet(dek)
 
     @classmethod
-    def ensure_user_tenant_access(self, user, tenant_or_id) -> None:
-        tenant_id = self.tenant_identifier(tenant_or_id)
+    def ensure_user_tenant_access(cls, user, tenant_or_id) -> None:
+        tenant_id = cls.tenant_identifier(tenant_or_id)
         if tenant_id is None:
             return
         if not user or str(getattr(user, "tenant_uuid", "") or "") != tenant_id:
@@ -160,7 +160,7 @@ class session_manager:
             if expires_delta is None:
                 expires_delta = timedelta(minutes=30)
 
-        user = None
+        user: db_user_account | None = None
         if username:
             user = await self._engine.find_one(db_user_account, db_user_account.username == username)
 
@@ -170,7 +170,7 @@ class session_manager:
         elif not free and user and user.role != user_role.CRAWLER and expires_delta > timedelta(minutes=30):
             expires_delta = timedelta(minutes=30)
 
-        expire = datetime.now(timezone.utc) + expires_delta if not free else None
+        expire: datetime | None = datetime.now(timezone.utc) + expires_delta if not free else None
 
         session_id = None
         if user and user.role != user_role.CRAWLER and not free:
@@ -185,10 +185,10 @@ class session_manager:
                 await self._engine.save(user)
             await self._redis.invoke_trigger(REDIS_COMMANDS.S_SET_STRING, [redis_key, session_id, self._client_session_ttl(session_client)])
 
-        if session_id:
-            to_encode.update({"exp": expire.timestamp(), "sid": session_id})
-        elif not free:
+        if expire is not None:
             to_encode.update({"exp": expire.timestamp()})
+        if session_id:
+            to_encode.update({"sid": session_id})
 
         if free:
             to_encode.update({"free": True})

@@ -10,7 +10,10 @@ import { IocResolver } from './shared/resolvers/ioc.resolver';
 import { ConfigResolver } from './shared/resolvers/config.resolver';
 import { OnboardingGuard } from './shared/guards/onboarding-guard';
 import { NotificationGuard } from './shared/guards/notification.guard';
+const loadPhoneLookupComponent = () => import('./sections/api/phone-lookup/phone-lookup.component').then(m => m.PhoneLookupComponent);
 const loadLoginComponent = () => import('./pages/login/login.component').then(m => m.LoginComponent);
+const loadExtensionPrivacyComponent = () => import('./pages/legal/extension-privacy/extension-privacy.component').then(m => m.ExtensionPrivacyComponent);
+const loadProjectPrivacyComponent = () => import('./pages/legal/project-privacy/project-privacy.component').then(m => m.ProjectPrivacyComponent);
 const loadSignupComponent = () => import('./pages/signup/signup.component').then(m => m.SignupComponent);
 const loadDashboardComponent = () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent);
 const loadHomepageComponent = () => import('./pages/homepage/homepage.component').then(m => m.HomepageComponent);
@@ -47,6 +50,7 @@ const loadAlertScannerSettingsComponent = () => import('./pages/user-management/
 const loadManageProfileComponent = () => import('./pages/tenant/tenant-management/view-profile/manage-profile.component').then(m => m.ManageProfileComponent);
 const loadViewTenantComponent = () => import('./pages/tenant/tenant-management/view-tenant/view-tenant.component').then(m => m.ViewTenantComponent);
 const loadSidebarProfileSystemSettingsComponent = () => import('./pages/user-management/sidebar-user-system-settings/sidebar-user-system-settings.component').then(m => m.SidebarProfileSystemSettingsComponent);
+const loadBackupRestoreComponent = () => import('./pages/user-management/backup-restore/backup-restore.component').then(m => m.BackupRestoreComponent);
 const loadTenantSettingsComponent = () => import('./pages/user-management/sidebar-user-settings/tenant-settings/tenant-settings.component').then(m => m.TenantSettingsComponent);
 const loadFileScannerComponent = () => import('./pages/api/ioc-extractor/file-scanner.component').then(m => m.FileScannerComponent);
 const loadTextAnalysisComponent = () => import('./pages/api/text-analysis/text-analysis.component').then(m => m.TextAnalysisComponent);
@@ -132,6 +136,16 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: loadLoginComponent,
     data: { animation: 'LoginPage' }
+  },
+  {
+    path: 'privacy/extension',
+    loadComponent: loadExtensionPrivacyComponent,
+    data: { animation: 'ExtensionPrivacyPage' }
+  },
+  {
+    path: 'privacy',
+    loadComponent: loadProjectPrivacyComponent,
+    data: { animation: 'PrivacyPage' }
   },
   {
     path: 'case-share/:shareId',
@@ -307,6 +321,15 @@ export const routes: Routes = [
               animation: 'TextAnalysisAPI',
               title: 'Text Analysis',
               description: 'Analyze text for spam and malicious URLs'
+            }
+          },
+          {
+            path: 'phone-lookup',
+            loadComponent: loadPhoneLookupComponent,
+            data: {
+              animation: 'TextAnalysisAPI',
+              title: 'Phone & Domain Lookup',
+              description: 'Analyze phone numbers and domains for OSINT intelligence'
             }
           },
           {
@@ -887,6 +910,11 @@ export const routes: Routes = [
             path: 'system-settings',
             loadComponent: loadSidebarProfileSystemSettingsComponent,
             data: { type: 'srttings', animation: 'CategoryPage' }
+          },
+          {
+            path: 'backup-restore',
+            loadComponent: loadBackupRestoreComponent,
+            data: { type: 'backup-restore', animation: 'CategoryPage' }
           },
           {
             path: 'case-management',

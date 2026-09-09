@@ -85,11 +85,11 @@ class NexusStreamManager:
             pass
 
     async def _stream(self, client: httpx.AsyncClient, payload: NexusRpcPayloadModel, headers: dict[str, str]) -> AsyncGenerator[tuple[str, str, bool], None]:
-        response = None
         answer = ""
+        request = client.build_request("POST", self.MCP_ENDPOINT, json=payload.model_dump(), headers=headers)
+        response = await client.send(request, stream=True)
+        closed = False
         try:
-            request = client.build_request("POST", self.MCP_ENDPOINT, json=payload.model_dump(), headers=headers)
-            response = await client.send(request, stream=True)
             if response.status_code != 200:
                 yield json.dumps({"output": {"response": (await response.aread()).decode("utf-8", errors="ignore")}, "done": True, "error": True}, ensure_ascii=True) + "\n", "", True
                 return
@@ -124,7 +124,7 @@ class NexusStreamManager:
                     response_type = output.get("response_type") or parsed_line.get("response_type")
                     if response_type == "api_pipeline":
                         await response.aclose()
-                        response = None
+                        closed = True
                         yield "", self.NOT_FOUND_RESPONSE, False
                         return
 
@@ -143,7 +143,7 @@ class NexusStreamManager:
                     yield f"{line}\n", "", False
             yield "", answer, False
         finally:
-            if response is not None:
+            if not closed:
                 await response.aclose()
 
     async def _emit(self, stream: ActiveNexusStream, line: str) -> None:
@@ -181,7 +181,7 @@ class NexusStreamManager:
     async def _run_stream(self, key: tuple[str, str], stream: ActiveNexusStream, prompt: str, user_id: str, tool: str, type_name: str, auth_token: str, session_id: str, session_type: str) -> None:
         client = httpx.AsyncClient(timeout=30 * 60)
         current_task = asyncio.current_task()
-        headers: dict[str, str] | None = None
+        headers: dict[str, str] = {}
         stored = False
         if current_task is not None:
             self.active_chat_tasks[user_id] = current_task
@@ -194,7 +194,7 @@ class NexusStreamManager:
             if auth_token:
                 headers["Authorization"] = auth_token
             arguments = {"prompt": prompt, "session_id": session_id}
-            if selected_tool == "api_payload":
+            if type_name and type_name != "default":
                 arguments["request_type"] = type_name
             payload = NexusRpcPayloadModel.tool_call(request_id=key[1], name=selected_tool, arguments=arguments)
             async for line, answer, failed in self._stream(client, payload, headers):
@@ -221,7 +221,7 @@ class NexusStreamManager:
         finally:
             if self.active_chat_tasks.get(user_id) is current_task:
                 self.active_chat_tasks.pop(user_id, None)
-            if headers is not None:
+            if headers:
                 await self._close_mcp_session(client, headers)
             await client.aclose()
             await self._finish(stream)
@@ -242,9 +242,12 @@ class NexusStreamManager:
         async for line in self._subscribe(stream):
             yield line
 
+    def has_stream(self, user_id: str, request_id: str) -> bool:
+        return bool(request_id) and (user_id, request_id) in self.active_streams
+
     async def cancel_chat(self, user_id: str = "system") -> dict[str, bool]:
         task = self.active_chat_tasks.pop(user_id, None)
-        cancelled = task is not None and not task.done()
-        if cancelled:
-            task.cancel()
-        return {"cancelled": cancelled}
+        if task is None or task.done():
+            return {"cancelled": False}
+        task.cancel()
+        return {"cancelled": True}

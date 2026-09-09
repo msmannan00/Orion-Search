@@ -18,6 +18,7 @@ class service_ready_middleware:
             path == "/"
             or path == "/robots.txt"
             or path.startswith("/assets/")
+            or path.startswith("/extensions/")
             or path.startswith("/api/s/static/")
             or path.endswith(frontend_files)
         )

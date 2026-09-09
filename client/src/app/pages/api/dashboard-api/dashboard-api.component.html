@@ -14,7 +14,7 @@
             <input data-testid="scan-primary-input" [(ngModel)]="q1" autocapitalize="none" autocomplete="off" class="h-full min-w-0 flex-1 bg-white pr-3 text-[15px] text-[#172235] outline-none placeholder:text-[14px] placeholder:text-[var(--color-text4)]" [ngClass]="{ 'w-[150px]': apiType === 'wanted' || apiType === 'national-identity' || apiType === 'cracked' || apiType === 'crypto' }" maxlength="150" [name]="apiType === 'user' ? 'username' : (apiType === 'social' ? 'username' : (apiType === 'wanted' ? 'query' : (apiType === 'national-identity' ? 'cnic' : (apiType === 'cracked' ? 'playstore' : (apiType === 'software' ? 'software' : (apiType === 'crypto' ? 'text' : 'q1'))))))" [placeholder]="(apiType === 'user' || apiType === 'crypto' ? (apiType === 'crypto' ? 'Wallet Address / Transaction Hash' : 'Username') : (apiType === 'social' ? 'Username' : (apiType === 'wanted' ? 'Person Name / Alias' : (apiType === 'national-identity' ? 'CNIC / Mobile Number' : (apiType === 'cracked' ? 'Package / Playstore URL' : (apiType === 'software' ? 'Software Name' : 'Query 1')))))) | translate" [type]="apiType === 'cracked' ? 'url' : 'text'" [required]="(apiType === 'crypto' || apiType === 'wanted' || apiType === 'national-identity' || apiType === 'cracked' || apiType === 'software') ? true : (apiType === 'email' ? false : !(q2 && q2.trim()))">
             <input type="hidden" value="1">
             @if (apiType === 'wanted' || apiType === 'national-identity' || apiType === 'cracked' || apiType === 'software' || apiType === 'crypto') {
-              <button data-testid="scan-search-button" [disabled]="(apiType === 'crypto' ? !cryptoTextValid : !searchForm.valid) || (apiType === 'cracked' && !crackedValid)" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] text-white disabled:cursor-not-allowed disabled:opacity-40">
+              <button data-testid="scan-search-button" [disabled]="(apiType === 'crypto' ? !cryptoTextValid : !searchForm.valid) || (apiType === 'cracked' && !crackedValid)" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] disabled:cursor-not-allowed disabled:opacity-40">
                 {{ 'Search' | translate }}
               </button>
             }
@@ -29,7 +29,7 @@
               </div>
               <input data-testid="scan-secondary-input" [(ngModel)]="q2" autocapitalize="none" autocomplete="off" class="h-full min-w-0 flex-1 bg-white pr-3 text-[15px] text-[#172235] outline-none placeholder:text-[14px] placeholder:text-[var(--color-text4)]" email maxlength="150" name="q2" [placeholder]="(apiType === 'user' || apiType === 'social' ? 'Email' : 'Query 2') | translate" type="email" [required]="apiType === 'email' ? true : !(q1 && q1.trim())">
               <input type="hidden" value="1">
-              <button data-testid="scan-search-button" [disabled]="(apiType === 'crypto' ? !cryptoTextValid : !searchForm.valid) || (apiType === 'cracked' && !crackedValid)" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] text-white disabled:cursor-not-allowed disabled:opacity-40">
+              <button data-testid="scan-search-button" [disabled]="(apiType === 'crypto' ? !cryptoTextValid : !searchForm.valid) || (apiType === 'cracked' && !crackedValid)" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] disabled:cursor-not-allowed disabled:opacity-40">
                 {{ 'Search' | translate }}
               </button>
             </div>
@@ -61,7 +61,7 @@
         </div>
       </div>
     }
-    <div data-testid="ioc-threat-table-loading" class="ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]" @fadeInDashboardItem>
+    <div data-testid="ioc-threat-table-loading" class="ui-fade-in-dashboard-item ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
       <div class="ui-ioc-table-head grid min-w-[680px] grid-cols-[60px_1fr_120px_120px_48px] items-center gap-2 border-b border-[var(--color-divider)] bg-[var(--color-blue-700)] px-4 py-3 text-xs font-semibold text-[var(--color-text4)] max-[900px]:grid-cols-[60px_1fr_120px_48px] [.light-theme_&]:!border-b-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#3a4f6a]">
         <div>#</div>
         <div>{{ 'Result' | translate }}</div>
@@ -84,9 +84,9 @@
   }
 
   @if (query_triggered && !loading && hasResults) {
-    <div class="mt-[15px] mx-0" @fadeInDashboardItem>
+    <div class="ui-fade-in-dashboard-item mt-[15px] mx-0">
       <section>
-        <div data-testid="scan-success-badge" class="flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3" @fadeInDashboardItem>
+        <div data-testid="scan-success-badge" class="ui-fade-in-dashboard-item flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3">
           <div class="flex items-center gap-2">
             <img alt="" aria-hidden="true" src="assets/images/shared/search_elapsed_time.svg" class="h-5 w-5">
             <div class="text-sm font-semibold capitalize text-[var(--color-text1)]">{{ apiType || 'api' }}</div>
@@ -133,7 +133,7 @@
           @if (apiType === 'crypto') {
             @if (cryptoResult; as r) {
               @if ((r?.query_type === 'transaction_id' || r?.txid)) {
-                <div class="rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none" @fadeInDashboardItem>
+                <div class="ui-fade-in-dashboard-item rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none">
                   <div class="flex items-center justify-between">
                     <div>
                       <div class="text-[14px] font-semibold text-[var(--color-text1)]">{{ r?.detected_network || r?.network || 'crypto' }}</div>
@@ -213,17 +213,17 @@
                     </div>
                   </div>
                 </div>
-                @if (r?.inputs && r?.inputs.length > 0) {
-                  <div class="rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none" @fadeInDashboardItem>
+                @if (r?.inputs?.length) {
+                  <div class="ui-fade-in-dashboard-item rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none">
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-[14px] font-semibold text-[var(--color-text1)]">{{ 'Inputs' | translate }}</div>
-                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.inputs.length }} {{ 'Inputs' | translate }}</div>
+                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.inputs?.length }} {{ 'Inputs' | translate }}</div>
                       </div>
                     </div>
                     <div class="mt-[12px] space-y-[10px]">
                       @for (i of r?.inputs; track i) {
-                        <div class="flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" @fadeInDashboardItem (click)="openAddr(i?.address)">
+                        <div class="ui-fade-in-dashboard-item flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" (click)="openAddr(i?.address)">
                           <div>
                             <div class="text-[13px] font-mono text-[var(--color-text1)]">{{ i?.address }}</div>
                             <div class="text-[12px] text-[var(--color-text4)]">{{ 'Address (' | translate }}{{ i?.value_btc ?? ('not available' | translate) }} BTC)</div>
@@ -234,17 +234,17 @@
                     </div>
                   </div>
                 }
-                @if (r?.outputs && r?.outputs.length > 0) {
-                  <div class="rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none" @fadeInDashboardItem>
+                @if (r?.outputs?.length) {
+                  <div class="ui-fade-in-dashboard-item rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none">
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-[14px] font-semibold text-[var(--color-text1)]">{{ 'Outputs' | translate }}</div>
-                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.outputs.length }} {{ 'Outputs' | translate }}</div>
+                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.outputs?.length }} {{ 'Outputs' | translate }}</div>
                       </div>
                     </div>
                     <div class="mt-[12px] space-y-[10px]">
                       @for (o of r?.outputs; track o) {
-                        <div class="flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" @fadeInDashboardItem (click)="openAddr(o?.address)">
+                        <div class="ui-fade-in-dashboard-item flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" (click)="openAddr(o?.address)">
                           <div>
                             <div class="text-[13px] font-mono text-[var(--color-text1)]">{{ o?.address }}</div>
                             <div class="text-[12px] text-[var(--color-text4)]">{{ 'Address (' | translate }}{{ o?.value_btc ?? ('not available' | translate) }} BTC)</div>
@@ -255,17 +255,17 @@
                     </div>
                   </div>
                 }
-                @if (r?.recent_transactions && r?.recent_transactions.length > 0) {
-                  <div class="rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none" @fadeInDashboardItem>
+                @if (r?.recent_transactions?.length) {
+                  <div class="ui-fade-in-dashboard-item rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[14px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-none">
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-[14px] font-semibold text-[var(--color-text1)]">{{ 'Recent Transactions' | translate }}</div>
-                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.recent_transactions.length }} TX</div>
+                        <div class="text-[12px] text-[var(--color-text4)]">{{ r?.recent_transactions?.length }} TX</div>
                       </div>
                     </div>
                     <div class="mt-[12px] space-y-[10px]">
                       @for (tx of r?.recent_transactions; track tx) {
-                        <div class="flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" @fadeInDashboardItem (click)="openTx(tx?.txid)">
+                        <div class="ui-fade-in-dashboard-item flex cursor-pointer items-center justify-between rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[10px] [.light-theme_&]:!border-[#d7e2ef] [.light-theme_&]:!bg-[#f9fbff] [.light-theme_&]:!shadow-none" (click)="openTx(tx?.txid)">
                           <div>
                             <div class="text-[13px] font-mono text-[var(--color-text1)]">{{ tx?.txid }}</div>
                             <div class="text-[12px] text-[var(--color-text4)]">TXID</div>
@@ -277,7 +277,7 @@
                   </div>
                 }
               } @else {
-                <div data-testid="ioc-threat-table" class="ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]" @fadeInDashboardItem>
+                <div data-testid="ioc-threat-table" class="ui-fade-in-dashboard-item ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
                   <div class="ui-ioc-table-head grid min-w-[1128px] grid-cols-[60px_1.5fr_120px_150px_160px_160px_120px_120px_48px] items-center gap-2 border-b border-[var(--color-divider)] bg-[var(--color-blue-700)] px-4 py-3 text-xs font-semibold text-[var(--color-text4)] [.light-theme_&]:!border-b-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#3a4f6a]">
                     <div>#</div>
                     <div>{{ 'Address' | translate }}</div>
@@ -302,7 +302,7 @@
                     <div class="truncate font-mono" [title]="('Received / Sent') | translate">
                       {{ r?.total_received ?? 'NA' }} / {{ r?.total_sent ?? 'NA' }}
                     </div>
-                    <div class="truncate capitalize" [title]="(r?.risk_assessment?.risk_factors && r.risk_assessment.risk_factors.length) ? r.risk_assessment.risk_factors.join(', ') : ('not available' | translate)">
+                    <div class="truncate capitalize" [title]="(r?.risk_assessment?.risk_factors?.join(', ')) || ('not available' | translate)">
                       {{ r?.risk_assessment?.risk_level || ('not available' | translate) }}
                     </div>
                     <div class="truncate" [title]="r?.status || ('not available' | translate)">{{ r?.status || ('not available' | translate) }}</div>
@@ -311,7 +311,7 @@
                     </button>
                   </div>
                   @if (cryptoSummaryExpanded) {
-                    <div class="border-b-0 bg-[var(--color-blue-790)] px-4 py-3" @fadeInDashboardItem>
+                    <div class="ui-fade-in-dashboard-item border-b-0 bg-[var(--color-blue-790)] px-4 py-3">
                       <div data-testid="defacement-report-card" class="ui-consolidated-sub [&&&]:![background:var(--ui-consolidated-sub-bg,#fff)] [&&&]:![border-color:var(--ui-consolidated-border,#d7e2ef)] hover:[&&&]:![background:var(--ui-consolidated-sub-hover,#fbfdff)] w-full overflow-hidden rounded-[12px] border border-[var(--ui-consolidated-border)] bg-[var(--color-blue-700)] text-[var(--color-text1)] [--ui-consolidated-sub-bg:var(--color-blue-700)] [--ui-consolidated-sub-hover:var(--color-blue-700)] [--ui-consolidated-border:var(--color-border)] [--ui-consolidated-divider:var(--color-divider)]">
                         <div class="flex items-center justify-between gap-[12px] border-b border-[var(--ui-consolidated-divider)] px-[14px] py-[10px] max-[640px]:px-[10px]">
                           <div class="min-w-0">
@@ -370,7 +370,7 @@
             }
           } @else {
             @if (genericItems.length > 0) {
-              <div data-testid="ioc-threat-table" class="ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]" @fadeInDashboardItem>
+              <div data-testid="ioc-threat-table" class="ui-fade-in-dashboard-item ui-ioc-table-shell mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
                 <div class="ui-ioc-table-head grid min-w-[680px] grid-cols-[60px_1fr_120px_120px_48px] items-center gap-2 border-b border-[var(--color-divider)] bg-[var(--color-blue-700)] px-4 py-3 text-xs font-semibold text-[var(--color-text4)] max-[900px]:grid-cols-[60px_1fr_120px_48px] [.light-theme_&]:!border-b-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#3a4f6a]">
                   <div>#</div>
                   <div>{{ 'Result' | translate }}</div>
@@ -392,7 +392,7 @@
                     </button>
                   </div>
                   @if (expandedResultIndex === idx) {
-                    <div class="border-b border-[var(--color-divider)] bg-[var(--color-blue-790)] px-4 py-3" @fadeInDashboardItem>
+                    <div class="ui-fade-in-dashboard-item border-b border-[var(--color-divider)] bg-[var(--color-blue-790)] px-4 py-3">
                       <div data-testid="defacement-report-card" class="ui-consolidated-sub [&&&]:![background:var(--ui-consolidated-sub-bg,#fff)] [&&&]:![border-color:var(--ui-consolidated-border,#d7e2ef)] hover:[&&&]:![background:var(--ui-consolidated-sub-hover,#fbfdff)] w-full overflow-hidden rounded-[12px] border border-[var(--ui-consolidated-border)] bg-[var(--color-blue-700)] text-[var(--color-text1)] [--ui-consolidated-sub-bg:var(--color-blue-700)] [--ui-consolidated-sub-hover:var(--color-blue-700)] [--ui-consolidated-border:var(--color-border)] [--ui-consolidated-divider:var(--color-divider)]">
                         <div class="flex items-center justify-between gap-[12px] border-b border-[var(--ui-consolidated-divider)] px-[14px] py-[10px] max-[640px]:px-[10px]">
                           <div class="min-w-0">
@@ -458,7 +458,7 @@
   }
 
   @if (query_triggered && !loading && !hasResults) {
-    <div class="mt-[15px] mx-0" @fadeInDashboardItem>
+    <div class="ui-fade-in-dashboard-item mt-[15px] mx-0">
       <section class="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-790)] p-[20px] text-center">
         <div class="text-[16px] font-semibold text-[var(--color-text1)]">{{ 'No response was found' | translate }}</div>
         <div class="mt-[4px] text-[13px] text-[var(--color-text4)]">{{ 'Try a different query and run the scan again.' | translate }}</div>

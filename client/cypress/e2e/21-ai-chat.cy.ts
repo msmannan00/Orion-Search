@@ -57,7 +57,7 @@ describe('AI Chat - Basic Flow', () => {
       .click({ force: true });
 
     cy.wait('@ensureAiChat', { timeout: 60000 }).then(({ response }) => {
-      expect(response, 'initial chat response').to.exist;
+      expect(response, 'initial chat response').to.not.equal(undefined);
       expect(response?.statusCode, JSON.stringify(response?.body || {})).to.be.oneOf([200, 201]);
     });
 
@@ -77,7 +77,7 @@ describe('AI Chat - Basic Flow', () => {
       .should('be.visible');
 
     cy.wait('@sendAiMessage', { timeout: 120000 }).then(({ response }) => {
-      expect(response, 'send AI message response').to.exist;
+      expect(response, 'send AI message response').to.not.equal(undefined);
       expect(response?.statusCode, JSON.stringify(response?.body || {})).to.be.oneOf([200, 201]);
     });
 
@@ -113,7 +113,7 @@ describe('AI Chat - Basic Flow', () => {
       .click({ force: true });
 
     cy.wait('@renameAiChat', { timeout: 60000 }).then(({ response }) => {
-      expect(response, 'rename chat response').to.exist;
+      expect(response, 'rename chat response').to.not.equal(undefined);
       expect(response?.statusCode, JSON.stringify(response?.body || {})).to.be.oneOf([200, 201]);
 
       const body = response?.body || {};
@@ -179,11 +179,11 @@ describe('AI Chat - Basic Flow', () => {
       .click({ force: true });
 
     cy.wait('@createAiChat', { timeout: 60000 }).then(({ response }) => {
-      expect(response, 'create chat response').to.exist;
+      expect(response, 'create chat response').to.not.equal(undefined);
       expect(response?.statusCode, JSON.stringify(response?.body || {})).to.be.oneOf([200, 201]);
 
       const sessionId = response?.body?.session_id;
-      expect(sessionId, JSON.stringify(response?.body || {})).to.be.a('string').and.not.be.empty;
+      expect(sessionId, JSON.stringify(response?.body || {})).to.be.a('string').and.to.have.lengthOf.greaterThan(0);
       cy.get(selector(`ai-chat-session-${sessionId}`), { timeout: 60000 })
         .should('have.attr', 'data-selected', 'true');
     });
@@ -212,7 +212,7 @@ describe('AI Chat - Basic Flow', () => {
       .click({ force: true });
 
     cy.wait('@deleteAiChat', { timeout: 60000 }).then(({ response }) => {
-      expect(response, 'delete chat response').to.exist;
+      expect(response, 'delete chat response').to.not.equal(undefined);
       expect(response?.statusCode, JSON.stringify(response?.body || {})).to.be.oneOf([200, 204]);
     });
   });

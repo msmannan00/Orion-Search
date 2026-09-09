@@ -23,7 +23,7 @@ export class AddCustomAlertComponent implements OnInit {
 
   iocDropdownOpen = false;
   alert: AlertModel = { type: '', status: 'active', title: '', description: '', url: '', source: '', all_ioc: [], content_types: [], first_seen: new Date(), last_seen: new Date(), ioc_type: '', ioc_value: '' };
-  formError: string = '';
+  formError = '';
   alertTypes = [ { key: 'general', label: 'General' }, { key: 'breach', label: 'Breach' }, { key: 'exploit', label: 'Exploit' }, { key: 'social', label: 'Social' }, { key: 'defacement', label: 'Defacement' } ];
   readonly heading = input<string>('');
   readonly description = input<string>('');
@@ -63,9 +63,7 @@ export class AddCustomAlertComponent implements OnInit {
           this.alert.type = lastSegment;
         });
     }
-    if (!this.alert.all_ioc) {
-      this.alert.all_ioc = [];
-    }
+    this.alert.all_ioc ??= [];
     this.syncAllIoc();
   }
 
@@ -83,8 +81,8 @@ export class AddCustomAlertComponent implements OnInit {
   }
 
   private syncAllIoc() {
-    const name = this.alert.ioc_type || '';
-    const value = (this.alert.ioc_value || '').trim();
+    const name = this.alert.ioc_type ?? '';
+    const value = (this.alert.ioc_value ?? '').trim();
     if (!name || !value) {
       this.alert.all_ioc = [];
       return;
@@ -104,10 +102,10 @@ export class AddCustomAlertComponent implements OnInit {
   }
 
   private validateForm(): string {
-    const title = (this.alert.title || '').trim();
-    const desc = (this.alert.description || '').trim();
-    const source = (this.alert.source || '').trim();
-    const url = (this.alert.url || '').trim();
+    const title = (this.alert.title ?? '').trim();
+    const desc = (this.alert.description ?? '').trim();
+    const source = (this.alert.source ?? '').trim();
+    const url = (this.alert.url ?? '').trim();
     if (!this.alert.type) {
       return 'Please select an alert type.';
     }
@@ -150,7 +148,7 @@ export class AddCustomAlertComponent implements OnInit {
         this.cancleAlert(true);
       },
       error: err => {
-        this.messageNotificationService.show(err?.error?.detail || this.translationService.translate('Alert operation failed'));
+        this.messageNotificationService.show(err?.error?.detail ?? this.translationService.translate('Alert operation failed'));
       }
     });
   }
@@ -167,14 +165,6 @@ export class AddCustomAlertComponent implements OnInit {
 
   cancleAlert(refresh: boolean) {
     this.cancle.emit(refresh);
-  }
-
-  getAlertTypeLabel(selectedKey: string): string {
-    if (!selectedKey) {
-      return 'Select Type';
-    }
-    const type = this.alertTypes.find(t => t.key === selectedKey);
-    return type ? type.label : 'Select Type';
   }
 
   getIOCTypeLabel(selectedKey: string): string {

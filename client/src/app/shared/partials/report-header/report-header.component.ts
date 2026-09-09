@@ -14,7 +14,8 @@ import { LicenseService } from '../../../services/licenses/licenses.service';
 import { ProxyController } from '../../services/proxy-controller';
 import { AiSummaryComponent } from '../../../pages/root-searches/ai-workspace/ai-summary/ai-summary.component';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { LANGUAGE_OPTIONS, LanguageOption } from '../../constants/shared-enums';
+import { LANGUAGE_OPTIONS } from '../../constants/shared-enums';
+import { LanguageOption } from '../../constants/model/shared-enums.model';
 import { TranslationService } from '../../services/translation.service';
 import { ReportRouteUtil } from '../../utils/report-route.util';
 
@@ -39,7 +40,7 @@ export class ReportHeaderComponent {
   readonly lang = input<string>("");
   readonly content = input<string | null | undefined>(null);
   readonly lang_detected = input<string>("");
-  readonly languageUpdated = output<any>();
+  readonly languageUpdated = output<unknown>();
 
   constructor(private helperService: HelperService, private api: ApiService, protected appService: AppService, private dashboardService: DashboardService, protected route: Router, protected licenseServise: LicenseService, private reportExportService: ReportExportService, private translationService: TranslationService) {
   }
@@ -50,7 +51,7 @@ export class ReportHeaderComponent {
       this.helperService.downloadstixJson(this.buildJsonExportPayload(), 'report_export.json');
       return;
     }
-    this.api.get<any>(endpoint).subscribe((res) => {
+    this.api.get<unknown>(endpoint).subscribe((res) => {
       this.helperService.downloadstixJson(res, 'stix_report.json');
     });
   }
@@ -78,8 +79,8 @@ export class ReportHeaderComponent {
 
   private getStixExportEndpoint(): string | null {
     const tree = this.route.parseUrl(this.route.url);
-    const id = tree.root.children['primary']?.segments.slice(-1)[0]?.path || '';
-    let ci = String(tree.queryParams['ci'] || '').trim().toLowerCase();
+    const id = tree.root.children.primary?.segments.slice(-1)[0]?.path || '';
+    let ci = String(tree.queryParams.ci ?? '').trim().toLowerCase();
     if (!id || !ci) {
       return null;
     }
@@ -99,16 +100,16 @@ export class ReportHeaderComponent {
       Object.assign(row, source);
     }
     else if (source !== null && source !== undefined) {
-      row['value'] = source;
+      row.value = source;
     }
     if (this.url()) {
-      row['url'] = this.url();
+      row.url = this.url();
     }
     if (this.lang() || this.lang_detected()) {
-      row['language'] = this.lang() || this.lang_detected();
+      row.language = this.lang() || this.lang_detected();
     }
     if (this.content()) {
-      row['content'] = this.content();
+      row.content = this.content();
     }
     return row;
   }
@@ -131,7 +132,7 @@ export class ReportHeaderComponent {
   }
 
   shareResult() {
-    this.helperService.shareResult(this.url() || '');
+    this.helperService.shareResult(this.url() ?? '');
   }
 
   redirectToUrl() {
@@ -165,7 +166,7 @@ export class ReportHeaderComponent {
     if (!this.route.url.toLowerCase().includes('/strategic/')) {
       return true;
     }
-    const cleanUrl = (this.url() || '').trim().split(/[?#]/)[0].replace(/\/+$/, '');
+    const cleanUrl = (this.url() ?? '').trim().split(/[?#]/)[0].replace(/\/+$/, '');
     return cleanUrl.endsWith('.onion');
   }
 
@@ -180,8 +181,8 @@ export class ReportHeaderComponent {
 
   @HostListener('document:click', ['$event'])
   closeLanguageDropdown(event: Event) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.report-language-picker')) {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('.report-language-picker')) {
       this.isLanguageDropdownOpen.set(false);
     }
   }
@@ -207,7 +208,7 @@ export class ReportHeaderComponent {
     this.selectedLanguage.set(selectedLanguage);
     this.isLanguageDropdownOpen.set(false);
     window.history.pushState({}, '', currentUrl.toString());
-    this.api.get<any>(apiUrl, {
+    this.api.get<unknown>(apiUrl, {
       params: new HttpParams().set('lang', selectedLanguage)
     }).subscribe({
       next: (result) => {

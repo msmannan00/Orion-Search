@@ -238,10 +238,10 @@ If IPs are extracted but no cameras detected:
 **Scan Duration by Configuration:**
 
 | max_ips | radius_km | Expected Duration | Typical Cameras Found |
-|---------|-----------|-------------------|----------------------|
-| 500     | 20        | 5-8 minutes       | 3-8                  |
-| 1000    | 30        | 8-12 minutes      | 5-15                 |
-| 2000    | 50        | 12-18 minutes     | 10-25                |
+|---------|-----------|-------------------|-----------------------|
+| 500     | 20        | 5-8 minutes       | 3-8                   |
+| 1000    | 30        | 8-12 minutes      | 5-15                  |
+| 2000    | 50        | 12-18 minutes     | 10-25                 |
 
 **Factors Affecting Results:**
 - **Location density** — urban areas have more IPs per square kilometer

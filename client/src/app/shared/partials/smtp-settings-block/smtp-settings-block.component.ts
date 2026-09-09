@@ -16,7 +16,7 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 })
 export class SmtpSettingsBlockComponent implements OnChanges {
   private apiService = inject(ApiService);
-  private hostElement = inject(ElementRef<HTMLElement>);
+  private hostElement = inject<ElementRef<Element>>(ElementRef);
 
   isVerifyingMail = false;
   mailConfigurationStatus = '';
@@ -30,7 +30,7 @@ export class SmtpSettingsBlockComponent implements OnChanges {
   @Output() settingsChange = new EventEmitter<void>();
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['errorState']?.currentValue) {
+    if (changes.errorState?.currentValue) {
       this.scrollToError();
     }
   }
@@ -42,7 +42,7 @@ export class SmtpSettingsBlockComponent implements OnChanges {
     this.isVerifyingMail = true;
     this.mailConfigurationStatus = '';
     this.verifyError = false;
-    this.apiService.post<any>('system/mail/verify', {}).subscribe({
+    this.apiService.post<unknown>('system/mail/verify', {}).subscribe({
       next: () => {
         this.mailConfigurationStatus = 'working';
         this.isVerifyingMail = false;

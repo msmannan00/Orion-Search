@@ -5,7 +5,6 @@ import { HttpHeaders } from '@angular/common/http';
 
 import { FormsModule } from '@angular/forms';
 import { AlertAllowedTenantOption, User } from '../../../../shared/model/tenant/tenant.model';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { LicenseName } from '../../../../shared/model/licenses/license.rules';
 import { AddTenantComponent } from "../add-tenant/add-tenant.component";
 import { ConfirmationPopupComponent } from '../../../../shared/partials/confirmation-popup/confirmation-popup.component';
@@ -21,9 +20,9 @@ import { UiDropdownComponent, UiDropdownOption } from '../../../../shared/partia
 @Component({
   selector: 'app-view-profile',
   imports: [FormsModule, CommonModule, AddTenantComponent, ConfirmationPopupComponent, TooltipDirective, TranslatePipe, UiDropdownComponent],
-  animations: [fadeInDashboardItem],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './manage-profile.component.html',
+  styleUrls: ['./manage-profile.component.css'],
 })
 export class ManageProfileComponent implements OnInit {
   private readonly allAlertsOption = 'all';
@@ -37,7 +36,7 @@ export class ManageProfileComponent implements OnInit {
   isLoading = true;
   selectedUserId: string | null = null;
   expandedUserIndex: number | null = null;
-  showAddTenantPopup: boolean = false;
+  showAddTenantPopup = false;
   userToDelete: User | null = null;
   isDeleteConfirmationOpen = signal<boolean>(false);
 
@@ -46,7 +45,15 @@ export class ManageProfileComponent implements OnInit {
 
   get permissionOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [{ key: 'case_management', label: this.translationService.translate('Case Management') }];
+    const session = this.appService.userSessionData();
+    const options: UiDropdownOption[] = [
+      { key: 'case_management', label: this.translationService.translate('Case Management') },
+      { key: 'dismiss_result', label: this.translationService.translate('Dismiss Result') },
+    ];
+    if (session.user.role === 'admin' && session.tenant.isDefault) {
+      options.push({ key: 'orion_mail', label: this.translationService.translate('Orion Mail') });
+    }
+    return options;
   }
 
   get statusOptions(): UiDropdownOption[] {
@@ -75,7 +82,7 @@ export class ManageProfileComponent implements OnInit {
         this.users = data;
         this.isLoading = false;
       },
-      error: (_) => {
+      error: () => {
         this.isLoading = false;
       },
     });
@@ -92,15 +99,15 @@ export class ManageProfileComponent implements OnInit {
     const payload = this.buildUserUpdatePayload(user);
     this.isLoading = true;
     this.apiService.post('update/user', payload).pipe(switchMap(() => this.nodeResolver.resolve()), finalize(() => (this.isLoading = false))).subscribe({
-      next: (_) => void 0,
+      next: () => void 0,
       error: () => void 0
     });
   }
 
   @HostListener('document:click', ['$event'])
   handleClickOutside(event: MouseEvent) {
-    const eventTargetElement = event.target as HTMLElement;
-    if (!eventTargetElement.closest('.action-menu')) {
+    const eventTargetElement = event.target;
+    if (!(eventTargetElement instanceof Element) || !eventTargetElement.closest('.action-menu')) {
       this.selectedUserId = null;
     }
   }
@@ -167,7 +174,7 @@ export class ManageProfileComponent implements OnInit {
   }
 
   onUserLicenseDropdownChange(user: User, nextLicenses: string[]): void {
-    const currentLicenses = user.licenses || [];
+    const currentLicenses = user.licenses ?? [];
     const addedLicense = nextLicenses.find(license => !currentLicenses.includes(license));
     if (addedLicense) {
       this.toggleUserLicense(user, addedLicense as LicenseName);
@@ -177,14 +184,14 @@ export class ManageProfileComponent implements OnInit {
   }
 
   showAlertsAllowed(user: User): boolean {
-    return this.appService.userSessionData().user.role === 'admin' && (user.permissions || []).includes('case_management');
+    return this.appService.userSessionData().user.role === 'admin' && (user.permissions ?? []).includes('case_management');
   }
 
   selectedAlertAllowedValues(user: User): string[] {
     if (user.alerts_allowed_all) {
       return [this.allAlertsOption];
     }
-    return user.alerts_allowed_tenant_ids || [];
+    return user.alerts_allowed_tenant_ids ?? [];
   }
 
   onUserPermissionChange(user: User, permissions: string[]): void {
@@ -231,7 +238,7 @@ export class ManageProfileComponent implements OnInit {
       return;
     }
     const allowedTenantIds = new Set(this.alertTenantOptions.map(tenant => tenant.id));
-    user.alerts_allowed_tenant_ids = (user.alerts_allowed_tenant_ids || []).filter(id => allowedTenantIds.has(id));
+    user.alerts_allowed_tenant_ids = (user.alerts_allowed_tenant_ids ?? []).filter(id => allowedTenantIds.has(id));
   }
 
   private buildUserUpdatePayload(user: User): User {
@@ -245,24 +252,22 @@ export class ManageProfileComponent implements OnInit {
     return user;
   }
 
-  toggleUserLicense(user: any, license: LicenseName) {
-    if (!user.licenses) {
-      user.licenses = [];
-    }
+  toggleUserLicense(user: User, license: LicenseName) {
+    user.licenses ??= [];
     if (user.licenses.includes(license)) {
-      user.licenses = user.licenses.filter((l: LicenseName) => l !== license);
+      user.licenses = user.licenses.filter((l) => l !== license);
       return;
     }
     if (license === LicenseName.FREE || license === LicenseName.ENTERPRISE) {
       user.licenses = [license];
       return;
     }
-    user.licenses = user.licenses.filter((l: LicenseName) => l !== LicenseName.FREE && l !== LicenseName.ENTERPRISE);
+    user.licenses = user.licenses.filter((l) => l !== LicenseName.FREE && l !== LicenseName.ENTERPRISE);
     if (license === LicenseName.OSINT_BASIC) {
-      user.licenses = user.licenses.filter((l: LicenseName) => l !== LicenseName.OSINT_ADVANCED);
+      user.licenses = user.licenses.filter((l) => l !== LicenseName.OSINT_ADVANCED);
     }
     if (license === LicenseName.OSINT_ADVANCED) {
-      user.licenses = user.licenses.filter((l: LicenseName) => l !== LicenseName.OSINT_BASIC);
+      user.licenses = user.licenses.filter((l) => l !== LicenseName.OSINT_BASIC);
     }
     user.licenses.push(license);
   }
@@ -285,11 +290,11 @@ export class ManageProfileComponent implements OnInit {
     })).subscribe();
   }
 
-  getUserLicensesLabel(user: any): string {
+  getUserLicensesLabel(user: User): string {
     if (!user.licenses || user.licenses.length === 0) {
       return this.translationService.translate('None');
     }
-    return user.licenses.map((l: LicenseName) => this.licenseService.getLicenseLabel(l)).join(', ');
+    return user.licenses.map((l) => this.licenseService.getLicenseLabel(l)).join(', ');
   }
 
   getUserPermissionsLabel(user: User): string {
@@ -300,7 +305,7 @@ export class ManageProfileComponent implements OnInit {
   }
 
   getPermissionLabel(permission: string): string {
-    return this.permissionOptions.find(option => option.key === permission)?.label || permission;
+    return this.permissionOptions.find(option => option.key === permission)?.label ?? permission;
   }
 
   canEditUser(user: User): boolean {

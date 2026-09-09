@@ -1,11 +1,9 @@
-export type ExtensionState = 'ready' | 'signin' | 'install';
+export type ExtensionState = 'checking' | 'ready' | 'signin' | 'install' | 'update' | 'unsupported';
 
 export interface ExtensionPresence {
   source?: string;
   type?: string;
   loggedIn?: boolean;
-}
-
-export interface ExtensionSession {
-  extension_connected?: boolean;
+  connected?: boolean;
+  version?: string;
 }

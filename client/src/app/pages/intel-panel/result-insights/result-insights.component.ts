@@ -1,11 +1,17 @@
-import { FormsModule } from '@angular/forms';
-import { Component, OnInit, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
-import { ConsolidatedCallbackModel } from '../../../shared/model/results/consolidated/consolidated.callback.model';
-import { UniqueLinkItem } from '../model/consolidation_insights';
+import { ChangeDetectionStrategy, Component, input, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { search_filter_labels } from '../../../shared/constants/shared-enums';
-import { getStatusFlag } from '../../../shared/utils/intel-report.util';
+import { ConsolidatedCallbackModel } from '../../../shared/model/results/consolidated/consolidated.callback.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { getStatusFlag } from '../../../shared/utils/intel-report.util';
+import { getOwnProperty, isUnknownRecord, setOwnProperty } from '../../../shared/utils/type-guards.util';
+import { UniqueLinkItem } from '../model/consolidation_insights';
+import type { InsightResultItem } from './model/result-insights.model';
+export type { InsightResultItem } from './model/result-insights.model';
+
+
+
 
 @Component({
   selector: 'app-result-insights',
@@ -21,7 +27,7 @@ export class ResultInsightsComponent implements OnInit {
   copiedUniqueUrlKey = '';
   searchQuery = '';
   filterOptions = ['All', 'Email', 'Username', 'Actor', 'Team', 'Attacker'];
-  selectedFilter: string = 'All';
+  selectedFilter = 'All';
   emails: string[] = [];
   usernames: string[] = [];
   actors: string[] = [];
@@ -32,27 +38,27 @@ export class ResultInsightsComponent implements OnInit {
   keywordData: { value: number; label: string; }[] = [];
   coverageData: { value: number; label: string; color: string; }[] = [];
   readonly consolidatedCallbackModel = input<ConsolidatedCallbackModel>(new ConsolidatedCallbackModel());
-  readonly results = input<any>();
-  readonly rankedResults = input<any>();
+  readonly results = input<unknown>();
+  readonly rankedResults = input<unknown>();
   readonly isGrouped = input.required<boolean>();
   readonly result_count = input.required<number>();
 
   ngOnInit(): void {
-    this.uniqueUrls = this.getUniqueLinks(this.consolidatedCallbackModel(), this.rankedResults(), this.isGrouped());
-    const { emails, usernames, actors, teams, attackers } = this.extractThreatEntities(this.consolidatedCallbackModel(), this.rankedResults(), this.isGrouped());
+    const rankedResults = this.toInsightItems(this.rankedResults());
+    this.uniqueUrls = this.getUniqueLinks(this.consolidatedCallbackModel(), rankedResults, this.isGrouped());
+    const { emails, usernames, actors, teams, attackers } = this.extractThreatEntities(this.consolidatedCallbackModel(), rankedResults, this.isGrouped());
     this.emails = emails;
     this.usernames = usernames;
     this.actors = actors;
     this.teams = teams;
     this.attackers = attackers;
     this.keywordData = [
-      { value: this.getTotalResultCount(this.consolidatedCallbackModel(), this.rankedResults(), this.isGrouped()), label: 'Total Found' },
+      { value: this.getTotalResultCount(this.consolidatedCallbackModel(), rankedResults, this.isGrouped()), label: 'Total Found' },
       { value: this.getAllThreatEntities().length, label: 'Threat Entities' },
-      { value: this.getSingleUrlPerResultCount(this.consolidatedCallbackModel(), this.rankedResults(), this.isGrouped()), label: 'Links' },
-      { value: this.getActiveModelCount(this.consolidatedCallbackModel(), this.rankedResults(), this.isGrouped()), label: 'Pages' }
+      { value: this.getSingleUrlPerResultCount(this.consolidatedCallbackModel(), rankedResults, this.isGrouped()), label: 'Links' },
+      { value: this.getActiveModelCount(this.consolidatedCallbackModel(), rankedResults, this.isGrouped()), label: 'Pages' }
     ];
     const consolidatedCallbackModel = this.consolidatedCallbackModel();
-    const rankedResults = this.rankedResults();
     const isGrouped = this.isGrouped();
     this.getCoverageSummaryFromModels(consolidatedCallbackModel, rankedResults, isGrouped);
     const extractedData = this.extractMultipleFieldsFromResults(consolidatedCallbackModel, rankedResults, isGrouped);
@@ -60,13 +66,13 @@ export class ResultInsightsComponent implements OnInit {
       const variants = new Set<string>([
         key,
         key.replace(/^m_/, ''),
-        key.endsWith('s') ? key.slice(0, -key) : key,
+        key.endsWith('s') ? key.slice(0, -1) : key,
         key.replace(/^m_/, '').replace(/s$/, ''),
         key.replace(/^m_/, '').replace(/_([a-z])/g, (_, c) => c.toUpperCase())
       ]);
       const collected: string[] = [];
       for (const k of variants) {
-        const v = (extractedData as any)[k];
+        const v = getOwnProperty(extractedData, k);
         if (Array.isArray(v)) {
           collected.push(...v);
         }
@@ -78,12 +84,12 @@ export class ResultInsightsComponent implements OnInit {
       };
     });
     for (const key of Object.keys(search_filter_labels)) {
-      this.sectionStates[key] = false;
+      setOwnProperty(this.sectionStates, key, false);
     }
-    this.sectionStates['isKeywordExpanded'] = true;
-    this.sectionStates['isCoverageExpanded'] = true;
-    this.sectionStates['isThreatExpanded'] = true;
-    this.sectionStates['isUrlsExpanded'] = true;
+    this.sectionStates.isKeywordExpanded = true;
+    this.sectionStates.isCoverageExpanded = true;
+    this.sectionStates.isThreatExpanded = true;
+    this.sectionStates.isUrlsExpanded = true;
   }
 
   toggleFilter(option: string) {
@@ -92,12 +98,12 @@ export class ResultInsightsComponent implements OnInit {
 
   toggleSection(section: string): void {
     if (section in this.sectionStates) {
-      this.sectionStates[section] = !this.sectionStates[section];
+      setOwnProperty(this.sectionStates, section, !getOwnProperty(this.sectionStates, section));
     }
   }
 
   isSectionExpanded(section: string): boolean {
-    return this.sectionStates[section];
+    return getOwnProperty(this.sectionStates, section);
   }
 
   getFilteredSectionData(section: { key: string; data: string[] }): string[] {
@@ -207,23 +213,23 @@ export class ResultInsightsComponent implements OnInit {
     ]));
   }
 
-  getTotalResultCount(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): number {
+  getTotalResultCount(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): number {
     if (!isGrouped && Array.isArray(rankedData)) {
       return rankedData.length;
     }
-    return ((consolidated.leak_model?.Result?.length || 0) +
-          (consolidated.chat_model?.Result?.length || 0) +
-          (consolidated.exploit_model?.Result?.length || 0) +
-          (consolidated.apt_model?.Result?.length || 0) +
-          (consolidated.malware_model?.Result?.length || 0) +
-          (consolidated.generic_model?.Result?.length || 0) +
-          (consolidated.defacement_model?.Result?.length || 0) +
-          (consolidated.social_model?.Result?.length || 0) +
-          (consolidated.tracking_model?.Result?.length || 0) +
-          (consolidated.news_model?.Result?.length || 0));
+    return ((consolidated.leak_model?.Result?.length ?? 0) +
+          (consolidated.chat_model?.Result?.length ?? 0) +
+          (consolidated.exploit_model?.Result?.length ?? 0) +
+          (consolidated.apt_model?.Result?.length ?? 0) +
+          (consolidated.malware_model?.Result?.length ?? 0) +
+          (consolidated.generic_model?.Result?.length ?? 0) +
+          (consolidated.defacement_model?.Result?.length ?? 0) +
+          (consolidated.social_model?.Result?.length ?? 0) +
+          (consolidated.tracking_model?.Result?.length ?? 0) +
+          (consolidated.news_model?.Result?.length ?? 0));
   }
 
-  getActiveModelCount(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): number {
+  getActiveModelCount(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): number {
     if (!isGrouped && Array.isArray(rankedData)) {
       return 1;
     }
@@ -242,35 +248,24 @@ export class ResultInsightsComponent implements OnInit {
     return models.filter(model => model?.Result && model.Result.length > 0).length;
   }
 
-  getUniqueLinks(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): UniqueLinkItem[] {
+  getUniqueLinks(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): UniqueLinkItem[] {
     const linkMap = new Map<string, UniqueLinkItem>();
     const addToMap = (url: string | undefined, title: string | undefined, date?: string) => {
       if (url && !linkMap.has(url)) {
         const status = this.getStatus(date);
-        linkMap.set(url, { url, title: title || 'Untitled', status });
+        linkMap.set(url, { url, title: title ?? 'Untitled', status });
       }
     };
-    const items: any[] = isGrouped
-      ? [
-        ...(consolidated.generic_model?.Result || []),
-        ...(consolidated.leak_model?.Result || []),
-        ...(consolidated.defacement_model?.Result || []),
-        ...(consolidated.social_model?.Result || []),
-        ...(consolidated.chat_model?.Result || []),
-        ...(consolidated.exploit_model?.Result || []),
-        ...(consolidated.apt_model?.Result || []),
-        ...(consolidated.malware_model?.Result || []),
-        ...(consolidated.tracking_model?.Result || []),
-        ...(consolidated.news_model?.Result || [])
-      ]
-      : (Array.isArray(rankedData) ? rankedData : []);
+    const items = isGrouped ? this.getGroupedItems(consolidated) : rankedData;
     items.forEach(item => {
-      addToMap(item.m_url, item.m_title, item.m_creation_date || item.m_update_date || item.m_date);
+      addToMap(item.m_url, item.m_title, item.m_creation_date ?? item.m_update_date ?? item.m_date);
       ['m_clearnet_links', 'm_weblink', 'm_dumplink', 'm_source_url'].forEach(field => {
-        const links = item[field];
+        const links = getOwnProperty(item, field);
         if (Array.isArray(links)) {
-          links.forEach(link => {
-            addToMap(link, item.m_title, item.m_creation_date);
+          links.forEach((link: unknown) => {
+            if (typeof link === 'string') {
+              addToMap(link, item.m_title, item.m_creation_date);
+            }
           });
         }
       });
@@ -282,7 +277,7 @@ export class ResultInsightsComponent implements OnInit {
     return getStatusFlag(dateString);
   }
 
-  extractThreatEntities(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): {
+  extractThreatEntities(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): {
       emails: string[];
       usernames: string[];
       actors: string[];
@@ -313,23 +308,10 @@ export class ResultInsightsComponent implements OnInit {
         return;
       }
       toValues(value).forEach(item => {
-        (item.match(emailRegex) || []).forEach(email => emails.add(email));
+        (item.match(emailRegex) ?? []).forEach(email => emails.add(email));
       });
     };
-    const items: any[] = isGrouped
-      ? [
-        ...(consolidated.generic_model?.Result || []),
-        ...(consolidated.defacement_model?.Result || []),
-        ...(consolidated.social_model?.Result || []),
-        ...(consolidated.leak_model?.Result || []),
-        ...(consolidated.exploit_model?.Result || []),
-        ...(consolidated.apt_model?.Result || []),
-        ...(consolidated.malware_model?.Result || []),
-        ...(consolidated.chat_model?.Result || []),
-        ...(consolidated.tracking_model?.Result || []),
-        ...(consolidated.news_model?.Result || [])
-      ]
-      : (Array.isArray(rankedData) ? rankedData : []);
+    const items = isGrouped ? this.getGroupedItems(consolidated) : rankedData;
     items.forEach(item => {
       extractEmails(item.m_email);
       extractEmails(item.m_content);
@@ -354,28 +336,15 @@ export class ResultInsightsComponent implements OnInit {
     };
   }
 
-  getCoverageSummaryFromModels(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): void {
+  getCoverageSummaryFromModels(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): void {
     let active = 0;
     let seldom = 0;
     let inactive = 0;
     let total: number;
-    const allResults: any[] = isGrouped
-      ? [
-        ...(consolidated.leak_model?.Result || []),
-        ...(consolidated.chat_model?.Result || []),
-        ...(consolidated.generic_model?.Result || []),
-        ...(consolidated.exploit_model?.Result || []),
-        ...(consolidated.apt_model?.Result || []),
-        ...(consolidated.malware_model?.Result || []),
-        ...(consolidated.social_model?.Result || []),
-        ...(consolidated.defacement_model?.Result || []),
-        ...(consolidated.tracking_model?.Result || []),
-        ...(consolidated.news_model?.Result || [])
-      ]
-      : (Array.isArray(rankedData) ? rankedData : []);
+    const allResults = isGrouped ? this.getGroupedItems(consolidated) : rankedData;
     total = allResults.length;
     allResults.forEach(item => {
-      const rawDate = item.m_update_date || item.m_date || item.m_creation_date;
+      const rawDate = item.m_update_date ?? item.m_date ?? item.m_creation_date;
       const status = this.getStatusCategory(rawDate);
       if (status === 'Active') {
         active++;
@@ -413,10 +382,10 @@ export class ResultInsightsComponent implements OnInit {
     }
   }
 
-  getSingleUrlPerResultCount(consolidated: ConsolidatedCallbackModel, rankedData: any[], isGrouped: boolean): number {
+  getSingleUrlPerResultCount(consolidated: ConsolidatedCallbackModel, rankedData: InsightResultItem[], isGrouped: boolean): number {
     const urls = new Set<string>();
     if (!isGrouped && Array.isArray(rankedData)) {
-      rankedData.forEach((item: any) => {
+      rankedData.forEach((item) => {
         const fields = ['m_url', 'm_weblink', 'm_dumplink', 'm_clearnet_links', 'm_source_url', 'm_channel_url'];
         const url = this.getFirstHttpUrlFromFields(item, fields);
         if (url) {
@@ -438,8 +407,21 @@ export class ResultInsightsComponent implements OnInit {
       news_model: ['m_url']
     };
     Object.entries(fieldMap).forEach(([modelKey, fields]) => {
-      const results = (consolidated as any)[modelKey]?.Result || [];
-      results.forEach((item: any) => {
+      const models: Record<string, unknown> = {
+        generic_model: consolidated.generic_model,
+        leak_model: consolidated.leak_model,
+        defacement_model: consolidated.defacement_model,
+        social_model: consolidated.social_model,
+        chat_model: consolidated.chat_model,
+        exploit_model: consolidated.exploit_model,
+        apt_model: consolidated.apt_model,
+        malware_model: consolidated.malware_model,
+        tracking_model: consolidated.tracking_model,
+        news_model: consolidated.news_model,
+      };
+      const model = getOwnProperty(models, modelKey);
+      const results = isUnknownRecord(model) ? this.toInsightItems(model.Result) : [];
+      results.forEach((item: InsightResultItem) => {
         const url = this.getFirstHttpUrlFromFields(item, fields);
         if (url) {
           urls.add(url);
@@ -449,9 +431,9 @@ export class ResultInsightsComponent implements OnInit {
     return urls.size;
   }
 
-  private getFirstHttpUrlFromFields(item: any, fields: string[]): string | null {
+  private getFirstHttpUrlFromFields(item: InsightResultItem, fields: string[]): string | null {
     for (const field of fields) {
-      const value = item[field];
+      const value = getOwnProperty(item, field);
       const url = Array.isArray(value)
         ? value.find(v => typeof v === 'string' && v.startsWith('http'))
         : (typeof value === 'string' && value.startsWith('http') ? value : null);
@@ -462,32 +444,52 @@ export class ResultInsightsComponent implements OnInit {
     return null;
   }
 
-  extractMultipleFieldsFromResults(groupData: any, rankData: any, isGrouped: boolean): Record<string, string[]> {
+  extractMultipleFieldsFromResults(groupData: unknown, rankData: unknown, isGrouped: boolean): Record<string, string[]> {
     const resultMap: Record<string, Set<string>> = {};
-    const dataArray = isGrouped
-      ? Object.values(groupData).flatMap((model: any) => model?.Result || [])
-      : (Array.isArray(rankData) ? rankData : []);
+    const dataArray = isGrouped && isUnknownRecord(groupData)
+      ? Object.values(groupData).flatMap(model => isUnknownRecord(model) ? this.toInsightItems(model.Result) : [])
+      : this.toInsightItems(rankData);
     for (const item of dataArray) {
       for (const [key, value] of Object.entries(item)) {
-        if (!resultMap[key]) {
-          resultMap[key] = new Set();
+        if (!getOwnProperty(resultMap, key)) {
+          setOwnProperty(resultMap, key, new Set());
         }
         if (Array.isArray(value)) {
           for (const v of value) {
             if (typeof v === 'string' && v.trim()) {
-              resultMap[key].add(v);
+              getOwnProperty(resultMap, key).add(v);
             }
           }
         }
         else if (typeof value === 'string' && value.trim()) {
-          resultMap[key].add(value);
+          getOwnProperty(resultMap, key).add(value);
         }
       }
     }
     const finalResult: Record<string, string[]> = {};
     for (const key in resultMap) {
-      finalResult[key] = Array.from(resultMap[key]);
+      setOwnProperty(finalResult, key, Array.from(getOwnProperty(resultMap, key)));
     }
     return finalResult;
+  }
+
+  private getGroupedItems(consolidated: ConsolidatedCallbackModel): InsightResultItem[] {
+    const resultGroups: unknown[] = [
+      consolidated.generic_model?.Result,
+      consolidated.leak_model?.Result,
+      consolidated.defacement_model?.Result,
+      consolidated.social_model?.Result,
+      consolidated.chat_model?.Result,
+      consolidated.exploit_model?.Result,
+      consolidated.apt_model?.Result,
+      consolidated.malware_model?.Result,
+      consolidated.tracking_model?.Result,
+      consolidated.news_model?.Result,
+    ];
+    return resultGroups.flatMap(group => this.toInsightItems(group));
+  }
+
+  private toInsightItems(value: unknown): InsightResultItem[] {
+    return Array.isArray(value) ? value as InsightResultItem[] : [];
   }
 }

@@ -497,6 +497,7 @@ class elastic_controller:
                         index=index,
                         id=doc_id,
                         body={"doc": entry[ELASTIC_KEYS.S_VALUE], "doc_as_upsert": True},
+                        retry_on_conflict=5,
                     )
                     touched_indices.setdefault(id(conn), (conn, set()))[1].add(index)
 
@@ -524,6 +525,7 @@ class elastic_controller:
                     index=index,
                     id=doc_id,
                     body={"doc": p_data[ELASTIC_KEYS.S_VALUE], "doc_as_upsert": True},
+                    retry_on_conflict=5,
                 )
                 touched_indices.setdefault(id(conn), (conn, set()))[1].add(index)
 

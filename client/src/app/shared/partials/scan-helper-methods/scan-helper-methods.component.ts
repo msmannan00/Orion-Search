@@ -6,6 +6,7 @@ import { DnsRecord, WaybackSnapshot } from '../../model/scanners/scanner.models'
 import { ScanHelperMethodsService } from './scan-helper-methods-service.service';
 import { AppService } from '../../../services/core/app/app.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { isDomainName, isIpv4Address, isIpv6Address } from '../../utils/network-validation.util';
 
 @Component({
   selector: 'app-scan-helper',
@@ -57,7 +58,7 @@ export class ScanHelperMethods implements OnDestroy {
         this.cancelRequested = false;
         return;
       }
-      const status = res?.status || res?.result?.status || 'unknown';
+      const status = res?.status ?? res?.result?.status ?? 'unknown';
       const progressVal = res?.progress ?? null;
       if (progressVal != null && typeof progressVal === 'number') {
         this.progress = Math.min(99, progressVal);
@@ -74,11 +75,11 @@ export class ScanHelperMethods implements OnDestroy {
       if (this.activeTab === 'subdomains') {
         if (this.isCompletedStatus(status)) {
           if (this.checkLive) {
-            this.subdomains = res?.result?.live_subdomains || res?.live_subdomains || [];
+            this.subdomains = res?.result?.live_subdomains ?? res?.live_subdomains ?? [];
             this.subdomainCount = this.subdomains.length;
           }
           else {
-            this.subdomains = res?.result?.subdomains || res?.subdomains || [];
+            this.subdomains = res?.result?.subdomains ?? res?.subdomains ?? [];
             this.subdomainCount = this.subdomains.length;
           }
           this.search.emit(this.subdomains);
@@ -93,14 +94,14 @@ export class ScanHelperMethods implements OnDestroy {
       else if (this.activeTab === 'dns') {
         const dnsRecord = res?.result?.result ?? res?.result;
         if (res?.status === 'error' || dnsRecord?.status === 'error') {
-          this.errorMessage = dnsRecord?.message || res?.error || 'Resolution failed';
+          this.errorMessage = dnsRecord?.message ?? res?.error ?? 'Resolution failed';
           this.statusMessage = 'Failed';
         }
-        else if (dnsRecord?.ip || dnsRecord?.hostname || dnsRecord?.domains?.length) {
+        else if (dnsRecord != null && (Boolean(dnsRecord.ip) || Boolean(dnsRecord.hostname) || Boolean(dnsRecord.domains?.length))) {
           const domains = Array.isArray(dnsRecord.domains) ? dnsRecord.domains : [];
           this.dnsRecords = [{
-            ip: dnsRecord.ip || this.domain.trim(),
-            hostname: dnsRecord.hostname || '',
+            ip: dnsRecord.ip ?? this.domain.trim(),
+            hostname: dnsRecord.hostname ?? '',
             domains,
             error: dnsRecord.error,
           }];
@@ -114,7 +115,7 @@ export class ScanHelperMethods implements OnDestroy {
       }
       else if (this.activeTab === 'wayback') {
         if (this.isCompletedStatus(status)) {
-          this.waybackSnapshots = res?.result?.snapshots || res?.snapshots || [];
+          this.waybackSnapshots = res?.result?.snapshots ?? res?.snapshots ?? [];
           this.statusMessage = this.waybackSnapshots.length > 0
             ? `Found ${this.waybackSnapshots.length} snapshot${this.waybackSnapshots.length !== 1 ? 's' : ''}`
             : 'No records found';
@@ -169,7 +170,7 @@ export class ScanHelperMethods implements OnDestroy {
 
   onClose(): void {
     this.resetState();
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.close.emit(undefined);
   }
 
@@ -208,15 +209,11 @@ export class ScanHelperMethods implements OnDestroy {
       return;
     }
     if (this.activeTab === 'dns') {
-      const ip = trimmed;
-      const ipv4 = /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/;
-      const ipv6 = /^((?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::1|::|(?:[0-9a-fA-F]{1,4}:){1,7}:)$/;
-      this.isValidDomain = ipv4.test(ip) || ipv6.test(ip);
+      this.isValidDomain = isIpv4Address(trimmed) || isIpv6Address(trimmed);
     }
     else {
-      const domainOnly = trimmed.replace(/^https?:\/\//i, '').replace(/\/.*/, '');
-      const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/i;
-      this.isValidDomain = domainRegex.test(domainOnly);
+      const domainOnly = trimmed.replace(/^https:\/\//i, '').replace(/^http:\/\//i, '').split('/')[0];
+      this.isValidDomain = isDomainName(domainOnly);
     }
   }
 
@@ -226,14 +223,14 @@ export class ScanHelperMethods implements OnDestroy {
   }
 
   getSubdomainUrl(subdomain: string): string {
-    return subdomain.match(/^https?:\/\//i) ? subdomain : `https://${subdomain}`;
+    return (/^https?:\/\//i.exec(subdomain)) ? subdomain : `https://${subdomain}`;
   }
 
   getAllWaybackUrls(): string {
     return this.waybackSnapshots.map(s => s.url).join('\n');
   }
 
-  copy(text: string, message: string = 'Copied'): void {
+  copy(text: string, message = 'Copied'): void {
     navigator.clipboard.writeText(text).then(() => {
       this.toast = message;
       setTimeout(() => {
@@ -286,7 +283,7 @@ export class ScanHelperMethods implements OnDestroy {
       return '';
     }
     try {
-      const u = new URL(v.match(/^https?:\/\//i) ? v : `https://${v.replace(/^\/+/, '')}`);
+      const u = new URL((/^https?:\/\//i.exec(v)) ? v : `https://${v.replace(/^\/+/, '')}`);
       return u.toString();
     }
     catch {

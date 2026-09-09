@@ -6,9 +6,9 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class SortGroupedResultsPipe implements PipeTransform {
   private readonly modelOrder = [ 'defacement_model', 'leak_model', 'chat_model', 'exploit_model', 'apt_model', 'malware_model', 'generic_model', 'tracking_model', 'news_model' ];
 
-  transform( value: Record<string, any[]> ): {
+  transform( value: Record<string, unknown[]> ): {
         key: string;
-        value: any[];
+        value: unknown[];
     }[] {
     return Object.entries(value)
       .map(([key, val]) => ({ key, value: val }))

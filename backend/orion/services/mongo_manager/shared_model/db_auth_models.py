@@ -111,6 +111,7 @@ class db_user_account(Model):
         return pwd_context.hash(password)
 
     @model_validator(mode="before")
+    @classmethod
     def validate_licenses(cls, values):
         if values.get("permissions") is None:
             values["permissions"] = []

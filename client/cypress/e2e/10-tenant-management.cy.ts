@@ -28,14 +28,16 @@ import {
   setTenantLicenses,
   submitLogin,
   waitForTenantAlertScanComplete,
+  ensureTenantAlertReportsPresent,
   waitForTenantAlertFindings,
   waitForBlockingOverlayToClose
 } from './controllers/10-tenant-management.controller';
 import {TEST_DATA} from '../support/constants';
+import type { CaseAlertTenant, TenantSubUser } from './model/10-tenant-management.model';
 
 describe('Tenant Management - End-to-End Provisioning Flows', () => {
-  let tenant: any;
-  let tenantSubUser: any;
+  let tenant = {} as CaseAlertTenant;
+  let tenantSubUser = {} as TenantSubUser;
   const tenantResetNewPassword = '2wsx@WSX2026';
   const alertSlackClientId = TEST_DATA.alert_slack_client_id;
 
@@ -59,8 +61,8 @@ describe('Tenant Management - End-to-End Provisioning Flows', () => {
 
   before(() => {
     cy.env(['TENANT_ACCOUNT', 'TENANT_SUB_USER']).then(({TENANT_ACCOUNT, TENANT_SUB_USER}) => {
-      tenant = TENANT_ACCOUNT;
-      tenantSubUser = TENANT_SUB_USER;
+      tenant = TENANT_ACCOUNT as CaseAlertTenant;
+      tenantSubUser = TENANT_SUB_USER as TenantSubUser;
       if (!tenant?.username || !tenant?.email || !tenant?.password || !tenantSubUser?.username || !tenantSubUser?.email || !tenantSubUser?.password) {
         throw new Error('Missing TENANT_ACCOUNT or TENANT_SUB_USER in cypress.config.ts');
       }
@@ -510,6 +512,7 @@ describe('Tenant Management - End-to-End Provisioning Flows', () => {
 
     cy.get('app-alert-scan-loading', { timeout: 80000 }).should('not.exist');
     assertAlertScanCompletedMailPresent();
+    ensureTenantAlertReportsPresent();
     cy.get('[data-testid="tenant-home-print-alerts"]').scrollIntoView().should('be.visible').click();
     exportFromModal('home-alert-export-modal', 'home-alert-export-option-report');
 

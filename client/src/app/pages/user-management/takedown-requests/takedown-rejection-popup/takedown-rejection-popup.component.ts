@@ -16,7 +16,7 @@ export class TakedownRejectionPopupComponent {
   readonly target = input('');
   readonly isSubmitting = input(false);
   readonly submitted = output<string>();
-  readonly cancelled = output<void>();
+  readonly cancelled = output();
   reason = '';
 
   get trimmedReason(): string {
@@ -28,8 +28,8 @@ export class TakedownRejectionPopupComponent {
   }
 
   onBackdrop(event: MouseEvent): void {
-    const eventTargetElement = event.target as HTMLElement | null;
-    if (eventTargetElement?.dataset?.['role'] === 'backdrop') {
+    const eventTargetElement = event.target;
+    if (eventTargetElement instanceof HTMLElement && eventTargetElement.dataset.role === 'backdrop') {
       this.cancel();
     }
   }

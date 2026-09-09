@@ -1,5 +1,5 @@
 <div class="w-full p-3 md:p-4">
-  <form data-testid="account-settings-form" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-consolidated-primary)] [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#f9fbff] [body.light-theme_&]:shadow-none p-5 w-full max-w-[2400px]" (ngSubmit)="updateUser()" @fadeInDashboardItem>
+  <form data-testid="account-settings-form" class="ui-fade-in-dashboard-item rounded-xl border border-[var(--color-border)] bg-[var(--color-consolidated-primary)] [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#f9fbff] [body.light-theme_&]:shadow-none p-5 w-full max-w-[2400px]" (ngSubmit)="updateUser()">
     <div class="mb-4 flex items-start gap-3">
       <div class="h-[88px] w-[88px] shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-blue-700)] p-[0.2rem]">
         <app-user-image-picker class="block h-full w-full" [imageUrl]="userSessionData.user.image || ''"

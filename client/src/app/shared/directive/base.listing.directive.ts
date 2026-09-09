@@ -1,17 +1,17 @@
 import { Directive, OnInit, signal, inject, DestroyRef } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, take } from 'rxjs';
 import { DashboardService } from '../../services/dashboard/dashboard.service';
 import { ScrollService } from '../services/scroll.service';
 import { FilterModel } from '../model/filter/filter.model';
-export interface BaseListResponse {
-    total_count: number;
-}
-export interface ListService {
-    reload(params: any): void;
-    setCurrentPage(page: number): void;
-}
+import type { BaseListResponse, ListService } from './model/base.listing.model';
+import { getOwnProperty, setOwnProperty } from '../utils/type-guards.util';
+
+export type { BaseListResponse, ListService } from './model/base.listing.model';
+
+
+
 @Directive()
 export abstract class BaseListingComponent<T extends BaseListResponse> implements OnInit {
   protected route = inject(ActivatedRoute);
@@ -46,7 +46,7 @@ export abstract class BaseListingComponent<T extends BaseListResponse> implement
     });
     this.route.queryParams.pipe(take(1)).subscribe(params => {
       this.initializeFilters(params);
-      const page = parseInt(params['page'], 10) || 1;
+      const page = parseInt(params.page, 10) || 1;
       this.service.setCurrentPage(page);
       const mergedFilters = { ...this.dashboard.selectedFilters(), ...this.selectedFilters };
       this.selectedFilters = mergedFilters;
@@ -55,25 +55,25 @@ export abstract class BaseListingComponent<T extends BaseListResponse> implement
     });
   }
 
-  private initializeFilters(params: any): void {
+  private initializeFilters(params: Params): void {
     const baseFilters = this.filterModel.filters;
     const initialSelected: Record<string, string> = {};
     Object.keys(baseFilters).forEach(key => {
-      const value = params[key];
-      if (value && baseFilters[key].options.includes(value)) {
-        baseFilters[key].selected = value;
-        initialSelected[key] = value;
+      const value = getOwnProperty(params, key);
+      if (value && getOwnProperty(baseFilters, key).options.includes(value)) {
+        getOwnProperty(baseFilters, key).selected = value;
+        setOwnProperty(initialSelected, key, value);
       }
     });
     this.selectedFilters = initialSelected;
-    this.searchQuery = params['q'] || '';
+    this.searchQuery = params.q ?? '';
   }
 
   onPageChange(page: number): void {
     this.isLoading.set(true);
     this.service.setCurrentPage(page);
     const queryParams = { ...this.selectedFilters, q: this.searchQuery || null, page };
-    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
+    void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
     this.service.reload(queryParams);
   }
 
@@ -92,17 +92,17 @@ export abstract class BaseListingComponent<T extends BaseListResponse> implement
 
   resetFilters(): void {
     this.selectedFilters = {};
-    Object.keys(this.filterModel.filters).forEach(key => delete (this.filterModel.filters as any)[key].selected);
+    Object.keys(this.filterModel.filters).forEach(key => delete getOwnProperty(this.filterModel.filters, key).selected);
     const currentUrl = this.router.url.split('?')[0];
     this.router.navigateByUrl(currentUrl, { replaceUrl: true }).then(() => {
-      this.reload(); 
+      this.reload();
     });
   }
 
   protected reload(): void {
     this.isLoading.set(true);
     const queryParams = { ...this.selectedFilters, q: this.searchQuery || null, page: 1 };
-    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
+    void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge' });
     this.service.reload(queryParams);
   }
 }

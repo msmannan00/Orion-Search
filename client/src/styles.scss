@@ -363,9 +363,14 @@ html:has(body.dark-theme) {
 body.demo-tour-active {
   [data-testid="dashboard-sidebar-main"] {
     height: 100vh !important;
-    height: 100dvh !important;
     min-height: 100vh !important;
-    min-height: 100dvh !important;
+  }
+
+  @supports (height: 100dvh) {
+    [data-testid="dashboard-sidebar-main"] {
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+    }
   }
 
   [data-testid="dashboard-sidebar-scroll"] {
@@ -911,4 +916,75 @@ select:not(.ui-popup-select, .ui-select)::-ms-expand {
   }
 
 
+}
+
+@property --ui-beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.ui-connection-beam {
+  position: relative;
+  isolation: isolate;
+}
+
+.ui-connection-beam::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--ui-beam-angle),
+    transparent 0deg,
+    transparent 198deg,
+    rgb(56 189 248 / 4%) 234deg,
+    rgb(56 189 248 / 14%) 288deg,
+    rgb(56 189 248 / 42%) 330deg,
+    rgb(56 189 248 / 85%) 350deg,
+    #7dd3fc 356deg,
+    rgb(125 211 252 / 10%) 359deg,
+    transparent 360deg);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 3px rgb(56 189 248 / 65%));
+  pointer-events: none;
+  animation: ui-connection-beam-rotate 1.9s linear infinite;
+}
+
+@keyframes ui-connection-beam-rotate {
+  to {
+    --ui-beam-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-connection-beam::after {
+    animation: none;
+  }
+}
+
+/* Orion extension state panel — smooth, consistent fade/slide on every state change */
+@keyframes orion-ext-fade {
+  from {
+    opacity: 0%;
+    transform: translateY(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ext-state-fade {
+  animation: orion-ext-fade 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ext-state-fade {
+    animation: none;
+  }
 }

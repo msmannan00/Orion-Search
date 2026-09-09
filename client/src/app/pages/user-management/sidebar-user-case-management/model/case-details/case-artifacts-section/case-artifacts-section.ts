@@ -55,7 +55,7 @@ export class CaseArtifactsSectionComponent {
       return null;
     }
 
-    return this.editedCase?.artifacts?.[this.editingArtifactIndex] || null;
+    return this.editedCase?.artifacts?.[this.editingArtifactIndex] ?? null;
   }
 
   get artifactReports() {
@@ -77,7 +77,7 @@ export class CaseArtifactsSectionComponent {
   }
 
   hasArtifactsChanged(): boolean {
-    return (this.editedCase?.artifacts?.length || 0) !== (this.caseData?.artifacts?.length || 0);
+    return (this.editedCase?.artifacts?.length ?? 0) !== (this.caseData?.artifacts?.length || 0);
   }
 
   getArtifactAccept(artifact: CaseArtifact): string {

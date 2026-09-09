@@ -1,7 +1,7 @@
-<div class="mt-4 w-full" @fadeInDashboardItem>
+<div class="mt-4 w-full ui-fade-in-item">
     @if (getDefacementGroups(); as headerGroups) {
         @if (getDefacementSummary(headerGroups); as headerSummary) {
-          <div class="mb-3 flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3" @fadeInDashboardItem>
+          <div class="mb-3 flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3 ui-fade-in-item">
             <div class="flex min-w-0 items-center gap-2">
               <div class="max-w-[110px] truncate text-sm font-semibold text-[var(--color-text1)]">{{ headerSummary.latestSeen ? (headerSummary.latestSeen | date:'MMM d, y') : '-' }}</div>
               <div class="text-xs text-[var(--color-text4)]">{{ 'Latest Compromise' | translate }}</div>
@@ -35,7 +35,7 @@
         }
       }
 
-    <div data-testid="defacement-card-view" @fadeInDashboardItem>
+    <div class="ui-fade-in-item" data-testid="defacement-card-view">
         @if (getRenderedDefacementGroups(); as groups) {
             @if (getDefacementGroups().length === 0) {
               <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-800)] px-4 py-5 text-sm text-[var(--color-text4)]">

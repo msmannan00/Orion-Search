@@ -18,12 +18,12 @@ Genesis Technologies combines software engineering, cybersecurity, artificial in
 
 ## Company Information
 
-| Field | Description |
-| --- | --- |
-| Company Name | Genesis Technologies |
-| Product in Scope | Orion Intelligence |
-| Product Website | https://www.orionintelligence.org |
-| Primary Industry | Software development and cybersecurity |
+| Field              | Description                                                                                                    |
+|--------------------|----------------------------------------------------------------------------------------------------------------|
+| Company Name       | Genesis Technologies                                                                                           |
+| Product in Scope   | Orion Intelligence                                                                                             |
+| Product Website    | https://www.orionintelligence.org                                                                              |
+| Primary Industry   | Software development and cybersecurity                                                                         |
 | Product Categories | Cyber Threat Intelligence (CTI), Open-Source Intelligence (OSINT), data analytics, and intelligence operations |
 
 ## Business Domains

@@ -19,8 +19,12 @@ export class MessageScrollRailComponent implements OnChanges, OnDestroy {
   private scrollFrame: number | null = null;
   private scrollTarget: HTMLElement | Window | null = null;
   private setupFrame: number | null = null;
-  private readonly onScroll = () => this.scheduleScrollSync();
-  private readonly onResize = () => this.scheduleScrollSync();
+  private readonly onScroll = () => {
+    this.scheduleScrollSync();
+  };
+  private readonly onResize = () => {
+    this.scheduleScrollSync();
+  };
 
   prompts: ScrollRailPrompt[] = [];
   visibleMarkers: ScrollRailMarker[] = [];

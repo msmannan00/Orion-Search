@@ -5,9 +5,9 @@ import { TooltipDirective } from '../../../../shared/directive/tooltip-directive
 import { LowerPipe } from '../../../../shared/pipes/lower.pipe';
 import { SelectionStoreService } from '../../../../services/dashboard/selection.service';
 import { LicenseService } from '../../../../services/licenses/licenses.service';
-import { SubscriptionService } from '../../../../services/dashboard/subscription.service';
 import { SidebarHomepageService } from '../../../../services/dashboard/sidebar.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { Category } from '../../../../shared/constants/pages';
 
 @Component({
   selector: 'app-dashboard-sidebar-items',
@@ -20,13 +20,13 @@ export class DashboardSidebarItemsComponent {
   readonly title = input('');
   readonly icon = input('');
   readonly items = input<string[]>([]);
-  readonly category = input<any>();
+  readonly category = input.required<Category>();
   readonly routePrefix = input('');
   readonly tooltip = input('');
-  readonly sectionSelected = output<any>();
+  readonly sectionSelected = output<Category>();
   readonly optionSelected = output<string>();
 
-  constructor(protected selectionStore: SelectionStoreService, protected licenseService: LicenseService, protected subscriptionService: SubscriptionService, private sidebarHomepageService: SidebarHomepageService) {
+  constructor(protected selectionStore: SelectionStoreService, protected licenseService: LicenseService, private sidebarHomepageService: SidebarHomepageService) {
   }
 
   selectSection() {

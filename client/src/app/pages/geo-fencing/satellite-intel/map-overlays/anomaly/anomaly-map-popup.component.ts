@@ -14,7 +14,7 @@ export class AnomalyMapPopupComponent {
   anomalyResult: SatelliteAnomalyResponse['result'] | null = null;
 
   get alertLevel(): string {
-    return this.anomalyResult?.alert_level || 'unknown';
+    return this.anomalyResult?.alert_level ?? 'unknown';
   }
 
   get deltaScore(): string {

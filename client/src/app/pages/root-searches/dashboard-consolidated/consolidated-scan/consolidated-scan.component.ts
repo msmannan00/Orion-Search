@@ -8,13 +8,16 @@ import { RouterLink } from '@angular/router';
 import { scanAnimation } from '../../../../shared/animations/scan.animations';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { AppService } from '../../../../services/core/app/app.service';
+import type { PendingMsg } from './model/consolidated-scan.model';
+import { isDomainName } from '../../../../shared/utils/network-validation.util';
+import { getOwnProperty, setOwnProperty } from '../../../../shared/utils/type-guards.util';
+
+export type { PendingMsg } from './model/consolidated-scan.model';
+
 
 type ScanKey = 'basic' | 'seo' | 'repo' | 'liveapi';
-interface PendingMsg {
-    status: 'pending';
-    progress?: number;
-    step?: string;
-}
+
+type ConsolidatedScanEmission = ConsolidatedScanResults | ConsolidatedLiveApiResults[] | PendingMsg;
 @Component({
   selector: 'app-consolidated-scan',
   standalone: true,
@@ -67,7 +70,7 @@ export class ConsolidatedScanComponent {
     const input = (q || '').trim();
     const scans: {
           t: ScanKey;
-          o: Observable<any>;
+          o: Observable<ConsolidatedScanEmission>;
       }[] = [];
     const liveApiEntities: ConsolidatedLiveApis[] = [];
     const domainInputs: string[] = [];
@@ -75,7 +78,8 @@ export class ConsolidatedScanComponent {
     this.today = new Date();
     this.targetLabel = input;
     if (input) {
-      const isDomain = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}$/i.test(input);
+      const domainHost = input.replace(/^https:\/\//i, '').replace(/^http:\/\//i, '').split('/')[0];
+      const isDomain = isDomainName(domainHost);
       const isRepo = input.includes('github');
       if (isRepo) {
         repoInputs.push(input);
@@ -86,12 +90,12 @@ export class ConsolidatedScanComponent {
       liveApiEntities.push(...this.extractLiveApiEntities(input));
     }
     if (entityCategories) {
-      const domains = Array.isArray(entityCategories['m_domain']) ? entityCategories['m_domain'] : [];
-      const emails = Array.isArray(entityCategories['m_email']) ? entityCategories['m_email'] : [];
-      const urls = Array.isArray(entityCategories['m_url']) ? entityCategories['m_url'] : [];
-      const software = Array.isArray(entityCategories['m_software']) ? entityCategories['m_software'] : [];
-      const companyNames = Array.isArray(entityCategories['m_company_name']) ? entityCategories['m_company_name'] : [];
-      const orgs = Array.isArray(entityCategories['m_org']) ? entityCategories['m_org'] : [];
+      const domains = Array.isArray(entityCategories.m_domain) ? entityCategories.m_domain : [];
+      const emails = Array.isArray(entityCategories.m_email) ? entityCategories.m_email : [];
+      const urls = Array.isArray(entityCategories.m_url) ? entityCategories.m_url : [];
+      const software = Array.isArray(entityCategories.m_software) ? entityCategories.m_software : [];
+      const companyNames = Array.isArray(entityCategories.m_company_name) ? entityCategories.m_company_name : [];
+      const orgs = Array.isArray(entityCategories.m_org) ? entityCategories.m_org : [];
       for (const domain of domains) {
         const value = (domain || '').trim();
         if (value) {
@@ -102,7 +106,7 @@ export class ConsolidatedScanComponent {
       for (const email of emails) {
         const value = (email || '').trim();
         if (value) {
-          liveApiEntities.push({ type: 'social', q1: value } as ConsolidatedLiveApis);
+          liveApiEntities.push({ type: 'social', q1: value });
         }
       }
       for (const url of urls) {
@@ -111,37 +115,37 @@ export class ConsolidatedScanComponent {
           repoInputs.push(value);
         }
         else if (value.includes('play.google.com/store/apps')) {
-          liveApiEntities.push({ type: 'cracked', q1: value } as ConsolidatedLiveApis);
+          liveApiEntities.push({ type: 'cracked', q1: value });
         }
       }
       for (const name of software) {
         const value = (name || '').trim();
         if (value) {
-          liveApiEntities.push({ type: 'software', q1: value } as ConsolidatedLiveApis);
+          liveApiEntities.push({ type: 'software', q1: value });
         }
       }
       for (const company of companyNames) {
         const value = (company || '').trim();
         if (value) {
-          liveApiEntities.push({ type: 'social', q1: value } as ConsolidatedLiveApis);
+          liveApiEntities.push({ type: 'social', q1: value });
         }
       }
       for (const org of orgs) {
         const value = (org || '').trim();
         if (value) {
-          liveApiEntities.push({ type: 'social', q1: value } as ConsolidatedLiveApis);
+          liveApiEntities.push({ type: 'social', q1: value });
         }
       }
     }
     for (const repo of repoInputs) {
-      scans.push({ t: 'repo', o: this.api.scanForRepo(repo, 'repo') as any });
+      scans.push({ t: 'repo', o: this.api.scanForRepo(repo, 'repo') });
     }
     for (const domain of domainInputs) {
-      scans.push({ t: 'basic', o: this.api.scanDomain(domain, 'basic') as any });
-      scans.push({ t: 'seo', o: this.api.scanDomain(domain, 'seo') as any });
+      scans.push({ t: 'basic', o: this.api.scanDomain(domain, 'basic') });
+      scans.push({ t: 'seo', o: this.api.scanDomain(domain, 'seo') });
     }
     if (liveApiEntities.length) {
-      scans.push({ t: 'liveapi', o: this.api.runLiveApiSearch(liveApiEntities) as any });
+      scans.push({ t: 'liveapi', o: this.api.runLiveApiSearch(liveApiEntities) });
     }
     if (!scans.length) {
       return;
@@ -161,28 +165,31 @@ export class ConsolidatedScanComponent {
     this.liveApiResults = [];
     this.isCollapsed = false;
     for (const t of this.expectedTypes) {
-      this.progressByType[t] = 0;
+      setOwnProperty(this.progressByType, t, 0);
     }
     this.isProcessing = true;
     this.scanSub = concat(...scans.map(({ t, o }) =>o.pipe(map(v => ({ t, v })))))
       .pipe(finalize(() => (this.isProcessing = false)))
       .subscribe({
-        next: ({ t, v }: { t: ScanKey; v: any }) => {
+        next: ({ t, v }: { t: ScanKey; v: ConsolidatedScanEmission }) => {
           if (this.isPending(v)) {
-            this.progressByType[t] = this.clamp(Number(v.progress ?? 0), 0, 100);
+            setOwnProperty(this.progressByType, t, this.clamp(Number(v.progress ?? 0), 0, 100));
             return;
           }
-          this.progressByType[t] = 100;
+          setOwnProperty(this.progressByType, t, 100);
           if (t === 'liveapi') {
             this.liveApiResults = Array.isArray(v) ? v : [];
             return;
           }
+          if (Array.isArray(v)) {
+            return;
+          }
           const result = {
-            ...(v as ConsolidatedScanResults),
-            scanType: (v)?.scanType || t
-          } as ConsolidatedScanResults;
-          const key = t as Exclude<ScanKey, 'liveapi'>;
-          this.resultsByType[key] = [...(this.resultsByType[key] || []), result];
+            ...v,
+            scanType: v.scanType || t
+          };
+          const key = t;
+          setOwnProperty(this.resultsByType, key, [...(getOwnProperty(this.resultsByType, key) ?? []), result]);
         },
         error: () => {
           this.isProcessing = false;
@@ -194,8 +201,8 @@ export class ConsolidatedScanComponent {
       });
   }
 
-  private isPending(v: any): v is PendingMsg {
-    return !!v && typeof v === 'object' && String(v.status || '').toLowerCase() === 'pending';
+  private isPending(v: unknown): v is PendingMsg {
+    return !!v && typeof v === 'object' && 'status' in v && String(v.status ?? '').toLowerCase() === 'pending';
   }
 
   private clamp(n: number, min: number, max: number): number {
@@ -220,19 +227,19 @@ export class ConsolidatedScanComponent {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
     if (isEmail) {
       const username = trimmed.split('@')[0];
-      entities.push({ type: 'user', q1: username, q2: trimmed } as ConsolidatedLiveApis);
-      entities.push({ type: 'social', q1: username } as ConsolidatedLiveApis);
+      entities.push({ type: 'user', q1: username, q2: trimmed });
+      entities.push({ type: 'social', q1: username });
       return entities;
     }
     if (trimmed.includes('play.google.com/store/apps')) {
-      entities.push({ type: 'cracked', q1: trimmed } as ConsolidatedLiveApis);
+      entities.push({ type: 'cracked', q1: trimmed });
     }
     try {
       const url = new URL(trimmed);
       const hostname = url.hostname.replace('www.', '');
       const name = hostname.split('.')[0];
       if (name) {
-        entities.push({ type: 'social', q1: name } as ConsolidatedLiveApis);
+        entities.push({ type: 'social', q1: name });
       }
     }
     catch {
@@ -241,7 +248,7 @@ export class ConsolidatedScanComponent {
         name = name.split('.')[0];
       }
       if (name) {
-        entities.push({ type: 'social', q1: name } as ConsolidatedLiveApis);
+        entities.push({ type: 'social', q1: name });
       }
     }
     return entities;
@@ -256,7 +263,7 @@ export class ConsolidatedScanComponent {
       if (t === 'liveapi') {
         return (this.progressByType.liveapi ?? 0) < 100;
       }
-      return !this.resultsByType[t];
+      return !getOwnProperty(this.resultsByType, t);
     });
   }
 
@@ -274,7 +281,7 @@ export class ConsolidatedScanComponent {
     }
     let sum = 0;
     for (const t of this.expectedTypes) {
-      sum += Number(this.progressByType[t] ?? 0);
+      sum += Number(getOwnProperty(this.progressByType, t) ?? 0);
     }
     return Math.round(sum / this.totalCount);
   }
@@ -307,10 +314,10 @@ export class ConsolidatedScanComponent {
           url: string;
       }[] = [];
     for (const r of this.liveApiResults || []) {
-      const input = (r as any)?.input || {};
-      const data = (r as any)?.resultData?.cards_data || [];
+      const input = r.input;
+      const data = r.resultData?.cards_data ?? [];
       for (const item of data) {
-        const url = item?.m_url || item?.m_app_url || '';
+        const url = item?.m_url ?? item?.m_app_url ?? '';
         if (!url) {
           continue;
         }
@@ -325,7 +332,7 @@ export class ConsolidatedScanComponent {
   }
 
   gradeBadgeClass(grade?: string): string {
-    const g = (grade || '').toUpperCase();
+    const g = (grade ?? '').toUpperCase();
     const baseClass = 'inline-flex items-center justify-center rounded-[999px] border px-[8px] py-[4px] font-[Inter] text-[12px] font-normal leading-[12px] whitespace-nowrap';
     if (g === 'D') {
       return `${baseClass} border-[rgba(248,113,113,0.45)] bg-[rgba(127,29,29,0.42)] text-red-100 [body.light-theme_&]:border-red-300 [body.light-theme_&]:bg-red-50 [body.light-theme_&]:text-red-700`;
@@ -337,7 +344,7 @@ export class ConsolidatedScanComponent {
   }
 
   gradeText(grade?: string): string {
-    const g = (grade || '—').toUpperCase();
+    const g = (grade ?? '—').toUpperCase();
     return `${g} Grade`;
   }
 

@@ -3,6 +3,6 @@ class CRAWL_CALLBACK_RESPONSES:
 
 
 class CRAWL_PATHS:
-    M_PARSER_FILE_PATH = "static/.well-known/parser_files.zip"
+    M_PARSER_FILE_PATH = "workspace/parser/parser_files.zip"
     M_FEEDER_FILE_PATH = "static/.well-known/feeder/"
-    M_SCREENSHOT = "static/resource/screenshot/breach/"
+    M_SCREENSHOT = "workspace/resource/screenshot/breach/"

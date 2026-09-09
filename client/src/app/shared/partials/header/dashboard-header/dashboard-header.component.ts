@@ -34,7 +34,7 @@ export class DashboardHeaderComponent implements OnInit {
 
   updateBreadcrumb(url: string) {
     const urlTree: UrlTree = this.router.parseUrl(url);
-    const segments = urlTree.root.children['primary']?.segments.map((segment) => segment.path) ?? [];
+    const segments = urlTree.root.children.primary?.segments.map((segment) => segment.path) ?? [];
     const formatLabel = (segment: string) => segment === 'netint' ? 'Network Intel' : segment === 'ai' ? 'AI' : segment;
     this.breadcrumb = segments.length > 1
       ? segments.slice(1).map((segment) => ({ path: segment, label: formatLabel(segment) }))
@@ -109,10 +109,10 @@ export class DashboardHeaderComponent implements OnInit {
   }
 
   supportOpenPopup() {
-    this.supportPopup = true; // open popup
+    this.supportPopup = true;
   }
 
   supportClosePopup() {
-    this.supportPopup = false; // close popup
+    this.supportPopup = false;
   }
 }

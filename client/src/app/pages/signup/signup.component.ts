@@ -18,7 +18,7 @@ import { isSignupHost } from '../../shared/utils/auth-host.util';
 })
 export class SignupComponent implements OnInit {
   private static readonly DEFAULT_LOGO_SRC = '/assets/images/shared/logo-wide-light.svg';
-  private static readonly DEFAULT_AUTH_DASHBOARD_SRC = '/assets/images/shared/auth_dashboard_icon.svg';
+  private static readonly DEFAULT_AUTH_DASHBOARD_SRC = '/assets/images/shared/auth_dashboard_map.png';
 
   user = { username: '', mail: '', password: '' };
   errorMessage: string | null = null;
@@ -28,7 +28,7 @@ export class SignupComponent implements OnInit {
   currentUnmetCheck: string | null = null;
   isMobile = false;
   usernamePattern = /^[A-Za-z][A-Za-z0-9_-]{7,19}$/;
-  usernameSuggestion: string = '';
+  usernameSuggestion = '';
   brandingResolved = false;
 
   constructor(private router: Router, public auth_service: AuthService, private route: ActivatedRoute, protected appService: AppService) { }
@@ -103,7 +103,7 @@ export class SignupComponent implements OnInit {
         this.router.navigate(['/welcome']).then();
       },
       error: (err) => {
-        this.errorMessage = err?.error?.detail || 'Signup failed';
+        this.errorMessage = err?.error?.detail ?? 'Signup failed';
       }
     });
   }

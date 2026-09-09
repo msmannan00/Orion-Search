@@ -20,7 +20,7 @@ export class ArcReportPopupComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['arc'] || changes['items']) {
+    if (changes.arc || changes.items) {
       this.setDisplayItems();
     }
   }

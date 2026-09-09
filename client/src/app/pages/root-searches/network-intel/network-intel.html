@@ -73,7 +73,7 @@
   </div>
 
   @if (!hasSearched && !isScanning() && !scanHelper.onError()) {
-    <div [ngClass]="isEmbeddedInConsolidated ? '' : 'px-4 md:px-6'" @fadeInDashboardItem>
+    <div class="network-intel-fade-in" [ngClass]="isEmbeddedInConsolidated ? '' : 'px-4 md:px-6'">
       <app-empty-query></app-empty-query>
     </div>
   }
@@ -88,7 +88,7 @@
       [hasSearched]="hasSearched"
       [dnsResult]="dnsResult"
       [ipRows]="ipRows"
-      @fadeInDashboardItem
+      class="network-intel-fade-in"
       (toggleRow)="toggleIpRow($event)">
     </app-network-intel-dns-section>
   }
@@ -104,7 +104,7 @@
       [dnsResult]="geoIpListResult"
       [ipRows]="geoIpRows"
       [resultLabel]="'IP ADDRESS' | translate"
-      @fadeInDashboardItem
+      class="network-intel-fade-in"
       (toggleRow)="toggleIpRow($event)">
     </app-network-intel-dns-section>
   }
@@ -118,7 +118,7 @@
       [errorMessage]="scanHelper.onError()?.message || null"
       [hasSearched]="hasSearched"
       [shodanResult]="shodanResult"
-      @fadeInDashboardItem>
+      class="network-intel-fade-in">
     </app-network-intel-shodan-section>
   }
 
@@ -135,7 +135,7 @@
       [vulnerabilityResult]="vulnerabilityResult"
       [elapsedLabel]="vulnerabilityElapsedLabel"
       (selectTarget)="startVulnerabilityScanForTarget($event.target, $event.depth)"
-      @fadeInDashboardItem>
+      class="network-intel-fade-in">
     </app-network-intel-vulnerability-section>
   }
 
@@ -152,7 +152,7 @@
       [grade]="seoRepoScanGrade"
       [gradeCounts]="seoRepoScanGradeCounts"
       [scanType]="activeTab"
-      @fadeInDashboardItem>
+      class="network-intel-fade-in">
     </app-network-intel-seo-repo-scan-section>
   }
 

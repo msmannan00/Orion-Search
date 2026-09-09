@@ -2,12 +2,16 @@ import { ComponentRef } from '@angular/core';
 import { OrionSatelliteFeature } from '../../../models/geo-fencing.models';
 import { FacilityPopupComponent } from './components/facility-popup/facility-popup.component';
 import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-renderer';
+import type * as Leaflet from 'leaflet';
+import type { Nullable } from '../../../../../shared/utils/type-guards.util';
+import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 export class FacilitiesMapRenderer {
-  private featureLayer: any = null;
+  private featureLayer: Nullable<Leaflet.LayerGroup> = null;
   private featurePopupRefs = new Set<ComponentRef<FacilityPopupComponent>>();
 
-  constructor(private L: any, private map: any, private componentRenderer: LeafletComponentRenderer) {}
+  constructor(private L: typeof Leaflet, private map: Leaflet.Map, private componentRenderer: LeafletComponentRenderer) {}
 
   init(): void {
     if (!this.L || !this.map || this.featureLayer) {
@@ -21,8 +25,9 @@ export class FacilitiesMapRenderer {
     if (!this.featureLayer) {
       return;
     }
+    const featureLayer = this.featureLayer;
     this.destroyPopupRefs(this.featurePopupRefs);
-    this.featureLayer.clearLayers();
+    featureLayer.clearLayers();
 
     (features || []).forEach((feature) => {
       if (!Array.isArray(feature.coordinates) || feature.coordinates.length < 2) {
@@ -44,7 +49,7 @@ export class FacilitiesMapRenderer {
         name: feature.name,
         kind: feature.rawType || feature.type,
       }, this.featurePopupRefs);
-      marker.addTo(this.featureLayer);
+      marker.addTo(featureLayer);
     });
   }
 
@@ -56,7 +61,9 @@ export class FacilitiesMapRenderer {
       this.featureLayer?.addTo(this.map);
       return;
     }
-    this.featureLayer && this.map.removeLayer(this.featureLayer);
+    if (this.featureLayer) {
+      this.map.removeLayer(this.featureLayer);
+    }
   }
 
   destroy(): void {
@@ -67,10 +74,10 @@ export class FacilitiesMapRenderer {
     this.featureLayer = null;
   }
 
-  private bindPopup(layer: any, properties: { name?: string; kind?: string }, refs: Set<ComponentRef<FacilityPopupComponent>>): void {
+  private bindPopup(layer: Leaflet.Layer, properties: { name?: string; kind?: string }, refs: Set<ComponentRef<FacilityPopupComponent>>): void {
     const popup = this.componentRenderer.create(FacilityPopupComponent, {
-      name: String(properties.name || ''),
-      kind: String(properties.kind || ''),
+      name: String(properties.name ?? ''),
+      kind: String(properties.kind ?? ''),
     });
     refs.add(popup.componentRef);
     layer.bindPopup(popup.element);
@@ -96,11 +103,13 @@ export class FacilitiesMapRenderer {
       military: '#ef4444',
       other: '#64748b',
     };
-    return colors[kind] || '#6b7280';
+    return getOwnProperty(colors, kind) || '#6b7280';
   }
 
   private destroyPopupRefs(refs: Set<ComponentRef<FacilityPopupComponent>>): void {
-    Array.from(refs).forEach((componentRef) => this.componentRenderer.destroy(componentRef));
+    Array.from(refs).forEach((componentRef) => {
+      this.componentRenderer.destroy(componentRef);
+    });
     refs.clear();
   }
 }

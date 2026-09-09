@@ -8,6 +8,7 @@ import { DashboardService } from '../../../../services/dashboard/dashboard.servi
 import { ResultRowHelperService } from '../../../../shared/services/result-row-helper.service';
 import { ProxyController } from '../../../../shared/services/proxy-controller';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { asUnknownRecord, getOwnProperty, setOwnProperty } from '../../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-defacement-results',
@@ -17,7 +18,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 })
 export class ThreatResultsComponent implements OnInit, OnChanges {
   private readonly proxied_resource = inject(ProxyController);
-  private copiedTimer: any = null;
+  private copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly isExpandableInput = input(false, { alias: 'isExpandable' });
   showLimitDefacement = 10;
@@ -50,14 +51,14 @@ export class ThreatResultsComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     const results_defacement = this.results_defacement();
-    if (changes['results_defacement'] && results_defacement?.Result?.length) {
+    if (changes.results_defacement && results_defacement?.Result?.length) {
       this.updateThreatTypeCounts(results_defacement.Result);
       this.showLimitDefacement = 10;
     }
-    if (changes['results_stealerlog'] && this.results_stealerlog()?.Result?.length) {
+    if (changes.results_stealerlog && this.results_stealerlog()?.Result?.length) {
       this.showLimitStealer = 10;
     }
-    if (changes['results_defacement'] || changes['results_stealerlog'] || changes['isExpandable']) {
+    if (changes.results_defacement || changes.results_stealerlog || changes.isExpandable) {
       this.copiedKey = null;
       if (this.copiedTimer) {
         clearTimeout(this.copiedTimer);
@@ -69,12 +70,12 @@ export class ThreatResultsComponent implements OnInit, OnChanges {
     this.threatTypeCounts = {};
     results.forEach(item => {
       const type = this.normalizeThreatType(item.m_ioc_type?.[0]);
-      this.threatTypeCounts[type] = (this.threatTypeCounts[type] || 0) + 1;
+      setOwnProperty(this.threatTypeCounts, type, (getOwnProperty(this.threatTypeCounts, type) || 0) + 1);
     });
   }
 
-  private normalizeThreatType(type: any): string {
-    return String(type || 'Unknown').trim().toLowerCase() || 'Unknown';
+  private normalizeThreatType(type: unknown): string {
+    return String(type ?? 'Unknown').trim().toLowerCase() || 'Unknown';
   }
 
   explore(route: string, q: string) {
@@ -89,9 +90,9 @@ export class ThreatResultsComponent implements OnInit, OnChanges {
     this.proxied_resource.open(url);
   }
 
-  exploreStealer(url: string, username: string) {
-    const encodedUrl = encodeURIComponent(url || '');
-    const encodedUser = encodeURIComponent(username || '');
+  exploreStealer(url: unknown, username: unknown) {
+    const encodedUrl = encodeURIComponent(String(url ?? ''));
+    const encodedUser = encodeURIComponent(String(username ?? ''));
     const finalUrl = `/dashboard/stealerlogs?domain=${encodedUrl}&user=${encodedUser}`;
     this.proxied_resource.open(finalUrl);
   }
@@ -141,7 +142,7 @@ export class ThreatResultsComponent implements OnInit, OnChanges {
     return this.rowHelper.isCopied(this.copiedKey, key);
   }
 
-  copyText(text: any, key: string, e?: MouseEvent) {
+  copyText(text: unknown, key: string, e?: MouseEvent) {
     this.rowHelper.copyText(text, key, (copiedKey) => {
       this.copiedTimer = this.rowHelper.setCopiedState(copiedKey, this.copiedTimer, (value) => {
         this.copiedKey = value;
@@ -149,51 +150,51 @@ export class ThreatResultsComponent implements OnInit, OnChanges {
     }, e);
   }
 
-  webServerValue(item: any): string {
-    return this.rowHelper.arrayOrDash(item?.m_web_server);
+  webServerValue(item: unknown): string {
+    return this.rowHelper.arrayOrDash(asUnknownRecord(item).m_web_server);
   }
 
-  attackerValue(item: any): string {
-    return this.rowHelper.arrayOrDash(item?.m_attacker);
+  attackerValue(item: unknown): string {
+    return this.rowHelper.arrayOrDash(asUnknownRecord(item).m_attacker);
   }
 
-  teamValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.m_team);
+  teamValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).m_team);
   }
 
-  ipValue(item: any): string {
-    return this.rowHelper.arrayOrDash(item?.m_ip);
+  ipValue(item: unknown): string {
+    return this.rowHelper.arrayOrDash(asUnknownRecord(item).m_ip);
   }
 
-  urlValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.m_url);
+  urlValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).m_url);
   }
 
-  dateValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.m_date);
+  dateValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).m_date);
   }
 
-  usernameValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.['username']);
+  usernameValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).username);
   }
 
-  passwordValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.['password']);
+  passwordValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).password);
   }
 
-  domainValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.['domain']);
+  domainValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).domain);
   }
 
-  hashValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.['m_hash']);
+  hashValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).m_hash);
   }
 
-  stealerUrlValue(item: any): string {
-    return this.rowHelper.valueOrDash(item?.['url']);
+  stealerUrlValue(item: unknown): string {
+    return this.rowHelper.valueOrDash(asUnknownRecord(item).url);
   }
 
-  truncate(v: any, n: number = 30): string {
+  truncate(v: unknown, n = 30): string {
     return this.rowHelper.truncate(v, n);
   }
 }

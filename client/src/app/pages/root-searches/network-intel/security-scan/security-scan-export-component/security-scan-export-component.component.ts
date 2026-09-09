@@ -1,9 +1,11 @@
 import { CommonModule, NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnChanges, SimpleChanges, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnChanges, input } from '@angular/core';
 import { UrlScanMeta, UrlScanThreatItem } from '../../../../../shared/model/security-scan/security.scan.results.model';
 import { FindingRow } from '../model/finding-row.model';
 import { HelperService } from '../../../../../shared/services/helper.service';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-security-scan-export-component',
@@ -24,7 +26,7 @@ export class SecurityScanExportComponentComponent implements OnChanges {
   constructor(private helperService: HelperService) {
   }
 
-  ngOnChanges(_c: SimpleChanges): void {
+  ngOnChanges(): void {
     this.viewFindings = this.buildRows();
   }
 
@@ -51,7 +53,7 @@ export class SecurityScanExportComponentComponent implements OnChanges {
     for (const cat of cats) {
       const items = cat.items || [];
       for (let i = 0; i < items.length; i++) {
-        const it = items[i];
+        const it = getOwnProperty(items, i);
         rows.push({
           n: i + 1,
           category: cat.name,
@@ -59,7 +61,7 @@ export class SecurityScanExportComponentComponent implements OnChanges {
           description: it.description || '',
           risk: it.risk || '',
           confidence: it.confidence || '',
-          proof: it.proof || undefined
+          proof: it.proof ?? undefined
         });
       }
     }

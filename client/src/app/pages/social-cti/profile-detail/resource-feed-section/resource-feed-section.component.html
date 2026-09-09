@@ -1,0 +1,193 @@
+<div data-testid="social-feed-list" class="mx-auto flex w-full max-w-[560px] flex-col gap-2.5 min-[1700px]:max-w-none">
+  @for (view of views(); track view.key) {
+    <div [class.ui-connection-beam]="isConnectionsLoading(view)" class="group flex flex-col gap-2.5 rounded-[12px] min-[1700px]:flex-row min-[1700px]:items-stretch min-[1700px]:justify-center min-[1700px]:gap-0">
+    <article data-testid="social-feed-post" (click)="openPost(view, $event)" [class.cursor-pointer]="!!view.url" class="overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[#111a2c] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] shadow-[0_6px_20px_var(--color-shadow-light)] transition-[border-color,box-shadow] group-hover:border-sky-400/25 [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-[#f7fafd] [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)] min-[1700px]:w-[560px] min-[1700px]:flex-shrink-0 min-[1700px]:rounded-r-none min-[1700px]:border-r-0">
+      @if (view.flags.length || view.replyTo || view.hateSpeech) {
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-[rgba(148,163,184,0.10)] px-4 py-1 text-[11px] font-semibold text-[var(--color-text4)] [body.light-theme_&]:border-[#dce6f1]">
+          @if (view.hateSpeech) {
+            <span class="inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-red-400">
+              <i class="bi bi-shield-exclamation text-[9px]" aria-hidden="true"></i>{{ view.hateSpeech }}
+            </span>
+          }
+          @for (flag of view.flags; track flag) {
+            <span class="inline-flex items-center gap-1">
+              <i class="bi text-[11px]" [class.bi-pin-angle-fill]="flag === 'Pinned'" [class.bi-arrow-repeat]="flag === 'Repost'" [class.bi-chat-dots]="flag === 'Reply' || flag === 'Quote'" aria-hidden="true"></i>
+              {{ flag | translate }}
+            </span>
+          }
+          @if (view.replyTo) {
+            <span class="min-w-0 truncate">{{ 'Replying to' | translate }} <span class="font-mono text-[var(--color-text3)]">{{ view.replyTo }}</span></span>
+          }
+        </div>
+      }
+
+      <header class="flex min-w-0 items-center gap-2.5 px-3 pt-3">
+        @if (view.avatar) {
+          <img [src]="view.avatar" [alt]="view.author" referrerpolicy="no-referrer" (error)="onImageError($event)" class="h-10 w-10 flex-shrink-0 rounded-full bg-[var(--color-blue-720)] object-cover">
+        } @else {
+          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-blue-720)] text-[13px] font-bold text-[var(--color-text2)]">{{ view.initial }}</span>
+        }
+        <div class="min-w-0 flex-1 leading-tight">
+          <div class="flex min-w-0 items-center gap-1">
+            <span class="min-w-0 truncate text-[15px] font-semibold text-[var(--color-text1)]">{{ view.author }}</span>
+            @if (view.verified) {
+              <i class="bi bi-patch-check-fill flex-shrink-0 text-[13px] text-sky-400" [title]="'Verified' | translate" aria-hidden="true"></i>
+            }
+          </div>
+          <div class="flex min-w-0 items-center gap-1 text-[12px] text-[var(--color-text4)]">
+            @if (view.handle) {
+              <span class="min-w-0 truncate">{{ view.handle }}</span>
+              <span aria-hidden="true">·</span>
+            }
+            @if (view.time.date) {
+              <span class="flex-shrink-0">{{ view.time.date | date:'MMM d, y' }}</span>
+            } @else if (view.time.raw) {
+              <span class="flex-shrink-0">{{ view.time.raw }}</span>
+            }
+            @if (view.edited) {
+              <span aria-hidden="true">·</span><span>{{ 'edited' | translate }}</span>
+            }
+            @if (view.location) {
+              <span aria-hidden="true">·</span><span class="inline-flex min-w-0 items-center gap-0.5"><i class="bi bi-geo-alt-fill text-[10px]" aria-hidden="true"></i><span class="truncate">{{ view.location }}</span></span>
+            }
+          </div>
+        </div>
+      </header>
+
+      @if (view.repo || view.branch || view.commits) {
+        <div class="mx-3 mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded-lg bg-[var(--color-blue-720)]/50 px-2.5 py-1.5 text-[12px] text-[var(--color-text3)]">
+          @if (view.repo) {
+            @if (view.repoUrl) {
+              <a [href]="view.repoUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-w-0 items-center gap-1 font-semibold text-[var(--color-blue-640)] hover:underline"><i class="bi bi-folder-fill text-[11px]" aria-hidden="true"></i><span class="truncate">{{ view.repo }}</span></a>
+            } @else {
+              <span class="inline-flex min-w-0 items-center gap-1 font-semibold"><i class="bi bi-folder-fill text-[11px]" aria-hidden="true"></i><span class="truncate">{{ view.repo }}</span></span>
+            }
+          }
+          @if (view.branch) {
+            <span class="inline-flex items-center gap-1 font-mono text-[11px]"><i class="bi bi-diagram-3 text-[11px]" aria-hidden="true"></i>{{ view.branch }}</span>
+          }
+          @if (view.commits) {
+            <span class="tabular-nums">{{ view.commits }} {{ (view.commits === '1' ? 'commit' : 'commits') | translate }}</span>
+          }
+        </div>
+      }
+
+      @if (view.warning && !isRevealed(view)) {
+        <div class="mx-3 mt-2 flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[12px] text-amber-300">
+          <span class="inline-flex min-w-0 items-center gap-1.5"><i class="bi bi-exclamation-triangle-fill flex-shrink-0 text-[12px]" aria-hidden="true"></i><span class="truncate">{{ view.warning }}</span></span>
+          <button type="button" (click)="reveal(view)" class="flex-shrink-0 cursor-pointer rounded border border-amber-400/40 bg-transparent px-2 py-0.5 text-[11px] font-semibold text-amber-300 outline-none hover:bg-amber-400/10 focus-visible:ring-1 focus-visible:ring-amber-400/55">{{ 'Show' | translate }}</button>
+        </div>
+      }
+
+      @if (isRevealed(view)) {
+        @if (view.title || view.body) {
+          <div class="px-3 pt-2">
+            @if (view.title) {
+              <p class="mb-0 text-[15px] font-semibold leading-5 text-[var(--color-text1)]">{{ view.title }}</p>
+            }
+            @if (view.body) {
+              <p class="mb-0 whitespace-pre-wrap break-words text-[15px] leading-5 text-[var(--color-text2)]" [class.mt-1]="view.title" [class.line-clamp-4]="!isBodyExpanded(view)">{{ view.body }}</p>
+              @if (hasLongBody(view)) {
+                <button type="button" (click)="toggleBody(view)" [attr.aria-expanded]="isBodyExpanded(view)" class="mt-0.5 cursor-pointer border-0 bg-transparent p-0 text-[13px] font-semibold text-[var(--color-text4)] outline-none hover:text-[var(--color-text2)] hover:underline focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+                  {{ (isBodyExpanded(view) ? 'Show less' : 'See more') | translate }}
+                </button>
+              }
+            }
+          </div>
+        }
+
+        @if (view.video || view.poster) {
+          <a [href]="view.url || view.video" target="_blank" rel="noopener noreferrer" class="relative mt-2.5 block bg-black outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35">
+            @if (view.poster) {
+              <img [src]="view.poster" [alt]="view.title || view.author" referrerpolicy="no-referrer" (error)="onImageError($event)" class="max-h-[420px] min-h-[200px] w-full object-cover">
+            } @else {
+              <span class="flex h-[240px] w-full items-center justify-center"></span>
+            }
+            <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span class="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 text-white ring-2 ring-white/70">
+                <i class="bi bi-play-fill text-2xl" aria-hidden="true"></i>
+              </span>
+            </span>
+            @if (view.duration) {
+              <span class="pointer-events-none absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white">{{ view.duration }}</span>
+            }
+          </a>
+        } @else if (view.images.length) {
+          <div class="mt-2.5 grid gap-0.5 bg-black" [class.grid-cols-2]="view.images.length > 1">
+            @for (image of view.images; track image) {
+              <a [href]="view.url || image" target="_blank" rel="noopener noreferrer" class="block outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35">
+                <img [src]="image" [alt]="view.title || view.author" referrerpolicy="no-referrer" (error)="onImageError($event)" class="w-full object-cover" [class.max-h-[480px]]="view.images.length === 1" [class.h-60]="view.images.length > 1">
+              </a>
+            }
+          </div>
+        }
+
+        @if (view.tags.length || view.mentions.length) {
+          <div class="flex flex-wrap gap-x-2 gap-y-0.5 px-3 pt-2 text-[13px]">
+            @for (tag of view.tags; track tag) {
+              <span class="text-[var(--color-blue-640)]">#{{ tag }}</span>
+            }
+            @for (mention of view.mentions; track mention) {
+              <span class="text-[var(--color-blue-640)]">&#64;{{ mention }}</span>
+            }
+          </div>
+        }
+      }
+
+      @if (hasEngagement(view) || view.extra.length || (connectionsEnabled() && view.url)) {
+        <footer class="mx-3 flex items-center gap-1 border-t border-[rgba(148,163,184,0.10)] py-1 text-[13px] text-[var(--color-text4)] [body.light-theme_&]:border-[#dce6f1]">
+          @if (hasEngagement(view) || view.extra.length) {
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Likes' | translate"><i class="bi bi-heart-fill text-[14px]" [class.text-rose-400]="view.likes" aria-hidden="true"></i>{{ view.likes || '' }}</span>
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Comments' | translate"><i class="bi bi-chat-dots text-[14px]" aria-hidden="true"></i>{{ view.comments || '' }}</span>
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Shares' | translate"><i class="bi bi-arrow-repeat text-[14px]" aria-hidden="true"></i>{{ view.shares || '' }}</span>
+          }
+          @if (connectionsEnabled() && view.url) {
+            <app-social-connections [postUrl]="view.url" [platform]="platform()" [profileUsername]="profileUsername()" [connectionsLoading]="connectionsLoading()" [connectionsByPost]="connectionsByPost()" (loadConnections)="loadConnections.emit($event)"></app-social-connections>
+          }
+          @if (view.quotes) {
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Quotes' | translate"><i class="bi bi-chat-dots text-[14px]" aria-hidden="true"></i>{{ view.quotes }}</span>
+          }
+          @if (view.bookmarks) {
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Bookmarks' | translate"><i class="bi bi-bookmark-fill text-[14px]" aria-hidden="true"></i>{{ view.bookmarks }}</span>
+          }
+          @if (view.views) {
+            <span class="inline-flex h-8 items-center gap-1.5 rounded-md px-2 tabular-nums" [title]="'Views' | translate"><i class="bi bi-eye text-[14px]" aria-hidden="true"></i>{{ view.views }}</span>
+          }
+          <div class="relative ml-auto flex items-center gap-1">
+            @if (view.extra.length) {
+              <button type="button" (click)="toggle(view)" [attr.aria-expanded]="isExpanded(view)" [title]="view.extra.length + ' more fields'" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[var(--color-text4)] outline-none transition-colors hover:bg-[var(--color-blue-720)] hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 min-[1700px]:hidden">
+                <i class="bi bi-three-dots text-[16px]" aria-hidden="true"></i>
+              </button>
+            }
+            @if (connectionsEnabled() && view.url) {
+              <button data-testid="social-feed-load-connections" type="button" (click)="onLoadConnections(view, $event)" [disabled]="isConnectionsLoading(view)" [title]="'Pull this post\'s commenters into Connections' | translate" class="inline-flex h-8 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-1.5 text-[12px] font-semibold text-[var(--color-text3)] outline-none transition-colors hover:text-[var(--color-text1)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55 disabled:cursor-not-allowed disabled:opacity-60">
+                {{ (isConnectionsLoading(view) ? 'Loading…' : 'Connections') | translate }}
+              </button>
+            }
+          </div>
+        </footer>
+      } @else {
+        <div class="mt-2"></div>
+      }
+    </article>
+      @if (view.extra.length) {
+        <div data-testid="social-feed-extra" class="overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[#111a2c] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] shadow-[0_6px_20px_var(--color-shadow-light)] [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-[#f7fafd] [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)] min-[1700px]:relative min-[1700px]:min-w-0 min-[1700px]:flex-1 min-[1700px]:!block min-[1700px]:rounded-l-none min-[1700px]:border-l-[rgba(148,163,184,0.10)] transition-[border-color] group-hover:border-sky-400/25 min-[1700px]:group-hover:border-l-[rgba(148,163,184,0.10)]" [class.hidden]="!isExpanded(view)">
+          <div class="flex flex-col min-[1700px]:absolute min-[1700px]:inset-0">
+            <div class="flex flex-shrink-0 items-center gap-2 border-b border-[rgba(148,163,184,0.12)] bg-[var(--color-blue-720)]/45 px-3 py-2 [body.light-theme_&]:border-[#dce6f1] [body.light-theme_&]:bg-[#eef4fb]">
+              <i class="bi bi-card-list text-[12px] text-[var(--color-text4)]" aria-hidden="true"></i>
+              <span class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text3)]">{{ 'Details' | translate }}</span>
+            </div>
+            <dl class="mb-0 grid grid-cols-2 md:grid-cols-3 min-[1700px]:!block min-[1700px]:min-h-0 min-[1700px]:flex-1 min-[1700px]:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              @for (entry of view.extra; track entry.key) {
+                <div class="min-w-0 border-b border-[rgba(148,163,184,0.07)] px-3 py-1.5 [body.light-theme_&]:border-[#eef2f8]">
+                  <dt class="min-w-0 truncate text-[9px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text4)]" [title]="formatKeyLabel(entry.key)">{{ formatKeyLabel(entry.key) }}</dt>
+                  <dd class="mb-0 mt-0.5 min-w-0 break-words text-[11px] font-medium leading-4 text-[var(--color-text2)]">{{ entry.value }}</dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

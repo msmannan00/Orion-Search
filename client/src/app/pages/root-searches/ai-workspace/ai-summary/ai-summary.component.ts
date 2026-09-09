@@ -1,6 +1,5 @@
 import { Component, DestroyRef, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { DashboardService } from '../../../../services/dashboard/dashboard.service';
 import { SubscriptionService } from '../../../../services/dashboard/subscription.service';
 import { NexusChatService } from '../nexus-chat.service';
@@ -13,7 +12,7 @@ import { TranslationService } from '../../../../shared/services/translation.serv
   standalone: true,
   templateUrl: './ai-summary.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./ai-summary.component.css'],
 })
 export class AiSummaryComponent {
   private activeRequest?: Subscription;
@@ -37,7 +36,7 @@ export class AiSummaryComponent {
       return;
     }
 
-    const text = (this.content() || '').trim();
+    const text = (this.content() ?? '').trim();
     if (!text || this.isLoading()) {
       return;
     }

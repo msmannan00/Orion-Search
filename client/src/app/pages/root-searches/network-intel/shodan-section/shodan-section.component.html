@@ -5,7 +5,7 @@
         <span class="text-[12px] font-medium text-[var(--color-text1)]">{{ loadingStepLabel | translate }}</span>
         <span class="text-[12px] font-semibold text-sky-400 [.light-theme_&]:!text-[#2d6f9f]">{{ progressValue }}%</span>
       </div>
-      <div class="relative overflow-hidden h-[10px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+      <div class="relative overflow-hidden h-[10px] w-full rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
         <div class="h-full rounded-full bg-[var(--color-blue-640)] transition-[width] duration-300 ease-out" [ngClass]="'ui-wpct-' + progressValue"></div>
       </div>
     </div>
@@ -29,7 +29,7 @@
           </div>
         </div>
       } @else if (shodanResult) {
-        <div @fadeInDashboardItem>
+        <div class="ui-fade-in-dashboard-item">
           <div data-testid="network-intel-ip-result" class="ui-ioc-table-row ui-ioc-row-even flex items-center justify-between border-b border-[var(--color-divider)] px-4 py-3 [app-scan-report_&]:hidden [.light-theme_&]:!border-b-[#d8e0e9]">
             <span class="font-mono text-[14px] font-semibold text-[var(--color-text1)]">{{ shodanResult.ip }}</span>
             <div class="flex items-center gap-2">

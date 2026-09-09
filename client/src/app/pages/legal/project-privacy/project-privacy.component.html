@@ -1,0 +1,211 @@
+<div class="min-h-screen bg-white text-[#475467] antialiased">
+
+  <header class="sticky top-0 z-50 border-b border-[#eaeef4] bg-white/85 backdrop-blur-md">
+    <div class="mx-auto flex h-[64px] max-w-[1120px] items-center justify-between px-6 max-[600px]:px-4">
+      <a href="/" aria-label="Go to homepage" class="flex items-center select-none">
+        <img [src]="logoSrc" (error)="onLogoError($event)" [alt]="appName" class="h-[30px] w-auto object-contain max-[600px]:h-[26px]">
+      </a>
+      <a href="/" class="text-[13.5px] font-medium text-[#2b90ee] transition-colors hover:text-[#1176d4] max-[600px]:text-[13px]">Back to {{ appName }} &rarr;</a>
+    </div>
+  </header>
+
+  <div class="border-b border-[#eef2f7] bg-gradient-to-b from-[#f6faff] to-white">
+    <div class="mx-auto max-w-[1120px] px-6 py-14 max-[600px]:px-4 max-[600px]:py-10">
+      <p class="mb-3 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-[#2b90ee]">{{ appName }} &middot; Web Platform</p>
+      <h1 class="text-[36px] font-bold leading-[1.12] tracking-[-0.02em] text-[#101828] max-[600px]:text-[27px]">Privacy Policy</h1>
+      <p class="mt-4 max-w-[680px] text-[16.5px] leading-[1.65] text-[#667085] max-[600px]:text-[15px]">How {{ appName }} collects, uses, shares, and protects information when you use the web platform, APIs, and related services.</p>
+      <p class="mt-4 text-[13.5px] font-medium text-[#98a2b3]">Last updated: {{ lastUpdated }}</p>
+      <a href="/privacy/extension" class="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[#2b90ee] transition-colors hover:text-[#1176d4]">
+        Looking for the Orion Social extension policy? <span aria-hidden="true">&rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="mx-auto flex max-w-[1120px] gap-14 px-6 py-14 max-[600px]:px-4 max-[600px]:py-9 max-[1023px]:gap-0">
+
+    <aside class="hidden w-[248px] shrink-0 lg:block">
+      <nav class="sticky top-[88px]" aria-label="On this page">
+        <p class="mb-3 pl-4 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#98a2b3]">On this page</p>
+        <ul class="border-l border-[#eaeef4]">
+          @for (item of toc; track item.id; let i = $index) {
+            <li>
+              <a [href]="'#' + item.id" (click)="scrollTo(item.id, $event)" [ngClass]="activeId === item.id ? 'border-[#2b90ee] font-semibold text-[#101828]' : 'border-transparent text-[#667085] hover:border-[#c8d6e6] hover:text-[#101828]'" class="-ml-px block border-l-2 py-[7px] pl-4 text-[13px] leading-snug transition-colors">
+                <span class="tabular-nums text-[#98a2b3]">{{ (i + 1) < 10 ? '0' : '' }}{{ i + 1 }}</span>&nbsp;&nbsp;{{ item.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+    </aside>
+
+    <article class="min-w-0 max-w-[740px] flex-1">
+
+      <section id="scope" class="scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">01</span>Scope and responsibility</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          This policy applies when Orion Intelligence operates the {{ appName }} websites, hosted web application, APIs, and support channels (together, the &ldquo;Service&rdquo;). It does not cover the Orion Social browser extension, which has a <a href="/privacy/extension" class="font-semibold text-[#2b90ee] underline decoration-[#b8dafa] underline-offset-2 transition-colors hover:text-[#1176d4]">separate privacy policy</a>.
+        </p>
+        <p class="mt-4 text-[15.5px] leading-[1.75] text-[#475467]">
+          If your employer, customer, tenant administrator, or another organization provides your account or operates its own deployment, that organization may control the information processed in that instance. Its privacy notice and instructions may apply in addition to, or instead of, this policy. Questions about an organization-managed account should first be directed to that organization.
+        </p>
+      </section>
+
+      <section id="collect" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">02</span>Information we collect</h2>
+        <p class="mb-5 text-[15.5px] leading-[1.75] text-[#475467]">The information processed depends on the features you use and how your instance is configured. It may include:</p>
+        <div class="space-y-4">
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Account and organization information</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">Your name, username, email address, organization or tenant, role, account preferences, authentication and recovery details, multi-factor authentication settings, and information an administrator supplies to create or manage your account.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Content and investigative activity</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">Search terms, investigation targets, cases, notes, reports, monitored profiles or assets, alerts, exports, uploaded files, API requests, extension results, and other content you submit, generate, or choose to store in the Service.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Usage, audit, and security information</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">Actions performed in the Service, timestamps, search and feature activity, login and authentication events, administrative changes, exports, errors, and audit records used to secure the Service and support organizational oversight.</p>
+          </div>
+          <div class="rounded-xl border border-[#eaeef4] bg-[#fbfcfe] p-5">
+            <p class="mb-1 text-[15px] font-semibold text-[#101828]">Device, connection, and communication information</p>
+            <p class="text-[14.5px] leading-[1.7] text-[#5a6b7e]">IP address, browser and device details, user-agent information, requested URLs, session identifiers, cookies or local-storage values, diagnostic logs, and the contents of support, account, or security communications you send us.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="intelligence" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">03</span>Investigative and threat-intelligence data</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          The Service helps authorized users search, correlate, monitor, and analyze information from open, social, technical, deep-web, dark-web, breach, and other intelligence sources. That material may contain identifiers and other information about people, accounts, organizations, infrastructure, or incidents, including information that the subject did not provide directly to us.
+        </p>
+        <div class="mt-5 rounded-xl border border-[#d9eafa] bg-[#f6faff] p-5">
+          <p class="text-[14.5px] leading-[1.7] text-[#475467]"><strong class="font-semibold text-[#101828]">Responsible use matters.</strong> Authorized users and their organizations are responsible for having a lawful purpose and appropriate authority for their searches, monitoring, exports, and downstream use. Intelligence may be incomplete, outdated, duplicated, or inaccurate and should be independently verified before consequential action is taken.</p>
+        </div>
+      </section>
+
+      <section id="use" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">04</span>How we use information</h2>
+        <ul class="space-y-2.5 pl-5 text-[15.5px] leading-[1.7] text-[#475467] marker:text-[#c0ccdb] [&>li]:list-disc">
+          <li>Provide, operate, maintain, and configure the Service and its APIs.</li>
+          <li>Authenticate users, manage tenants and permissions, and protect accounts.</li>
+          <li>Run the searches, scans, collections, monitoring, analysis, alerts, reports, and exports you request.</li>
+          <li>Enable case management, collaboration, administration, and audit functions.</li>
+          <li>Detect abuse, investigate security events, troubleshoot errors, and enforce applicable terms.</li>
+          <li>Respond to support requests and communicate operational, account, and security notices.</li>
+          <li>Understand performance and improve the reliability, safety, and functionality of the Service.</li>
+          <li>Comply with law, lawful requests, and our legal obligations, and protect legal rights.</li>
+        </ul>
+        <p class="mt-4 text-[15.5px] leading-[1.75] text-[#475467]">We do not sell account or investigative information, and we do not use it for third-party behavioral advertising.</p>
+      </section>
+
+      <section id="legal-bases" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">05</span>Legal bases</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          Where applicable law requires a legal basis, we process personal information as necessary to provide the Service and perform our agreements; for legitimate interests such as securing, supporting, and improving the Service; to comply with legal obligations; and with consent where consent is requested. When an organization controls an account or deployment, that organization determines its own legal bases for the investigations and other processing it directs.
+        </p>
+      </section>
+
+      <section id="sharing" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">06</span>How information is shared</h2>
+        <p class="mb-5 text-[15.5px] leading-[1.75] text-[#475467]">We may disclose information only as reasonably necessary in the following circumstances:</p>
+        <ul class="space-y-3">
+          @for (item of [
+            { title: 'Within your organization', text: 'Tenant administrators and authorized members may access account details, cases, activity, audit records, and content according to their roles and the organization’s settings.' },
+            { title: 'Service providers', text: 'Vendors that support hosting, storage, email delivery, security, diagnostics, or other operations may process limited information for us under appropriate contractual restrictions.' },
+            { title: 'Legal and safety reasons', text: 'We may disclose information when reasonably necessary to comply with law or lawful process, protect people or the Service, investigate abuse, or establish, exercise, or defend legal claims.' },
+            { title: 'Business changes or your direction', text: 'Information may be transferred in connection with a merger, financing, acquisition, reorganization, or sale of assets, or shared when you direct us to do so or provide consent.' }
+          ]; track item.title) {
+            <li class="flex gap-3">
+              <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e7f6ec]">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3 w-3 text-[#177245]"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="text-[15px] leading-[1.65] text-[#475467]"><strong class="font-semibold text-[#101828]">{{ item.title }}.</strong> {{ item.text }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section id="integrations" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">07</span>Integrations and external sources</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          Some features connect to external data sources, enrichment services, AI services, notification channels, or tools selected or configured by you or your organization. The information sent to an integration depends on the feature and may include search terms, indicators, source content, or account identifiers needed to complete the request. External services process information under their own terms and privacy practices. Review those terms and your organization&rsquo;s configuration before enabling or using an integration.
+        </p>
+      </section>
+
+      <section id="cookies" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">08</span>Cookies and local storage</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          The Service uses cookies and browser storage for essential functions such as authentication, session continuity, security, language, theme, and interface preferences. Blocking essential storage may prevent sign-in or other features from working. The core application does not use these mechanisms for cross-site behavioral advertising. An independently operated deployment may add its own tools, and its operator is responsible for explaining those practices.
+        </p>
+      </section>
+
+      <section id="retention" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">09</span>Data retention</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          We retain information for as long as needed to provide and secure the Service, maintain required audit and business records, resolve disputes, enforce agreements, and comply with law. Retention may vary by data type, tenant settings, contract, and deployment. When information is deleted, limited copies may remain temporarily in backups or be retained where required for security, fraud prevention, legal compliance, or the establishment or defense of claims. Operators of organization-managed or self-hosted instances set their own retention practices.
+        </p>
+      </section>
+
+      <section id="security" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">10</span>Security</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          We use administrative, technical, and organizational safeguards designed to protect information, including access controls, tenant and role separation, authentication controls, audit logging, protected network transport, and monitoring appropriate to the Service. Customers and users are responsible for protecting credentials, enabling available security features, assigning access appropriately, and securing their devices and integrations. No method of transmission, processing, or storage can be guaranteed completely secure.
+        </p>
+      </section>
+
+      <section id="transfers" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">11</span>International transfers</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          Depending on the hosting region, your location, and the services or integrations configured for your account, information may be processed in countries other than the one where you live. Where required, we use recognized safeguards for international transfers. Organization-managed and self-hosted deployments determine their own hosting locations and transfer arrangements.
+        </p>
+      </section>
+
+      <section id="rights" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">12</span>Your rights and choices</h2>
+        <p class="mb-4 text-[15.5px] leading-[1.75] text-[#475467]">
+          Depending on your location and the circumstances, you may have rights to access, correct, delete, restrict, or object to processing of your personal information; receive a portable copy; withdraw consent; or complain to a data-protection authority. These rights may be subject to legal exceptions and identity verification.
+        </p>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          For an organization-managed account, submit your request to the organization that provided the account because it generally controls that data. For an Orion-operated account or a concern about information in Orion-operated intelligence data, contact us using the address below and provide enough detail for us to locate and evaluate the request. We may preserve information where retention is legally required or needed to protect rights and security.
+        </p>
+      </section>
+
+      <section id="children" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">13</span>Children&rsquo;s privacy</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          The Service is a professional investigative and security platform and is not directed to children. It is not intended for use by anyone under the age of majority in their jurisdiction, and we do not knowingly invite children to create accounts.
+        </p>
+      </section>
+
+      <section id="changes" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">14</span>Changes to this policy</h2>
+        <p class="text-[15.5px] leading-[1.75] text-[#475467]">
+          We may update this policy as the Service, our practices, or legal requirements change. We will revise the &ldquo;Last updated&rdquo; date at the top of this page when we do. Where required, we will provide additional notice of material changes before they take effect.
+        </p>
+      </section>
+
+      <section id="contact" class="mt-14 scroll-mt-[88px]">
+        <h2 class="mb-4 text-[22px] font-bold leading-tight text-[#101828] max-[600px]:text-[19px]"><span class="mr-2.5 text-[15px] font-semibold text-[#2b90ee] tabular-nums">15</span>Contact us</h2>
+        <div class="rounded-2xl border border-[#eaeef4] bg-[#f6faff] p-6 max-[600px]:p-5">
+          <p class="mb-4 text-[15.5px] leading-[1.7] text-[#475467]">For questions about this policy, privacy requests concerning an Orion-operated account, or concerns about information processed by the Orion-operated Service, contact us:</p>
+          <a [href]="'mailto:' + contactEmail" class="inline-flex items-center gap-2 rounded-lg bg-[#2b90ee] px-4 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#1176d4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2b90ee]">
+            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {{ contactEmail }}
+          </a>
+        </div>
+      </section>
+
+    </article>
+  </div>
+
+  <footer class="border-t border-[#eef2f7] bg-[#fafbfd]">
+    <div class="mx-auto flex max-w-[1120px] flex-wrap items-center justify-between gap-3 px-6 py-7 text-[13px] text-[#98a2b3] max-[600px]:px-4">
+      <span>&copy; {{ year }} {{ appName }}. All rights reserved.</span>
+      <span class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span>Platform Privacy Policy</span>
+        <a href="/privacy/extension" class="font-medium text-[#667085] transition-colors hover:text-[#2b90ee]">Extension policy</a>
+      </span>
+    </div>
+  </footer>
+
+</div>

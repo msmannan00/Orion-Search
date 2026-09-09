@@ -1,11 +1,14 @@
-export class SearchLocationMapRenderer {
-  private marker: any = null;
+import type * as Leaflet from 'leaflet';
+import type { Nullable } from '../../../../shared/utils/type-guards.util';
 
-  constructor(private L: any, private map: any) {}
+export class SearchLocationMapRenderer {
+  private marker: Nullable<Leaflet.CircleMarker> = null;
+
+  constructor(private L: typeof Leaflet, private map: Leaflet.Map) {}
 
   render(lat: number | null, lon: number | null): void {
     this.clear();
-    if (!this.L || !this.map || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+    if (lat === null || lon === null || !Number.isFinite(lat) || !Number.isFinite(lon)) {
       return;
     }
 

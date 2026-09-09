@@ -125,10 +125,10 @@
           </div>
         </div>
         @if (activeTab === 'm_content') {
-          <app-result-section @fadeInDashboardItem [listItems]="[content]"></app-result-section>
+          <app-result-section class="ui-fade-in-item" [listItems]="[content]"></app-result-section>
         }
         @if (activeTab === 'm_section') {
-          <app-result-section @fadeInDashboardItem [listItems]="listItems"></app-result-section>
+          <app-result-section class="ui-fade-in-item" [listItems]="listItems"></app-result-section>
         }
         @if (activeTab === 'm_org' || activeTab === 'm_person') {
           <div class="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-790)] [&&]:!bg-[var(--color-blue-790)] [body.light-theme_&&]:!bg-[#f6faff] p-3 text-xs text-[var(--color-text4)]">
@@ -136,7 +136,7 @@
           </div>
         }
         @if (activeTab !== 'm_section' && activeTab !== 'm_content') {
-          <app-result-list @fadeInDashboardItem [activeTab]="activeTab" [listItems]="listItems"></app-result-list>
+          <app-result-list class="ui-fade-in-item" [activeTab]="activeTab" [listItems]="listItems"></app-result-list>
         }
       </div>
     }

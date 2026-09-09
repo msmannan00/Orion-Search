@@ -30,7 +30,7 @@ export class SidebarUserFeederOwnerDialogComponent implements OnChanges {
   constructor(private feederService: FeederService, private messageNotificationService: MessageNotificationService, private translationService: TranslationService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['script'] && this.script) {
+    if (changes.script && this.script) {
       this.selectedOwnerUserId = '';
       this.loadOwnerUsers();
     }
@@ -52,11 +52,11 @@ export class SidebarUserFeederOwnerDialogComponent implements OnChanges {
       }))
       .subscribe({
         next: (response) => {
-          this.messageNotificationService.show(response?.message || this.translationService.translate('Script owner updated successfully'), 'success');
+          this.messageNotificationService.show(response?.message ?? this.translationService.translate('Script owner updated successfully'), 'success');
           this.saved.emit();
         },
         error: (error) => {
-          this.messageNotificationService.show(error?.error?.detail || this.translationService.translate('Failed to update script owner'));
+          this.messageNotificationService.show(error?.error?.detail ?? this.translationService.translate('Failed to update script owner'));
         }
       });
   }
@@ -70,13 +70,13 @@ export class SidebarUserFeederOwnerDialogComponent implements OnChanges {
       .subscribe({
         next: (users) => {
           this.ownerUsers = (users ?? [])
-            .filter((user) => user.status === 'active' && (user.role === 'admin' || (user.licenses || []).includes(LicenseName.FEEDER)))
-            .sort((left, right) => (left.username || '').localeCompare(right.username || ''));
-          this.selectedOwnerUserId = this.ownerUsers.find((user) => user.id !== this.script?.owner_id)?.id || '';
+            .filter((user) => user.status === 'active' && (user.role === 'admin' || (user.licenses ?? []).includes(LicenseName.FEEDER)))
+            .sort((left, right) => (left.username ?? '').localeCompare(right.username ?? ''));
+          this.selectedOwnerUserId = this.ownerUsers.find((user) => user.id !== this.script?.owner_id)?.id ?? '';
         },
         error: (error) => {
           this.closed.emit();
-          this.messageNotificationService.show(error?.error?.detail || this.translationService.translate('Failed to load feeder users'));
+          this.messageNotificationService.show(error?.error?.detail ?? this.translationService.translate('Failed to load feeder users'));
         }
       });
   }

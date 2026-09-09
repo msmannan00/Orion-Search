@@ -8,4 +8,6 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './case-details-skeleton.html'
 })
-export class CaseDetailsSkeletonComponent { }
+export class CaseDetailsSkeletonComponent {
+  readonly skeletonActions = [1, 2, 3];
+}

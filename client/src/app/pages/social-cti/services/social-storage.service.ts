@@ -1,9 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { ApiService } from '../../../shared/services/api.service';
-import { Job, db_social_model, social_profile, social_profile_config } from '../models/social.models';
+import { Job, db_social_model, social_exposure_signals, social_phone_lookup, social_profile, social_profile_config, social_wanted } from '../models/social.models';
 import { ApiEnvelope, social_state } from '../models/social-usability.models';
+const SOCIAL_GRAPH_TYPE = 'social-users';
+
 @Injectable({ providedIn: 'root' })
 export class SocialStorageService {
   private readonly api = inject(ApiService);
@@ -38,7 +40,7 @@ export class SocialStorageService {
       ?? Array.from(this.state.scanResults().entries()).find(([username]) => username.toLowerCase() === ownerUsername.toLowerCase())?.[1]
       ?? [];
     const previous = { ...this.getProfileConfig(ownerUsername) };
-    delete previous['allowed'];
+    delete previous.allowed;
     const config: social_profile_config = {
       ...previous,
       disallowed: allProfiles.filter(platform => !selectedIds.has(platform.id)).map(platform => platform.id),
@@ -63,7 +65,9 @@ export class SocialStorageService {
 
   loadProfiles(): Observable<void> {
     return this.api.get<ApiEnvelope<db_social_model[]>>('social/data').pipe(map(response => Array.isArray(response?.result) ? response.result : []),
-      tap(documents => this.setStoredSocialProfiles(documents)),
+      tap(documents => {
+        this.setStoredSocialProfiles(documents);
+      }),
       map(() => undefined),);
   }
 
@@ -75,8 +79,57 @@ export class SocialStorageService {
     return this.api.post('social/data', { profile_username: username, profiles, config: this.getProfileConfig(username), replace });
   }
 
+  savePhoneLookup(username: string, phoneLookup: social_phone_lookup): Observable<unknown> {
+    return this.saveProfileData(username, profile => !!profile.phone_lookup, profile => ({ ...profile, phone_lookup: phoneLookup }));
+  }
+
+  saveExposureSignals(username: string, exposureSignals: social_exposure_signals): Observable<unknown> {
+    return this.saveProfileData(username, profile => !!profile.exposure_signals, profile => ({ ...profile, exposure_signals: exposureSignals }));
+  }
+
+  saveWantedList(username: string, query: string, records: social_wanted[]): Observable<unknown> {
+    return this.saveProfileData(username, profile => profile.wanted_query !== null && profile.wanted_query !== undefined, profile => ({ ...profile, wanted_query: query, wanted: records }));
+  }
+
+  clearPhoneLookup(username: string): Observable<unknown> {
+    return this.saveProfileData(username, profile => !!profile.phone_lookup, profile => ({ ...profile, phone_lookup: null }));
+  }
+
+  clearWantedList(username: string): Observable<unknown> {
+    return this.saveProfileData(username, profile => (profile.wanted_query !== null && profile.wanted_query !== undefined) || !!profile.wanted?.length, profile => ({ ...profile, wanted_query: null, wanted: [] }));
+  }
+
+  private saveProfileData(username: string, matches: (profile: social_profile) => boolean, update: (profile: social_profile) => social_profile): Observable<unknown> {
+    const storedUsername = Array.from(this.state.scanResults().keys()).find(key => key.toLowerCase() === username.toLowerCase()) ?? username;
+    const profiles = this.state.scanResults().get(storedUsername) ?? [];
+    if (!profiles.length) {
+      return throwError(() => new Error('No social profile is available to save this data.'));
+    }
+    const matchingIndex = profiles.findIndex(matches);
+    const targetIndex = matchingIndex >= 0 ? matchingIndex : 0;
+    const updatedProfiles = profiles.map((profile, index) => index === targetIndex ? update(profile) : profile);
+    this.state.scanResults.update(results => new Map(results).set(storedUsername, updatedProfiles));
+    return this.saveProfiles(storedUsername, updatedProfiles, true).pipe(catchError(error => {
+      this.state.scanResults.update(results => results.get(storedUsername) === updatedProfiles
+        ? new Map(results).set(storedUsername, profiles)
+        : results);
+      return throwError(() => error);
+    }));
+  }
+
   deleteProfiles(username: string): Observable<unknown> {
     return this.api.delete(`social/data/${encodeURIComponent(username)}`);
+  }
+
+  loadGraphUsers(): Observable<string[]> {
+    return this.api.get<{ extra?: { usernames?: unknown } }>(`graph/session/tabs?graph_type=${SOCIAL_GRAPH_TYPE}`).pipe(map(response => {
+      const usernames = response?.extra?.usernames;
+      return Array.isArray(usernames) ? usernames.filter((value): value is string => typeof value === 'string' && !!value.trim()) : [];
+    }), catchError(() => of<string[]>([])));
+  }
+
+  saveGraphUsers(usernames: string[]): Observable<unknown> {
+    return this.api.post(`graph/session/upsert?graph_type=${SOCIAL_GRAPH_TYPE}`, { graph_type: SOCIAL_GRAPH_TYPE, extra: { usernames } }).pipe(catchError(() => of(undefined)));
   }
 
   private setStoredSocialProfiles(documents: db_social_model[]): void {

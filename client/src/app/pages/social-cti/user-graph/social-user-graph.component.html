@@ -1,0 +1,229 @@
+<section data-testid="social-user-graph-root" [class.opacity-0]="hasGraph() && !layoutReady()" [class]="hasGraph() && layoutReady() ? 'animate-[ui-overlay-fade-in_180ms_ease-out_both]' : ''" class="[&&]:![background:repeating-linear-gradient(0deg,rgba(255,255,255,0.009)_0,rgba(255,255,255,0.009)_1px,transparent_1px,transparent_26px),repeating-linear-gradient(90deg,rgba(255,255,255,0.009)_0,rgba(255,255,255,0.009)_1px,transparent_1px,transparent_26px),linear-gradient(180deg,var(--color-blue-830)_0%,var(--color-blue-850)_100%)] [body.light-theme_&&]:![background:repeating-linear-gradient(0deg,rgba(15,23,42,0.013)_0,rgba(15,23,42,0.013)_1px,transparent_1px,transparent_26px),repeating-linear-gradient(90deg,rgba(15,23,42,0.013)_0,rgba(15,23,42,0.013)_1px,transparent_1px,transparent_26px),linear-gradient(180deg,#e7eff9_0%,#e7eff9_100%)] relative flex h-full min-h-0 w-full flex-1 overflow-hidden motion-reduce:animate-none">
+  <div data-testid="social-user-graph-canvas" #graphContainer class="block !h-full !min-h-0 !w-full flex-1 bg-transparent [&_.vis-network]:block [&_.vis-network]:!h-full [&_.vis-network]:!min-h-0 [&_.vis-network]:!w-full [&_canvas]:block [&_canvas]:!h-full [&_canvas]:!min-h-0 [&_canvas]:!w-full [&_canvas]:outline-none"></div>
+
+  @if (hasGraph()) {
+    <form data-testid="social-user-graph-find" class="pointer-events-none absolute inset-x-0 top-4 z-30 mx-auto w-full max-w-[1480px] px-4" (submit)="$event.preventDefault(); onFindSubmit()">
+      <div class="pointer-events-auto relative w-full min-w-[220px] max-w-[320px]">
+        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-4">
+          <i class="bi bi-search h-5 w-5 leading-none text-[var(--color-text4)]"></i>
+        </div>
+        <input data-testid="social-user-graph-find-input" type="text" autocomplete="off" [value]="findTerm()" (input)="onFindInput($event)" (keydown.escape)="clearFind()" [placeholder]="'Find a username in this graph…' | translate" class="ui-graph-toolbar-input relative z-0 block h-10 w-full rounded-full border-0 bg-[var(--color-blue-760)]/80 pl-11 pr-10 text-[var(--color-text2)] shadow-lg ring-1 ring-inset ring-[var(--color-border)] backdrop-blur-sm placeholder:text-[var(--color-text4)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue-640)] sm:text-sm sm:leading-6 [.dark-theme_&]:!bg-[rgba(71,85,105,0.55)] [.light-theme_&]:!bg-[rgba(255,255,255,0.97)]" />
+        @if (findTerm()) {
+          <button type="button" (click)="clearFind()" [attr.aria-label]="'Clear' | translate" class="absolute inset-y-0 right-2 z-10 flex w-8 items-center justify-center text-[var(--color-text4)] transition-colors hover:text-[var(--color-text1)]"><i class="bi bi-x-lg text-[11px]"></i></button>
+        }
+        @if (findTerm().trim()) {
+          <ul class="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]/[0.97] shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-[8px] [body.light-theme_&]:bg-[#f8fafc]/[0.97]">
+            @for (match of findMatches(); track match.nodeId) {
+              <li>
+                <button type="button" (click)="pickFind(match)" class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--color-text1)] transition-colors hover:bg-[var(--color-blue-720)]">
+                  <span class="h-2 w-2 shrink-0 rounded-full bg-[#facc15]"></span>
+                  <span class="min-w-0 flex-1 truncate">{{ '@' + match.handle }}</span>
+                </button>
+              </li>
+            }
+            @if (canAddFind()) {
+              <li>
+                <button type="button" (click)="findTerm.set(''); addUser(findHandle())" class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[var(--color-text1)] transition-colors hover:bg-[var(--color-blue-720)]" [class.border-t]="findMatches().length" [class]="findMatches().length ? 'border-[var(--color-divider)]' : ''">
+                  <i class="bi bi-plus-lg text-[11px] text-[var(--color-blue-640)]"></i>
+                  <span class="min-w-0 flex-1 truncate">{{ 'Add' | translate }} {{ '@' + findHandle() }}</span>
+                </button>
+              </li>
+            }
+            @if (!findMatches().length && !canAddFind()) {
+              <li class="px-3 py-2 text-[11px] text-[var(--color-text4)]">{{ 'No user in this graph matches.' | translate }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </form>
+  }
+
+  @if (panelVisible() && detail(); as node) {
+    <div data-testid="social-graph-node-panel" [attr.data-left]="panelLeft()" [attr.data-top]="panelTop()" class="absolute z-[1300] flex max-h-[420px] w-[320px] flex-col overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] text-xs text-[var(--color-text3)] shadow-[0_16px_36px_rgba(0,0,0,0.32)] [body.light-theme_&]:bg-[#f8fafc]">
+      <div class="flex items-start gap-3 border-b border-[var(--color-divider)] p-3">
+        @if (node.avatar) {
+          <img [src]="node.avatar" (error)="onImageError($event)" alt="" class="h-11 w-11 shrink-0 rounded-full object-cover" />
+        }
+        @else if (node.kind === 'account' || node.kind === 'group') {
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-blue-720)] p-2.5"><app-social-icon [platformName]="node.platform"></app-social-icon></span>
+        }
+        @else {
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-blue-720)] text-base font-semibold text-[var(--color-text1)]">{{ (node.title || node.handle || '?').charAt(0).toUpperCase() }}</span>
+        }
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-semibold text-[var(--color-text1)]">{{ node.title }}</div>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[var(--color-text4)]">
+            @if (node.handle) {
+              <span class="truncate">{{ handleLabel(node.handle) }}</span>
+            }
+            @if (node.platform && node.kind !== 'account') {
+              <span>· {{ node.platform }}</span>
+            }
+            <span class="rounded-full bg-[var(--color-blue-720)] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text3)]">{{ kindLabel(node.kind) | translate }}</span>
+            @if (isNodeScanning(node.nodeId)) {
+              <span class="rounded-full bg-sky-500/20 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-sky-300">{{ 'scanning' | translate }}</span>
+            }
+            @else if (node.kind !== 'group' && !node.scanned) {
+              <span class="rounded-full bg-orange-500/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-orange-300">{{ 'not scanned' | translate }}</span>
+            }
+          </div>
+        </div>
+        <button type="button" class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] text-[var(--color-text4)] transition hover:bg-white/[0.06] hover:text-[var(--color-text1)] [body.light-theme_&]:hover:bg-[#edf4fb]" (click)="hidePanel()" [attr.aria-label]="'Close' | translate"><i class="bi bi-x-lg text-[11px]"></i></button>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5 border-b border-[var(--color-divider)] px-3 py-2">
+        @if (node.url && node.kind !== 'account') {
+          <button type="button" (click)="openUrl(node.url)" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] bg-[var(--color-blue-640)] px-2.5 font-semibold text-white transition-colors hover:bg-[var(--color-blue-630)]"><i class="bi bi-box-arrow-up-right"></i>{{ 'Open profile' | translate }}</button>
+        }
+        @if (node.addable && (node.kind === 'user' || node.kind === 'person')) {
+          <button type="button" (click)="addUser(node.kind === 'user' ? node.owner : node.handle)" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)]"><i class="bi bi-plus-lg"></i>{{ 'Add to graph' | translate }}</button>
+        }
+        @if (!node.scanned && node.scanQuery) {
+          <button type="button" (click)="scanPerson(node.scanQuery, node.nodeId)" [disabled]="isScanPending(node.scanQuery)" [title]="('Run a full Social Intel scan for' | translate) + ' ' + node.scanQuery" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)] disabled:cursor-not-allowed disabled:opacity-60"><i class="bi" [class.bi-search]="!isScanPending(node.scanQuery)" [class.bi-hourglass-split]="isScanPending(node.scanQuery)"></i>{{ (isScanPending(node.scanQuery) ? 'Scanning…' : 'Scan') | translate }}</button>
+        }
+        @if (node.kind === 'user') {
+          <button type="button" (click)="toggleUser(node.owner)" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)]"><i [class]="node.expanded ? 'bi bi-arrows-collapse' : 'bi bi-arrows-expand'"></i>{{ (node.expanded ? 'Collapse' : 'Expand') | translate }}</button>
+        }
+        @if (node.kind === 'group') {
+          <button type="button" (click)="toggleGroup(node.nodeId)" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)]"><i [class]="node.expanded ? 'bi bi-arrows-collapse' : 'bi bi-arrows-expand'"></i>{{ (node.expanded ? 'Collapse' : 'Expand') | translate }}</button>
+          @if (node.expanded) {
+            <button type="button" (click)="showMore(node.nodeId)" class="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] px-2.5 font-semibold text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)]"><i class="bi bi-plus-lg"></i>{{ 'Show more' | translate }}</button>
+          }
+        }
+        @if (node.handle) {
+          <button type="button" (click)="copyText(node.handle)" [title]="'Copy handle' | translate" [attr.aria-label]="'Copy handle' | translate" class="inline-flex h-7 w-7 items-center justify-center rounded-[7px] border border-[var(--color-border)] bg-[var(--color-blue-720)] text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)] hover:text-[var(--color-text1)]"><i class="bi bi-clipboard"></i></button>
+        }
+        @if (node.kind === 'root') {
+          <button type="button" (click)="removeUser(node.owner)" [title]="'Remove from graph' | translate" [attr.aria-label]="'Remove from graph' | translate" class="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-[7px] border border-red-400/40 bg-[var(--color-blue-720)] text-red-300 transition-colors hover:bg-red-500/15 hover:text-red-200"><i class="bi bi-trash3"></i></button>
+        }
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto p-3 [scrollbar-width:thin]">
+        @if (node.bio) {
+          <p class="mb-0 line-clamp-2 leading-5">{{ node.bio }}</p>
+        }
+        @if (node.followers || node.location) {
+          <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 leading-5">
+            @if (node.followers) {
+              <span><strong class="font-semibold text-[var(--color-text1)]">{{ 'Followers' | translate }}:</strong> {{ node.followers }}</span>
+            }
+            @if (node.location) {
+              <span><strong class="font-semibold text-[var(--color-text1)]">{{ 'Location' | translate }}:</strong> {{ node.location }}</span>
+            }
+          </div>
+        }
+
+        @if (node.links.length) {
+          <div class="mt-3 first:mt-0">
+            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{ 'Connections' | translate }}</div>
+            <ul class="space-y-0.5 leading-5">
+              @for (link of node.links; track link.label) {
+                <li class="text-[var(--color-text2)]" [title]="link.title">{{ link.label }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (node.memberships.length) {
+          <div class="mt-3 first:mt-0">
+            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{ 'Appears on' | translate }} ({{ node.memberships.length }})</div>
+            <ul class="space-y-1">
+              @for (membership of node.memberships; track membership.groupId) {
+                <li>
+                  <button type="button" (click)="revealNode(membership.groupId)" class="flex w-full items-center gap-2 rounded-[6px] bg-[var(--color-blue-720)] px-2 py-1.5 text-left transition hover:bg-[var(--color-blue-710)]">
+                    <span class="flex h-4 w-4 shrink-0 items-center justify-center"><app-social-icon [platformName]="membership.platform"></app-social-icon></span>
+                    <span class="min-w-0 flex-1 truncate text-[var(--color-text2)]">{{ membership.relation }}@if (membership.posts > 1) { · <strong class="font-semibold text-[#f472b6]">{{ membership.posts }} {{ 'posts' | translate }}</strong>}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (node.accounts.length) {
+          <div class="mt-3 first:mt-0">
+            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{ (node.kind === 'account' ? 'Users here' : 'Profiles') | translate }} ({{ node.accounts.length }})</div>
+            <div class="flex flex-wrap gap-1">
+              @for (account of node.accounts; track account.id) {
+                <span class="inline-flex max-w-full items-stretch overflow-hidden rounded-full bg-[var(--color-blue-720)] ring-1 ring-inset ring-[var(--color-border)]">
+                  <button type="button" (click)="revealNode(account.nodeId)" [title]="'@' + account.handle + (account.discovered ? (' · ' + ('found as contact' | translate)) : (account.contacts ? (' · ' + account.contacts + ' ' + ('contacts' | translate)) : ''))" class="flex min-w-0 items-center gap-1.5 py-1 pl-1.5 pr-2 text-left transition hover:bg-[var(--color-blue-710)]">
+                    <span class="flex h-3.5 w-3.5 shrink-0 items-center justify-center"><app-social-icon [platformName]="account.platform"></app-social-icon></span>
+                    <span class="truncate text-[11px] font-semibold text-[var(--color-text2)]">{{ node.kind === 'account' ? '@' + account.owner : account.platform }}</span>
+                    @if (account.contacts) {
+                      <span class="text-[10px] text-[var(--color-text4)]">{{ account.contacts }}</span>
+                    }
+                  </button>
+                  @if (account.url) {
+                    <button type="button" (click)="openUrl(account.url)" [title]="'Open profile' | translate" [attr.aria-label]="'Open profile' | translate" class="flex w-6 shrink-0 items-center justify-center border-l border-[var(--color-divider)] text-[var(--color-blue-640)] transition hover:bg-[var(--color-blue-710)]"><i class="bi bi-box-arrow-up-right text-[10px]"></i></button>
+                  }
+                </span>
+              }
+            </div>
+          </div>
+        }
+
+        @if (node.groups.length) {
+          <div class="mt-3 first:mt-0">
+            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{ 'Contact groups' | translate }}</div>
+            <ul class="space-y-1">
+              @for (group of node.groups; track group.id) {
+                <li>
+                  <button type="button" (click)="group.expanded ? toggleGroup(group.id) : revealNode(group.id)" class="flex w-full items-center gap-2 rounded-[6px] bg-[var(--color-blue-720)] px-2 py-1.5 text-left transition hover:bg-[var(--color-blue-710)]">
+                    <svg class="h-2 w-2 shrink-0" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" [attr.fill]="relationColors[group.relation]"></circle></svg>
+                    <span class="min-w-0 flex-1 truncate text-[var(--color-text2)]">{{ group.label | translate }} · {{ group.count }}@if (group.posts) { · {{ group.posts }} {{ 'posts with comments' | translate }} }</span>
+                    <i class="shrink-0 text-[var(--color-text4)]" [class]="group.expanded ? 'bi bi-dash-square' : 'bi bi-plus-square'"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (!node.bio && !node.followers && !node.location && !node.links.length && !node.memberships.length && !node.accounts.length && !node.groups.length) {
+          <p class="mb-0 text-[var(--color-text4)]">{{ 'Nothing more is known about this node yet.' | translate }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  @if (contextMenu(); as menu) {
+    <div data-testid="social-graph-context-menu" [attr.data-left]="menu.left" [attr.data-top]="menu.top" class="absolute z-[1400] w-52 overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]/[0.97] shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-[8px] [body.light-theme_&]:bg-[#f8fafc]/[0.97]">
+      @if (menu.action === 'remove') {
+        <button type="button" (click)="runContextMenu()" class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 hover:text-red-200"><i class="bi bi-dash-lg"></i>{{ 'Remove from graph' | translate }}</button>
+      }
+      @else {
+        <button type="button" (click)="runContextMenu()" class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-semibold text-[var(--color-text1)] transition-colors hover:bg-[var(--color-blue-720)]"><i class="bi bi-search text-[var(--color-blue-640)]"></i>{{ 'Scan' | translate }} {{ '@' + menu.handle }}</button>
+      }
+    </div>
+  }
+
+  @if (hasGraph() && layoutProgress() < 100) {
+    <div class="absolute bottom-4 right-4 z-30 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]/95 px-3 py-2 text-sm text-[var(--color-text1)] shadow-[0_10px_24px_var(--color-shadow-light)] backdrop-blur-sm">{{ 'Arranging' | translate }} {{ layoutProgress() }}%</div>
+  }
+
+  @if (busy() && !hasGraph()) {
+    <div class="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
+      <img [alt]="'Loading' | translate" class="h-40 w-auto animate-pulse" src="assets/images/shared/cti-empty.svg" />
+      <span class="text-sm text-[var(--color-text3)]">{{ 'Building relationship graph' | translate }}@if (hasRoots()) { {{ 'for' | translate }} {{ rootsLabel() }}}</span>
+    </div>
+  }
+  @else if (!hasRoots()) {
+    <div class="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 px-6 text-center">
+      <img [alt]="'No Data' | translate" class="h-40 w-auto" src="assets/images/shared/magnifying_search.svg" />
+      <span class="text-sm text-[var(--color-text3)]">{{ 'Pick a user in the sidebar to add it to the graph.' | translate }}</span>
+    </div>
+  }
+  @else if (graph() && !hasGraph()) {
+    <div class="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 px-6 text-center">
+      <img [alt]="'No Data' | translate" class="h-40 w-auto" src="assets/images/shared/magnifying_search.svg" />
+      <span class="text-sm text-[var(--color-text3)]">{{ 'No scanned profiles found for' | translate }} {{ rootsLabel() }}</span>
+    </div>
+  }
+
+  @if (copied()) {
+    <span class="absolute right-4 top-4 z-[1001] rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-semibold text-white shadow-lg">{{ 'Copied!' | translate }}</span>
+  }
+  @if (notice()) {
+    <span data-testid="social-user-graph-notice" class="absolute right-4 top-4 z-[1001] max-w-md rounded-full bg-[var(--color-blue-640)]/95 px-3 py-1 text-xs font-semibold text-white shadow-lg">{{ notice() }}</span>
+  }
+</section>

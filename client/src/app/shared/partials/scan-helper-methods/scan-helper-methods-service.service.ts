@@ -4,6 +4,7 @@ import { expand, finalize, switchMap, takeUntil, takeWhile, tap } from 'rxjs/ope
 import { ApiService } from '../../services/api.service';
 import { DnsResponse, SubdomainResponse, WaybackResponse } from '../../model/scanners/scanner.models';
 import { ScanNotificationService } from '../../services/scan-notification.service';
+import { ScanTaskError, ScanTaskResponse } from '../../model/network-intel/network-intel.model';
 @Injectable({ providedIn: 'root' })
 export class ScanHelperMethodsService {
   private readonly baseScanNotifications = inject(ScanNotificationService);
@@ -13,8 +14,8 @@ export class ScanHelperMethodsService {
   protected api = inject(ApiService);
 
   progress = signal(0);
-  onDone = signal<any>(null);
-  onError = signal<any>(null);
+  onDone = signal<ScanTaskResponse | null>(null);
+  onError = signal<ScanTaskError | null>(null);
 
   cancelCurrentScan(): void {
     if (this.currentCancel$) {
@@ -28,11 +29,11 @@ export class ScanHelperMethodsService {
   }
 
   protected isPendingOrBusy(status: string | undefined): boolean {
-    return ['pending', 'busy', 'queued', 'running', 'started', 'processing', 'scanning', 'in_progress'].includes(String(status || '').toLowerCase());
+    return ['pending', 'busy', 'queued', 'running', 'started', 'processing', 'scanning', 'in_progress'].includes(String(status ?? '').toLowerCase());
   }
 
-  protected getPendingStatus<T extends { status?: string; result?: { status?: string } | null }>(res: T): string | undefined {
-    return res?.result?.status || res?.status;
+  protected getPendingStatus<T extends { status?: string; progress?: number; step?: string; result?: { status?: string; progress?: number; step?: string } | null }>(res: T): string | undefined {
+    return res?.result?.status ?? res?.status;
   }
 
   protected updateProgress(progress: number | null | undefined): void {
@@ -52,7 +53,7 @@ export class ScanHelperMethodsService {
     }), takeWhile((v: T) => this.isPendingOrBusy(getStatus(v)), true), takeUntil(cancel$));
   }
 
-  protected runTask<T>(build: (cancel$: Subject<boolean>) => Observable<T>): Subscription {
+  protected runTask<T extends object>(build: (cancel$: Subject<boolean>) => Observable<T>): Subscription {
     this.progress.set(0);
     this.onDone.set(null);
     this.onError.set(null);
@@ -69,8 +70,8 @@ export class ScanHelperMethodsService {
       next: (value) => {
         this.handleTaskValue(value);
       },
-      error: (err) => {
-        this.onError.set(err);
+      error: (err: unknown) => {
+        this.onError.set({ message: err instanceof Error ? err.message : 'Request failed' });
       },
       complete: () => {
         this.currentCancel$ = undefined;
@@ -85,7 +86,7 @@ export class ScanHelperMethodsService {
     return sub;
   }
 
-  protected runPollingScan<T>( call: () => Observable<T>, getStatus: (res: T) => string | undefined, getProgress: (res: T) => number | null | undefined ): Subscription {
+  protected runPollingScan<T extends object>( call: () => Observable<T>, getStatus: (res: T) => string | undefined, getProgress: (res: T) => number | null | undefined ): Subscription {
     const enhanced = (res: T) => {
       this.updateProgress(getProgress(res));
     };
@@ -103,14 +104,14 @@ export class ScanHelperMethodsService {
   }
 
   protected beforeTaskStart(): void {
-    // Optional extension hook for derived scanners.
+    return;
   }
 
   protected afterTaskStop(): void {
-    // Optional extension hook for derived scanners.
+    return;
   }
 
-  protected handleTaskValue<T>(value: T): void {
+  protected handleTaskValue<T extends object>(value: T): void {
     this.onDone.set(value);
   }
 
@@ -122,7 +123,7 @@ export class ScanHelperMethodsService {
       pollDelayMs: this.pollDelayMs,
     });
     const getStatus = (res: SubdomainResponse) => this.getPendingStatus(res);
-    const getProgress = (res: SubdomainResponse) => (res as any)?.progress;
+    const getProgress = (res: SubdomainResponse) => res.progress;
     return this.runPollingScan<SubdomainResponse>(call, getStatus, getProgress);
   }
 
@@ -147,7 +148,7 @@ export class ScanHelperMethodsService {
       pollDelayMs: this.pollDelayMs,
     });
     const getStatus = (res: WaybackResponse) => this.getPendingStatus(res);
-    const getProgress = (res: WaybackResponse) => (res as any)?.progress;
+    const getProgress = (res: WaybackResponse) => res.progress;
     return this.runPollingScan<WaybackResponse>(call, getStatus, getProgress);
   }
 }

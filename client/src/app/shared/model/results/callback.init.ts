@@ -1,4 +1,4 @@
-export function initCallbackModel<TRaw, TResult>( target: { Result: TResult[]; Page_Count: number; }, init: any, makeResultItem: (r: Partial<TRaw>) => TResult ) {
+export function initCallbackModel<TRaw, TResult>( target: { Result: TResult[]; Page_Count: number; }, init: { Result?: Partial<TRaw>[]; Page_Count?: number } | null | undefined, makeResultItem: (r: Partial<TRaw>) => TResult ) {
   if (!init) {
     return;
   }

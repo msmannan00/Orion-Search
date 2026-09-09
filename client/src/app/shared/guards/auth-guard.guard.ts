@@ -8,7 +8,7 @@ export class AuthGuard implements CanActivate {
 
   canActivate(_route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
     const urlTree = this.router.parseUrl(state.url);
-    const currentPath = '/' + (urlTree.root.children['primary']?.segments.map(segment => segment.path).join('/') || '');
+    const currentPath = '/' + (urlTree.root.children.primary?.segments.map(segment => segment.path).join('/') || '');
     if (this.authService.getIsMobileDemo() && currentPath !== '/dashboard/strategic/all') {
       this.router.navigate(['/dashboard/strategic/all'], { queryParams: { ...urlTree.queryParams, page: 1 } }).then();
       return false;

@@ -501,7 +501,7 @@ class CaseManager:
         if assigned_analysts_changed and not CaseHelperMethods.can_manage_case_assignments(record, current_user):
             raise HTTPException(status_code=403, detail="Only admins, maintainers, or the case creator can update case analysts")
 
-        if (task_assignments_changed and not CaseHelperMethods.is_analyst(current_user) and not CaseHelperMethods.can_manage_case_assignments(record, current_user)):
+        if task_assignments_changed and not CaseHelperMethods.is_analyst(current_user) and not CaseHelperMethods.can_manage_case_assignments(record, current_user):
             raise HTTPException(status_code=403, detail="Only admins, maintainers, or the case creator can assign tasks")
 
         if linked_cases_changed and not CaseHelperMethods.can_manage_case_assignments(record, current_user):
@@ -678,24 +678,14 @@ class CaseManager:
         return {"success": True}
 
     async def get_next_case_id(self, current_user) -> dict:
-        records = await self._engine.find(
+        case_count = await self._engine.count(
             db_case_model, db_case_model.tenant_uuid == str(current_user.tenant_uuid)
         )
-        next_id = str(len(records) + 1).zfill(5)
+        next_id = str(case_count + 1).zfill(5)
         return {"nextCaseId": next_id}
     
     async def upload_artifact_files(self, case_id: str, artifact_id: str, files: list[UploadFile], current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
-
-        if not record:
-            raise HTTPException(status_code=404, detail="Case not found")
-
-        if not CaseHelperMethods.can_view_case(record, current_user):
-            raise HTTPException(status_code=403, detail="Access forbidden")
+        record = await self._load_viewable_case(case_id, current_user)
         
         if CaseHelperMethods.is_analyst(current_user):
             raise HTTPException(status_code=403, detail="Analysts cannot upload artifact files")
@@ -712,7 +702,7 @@ class CaseManager:
 
         artifact = next((item for item in record.artifacts if item.artifactId == artifact_id), None)
 
-        if not artifact:
+        if artifact is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
 
         for file in files:
@@ -757,7 +747,7 @@ class CaseManager:
 
         return {"files": uploaded_files}
     
-    async def get_artifact_file_response(self, case_id: str, artifact_id: str, file_id: str, current_user, download: bool = True) -> Response:
+    async def _load_viewable_case(self, case_id: str, current_user):
         record = await self._engine.find_one(
             db_case_model,
             (db_case_model.caseId == case_id)
@@ -770,6 +760,25 @@ class CaseManager:
         if not CaseHelperMethods.can_view_case(record, current_user):
             raise HTTPException(status_code=403, detail="Access forbidden")
 
+        return record
+
+    @staticmethod
+    def _resolve_artifact_file(record, artifact_id: str, file_id: str):
+        artifact = next((item for item in record.artifacts if item.artifactId == artifact_id), None)
+
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Artifact not found")
+
+        artifact_file = next((item for item in artifact.files if item.fileId == file_id), None)
+
+        if artifact_file is None:
+            raise HTTPException(status_code=404, detail="Artifact file not found")
+
+        return artifact, artifact_file
+
+    async def get_artifact_file_response(self, case_id: str, artifact_id: str, file_id: str, current_user, download: bool = True) -> Response:
+        record = await self._load_viewable_case(case_id, current_user)
+
         enc = await CaseHelperMethods.get_case_cipher(current_user)
 
         CaseHelperMethods.apply_sensitive_case_values(
@@ -777,15 +786,7 @@ class CaseManager:
             lambda value: CaseHelperMethods.decrypt_value(enc, value)
         )
 
-        artifact = next((item for item in record.artifacts if item.artifactId == artifact_id), None)
-
-        if not artifact:
-            raise HTTPException(status_code=404, detail="Artifact not found")
-
-        artifact_file = next((item for item in artifact.files if item.fileId == file_id), None)
-
-        if not artifact_file:
-            raise HTTPException(status_code=404, detail="Artifact file not found")
+        _, artifact_file = self._resolve_artifact_file(record, artifact_id, file_id)
 
         file_resource_id = artifact_file.fileResourceId
         file_name = artifact_file.fileName or "artifact-file"
@@ -827,17 +828,7 @@ class CaseManager:
         )
     
     async def delete_artifact_file_from_case(self, case_id: str, artifact_id: str, file_id: str, current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
-
-        if not record:
-            raise HTTPException(status_code=404, detail="Case not found")
-
-        if not CaseHelperMethods.can_view_case(record, current_user):
-            raise HTTPException(status_code=403, detail="Access forbidden")
+        record = await self._load_viewable_case(case_id, current_user)
         
         if CaseHelperMethods.is_analyst(current_user):
             raise HTTPException(status_code=403, detail="Analysts cannot delete artifact files")
@@ -848,15 +839,7 @@ class CaseManager:
             lambda value: CaseHelperMethods.decrypt_value(enc, value)
         )
 
-        artifact = next((item for item in record.artifacts if item.artifactId == artifact_id), None)
-
-        if not artifact:
-            raise HTTPException(status_code=404, detail="Artifact not found")
-
-        artifact_file = next((item for item in artifact.files if item.fileId == file_id), None)
-
-        if not artifact_file:
-            raise HTTPException(status_code=404, detail="Artifact file not found")
+        artifact, artifact_file = self._resolve_artifact_file(record, artifact_id, file_id)
 
         self._artifact_file_helper.delete_artifact_file(artifact_file.fileResourceId)
 
@@ -904,7 +887,7 @@ class CaseManager:
         )
     
 
-    async def get_artifact_reports(self, source: str, current_user, q: str = "", limit: int = 10) -> list[dict]:
+    async def get_artifact_reports(self, source: str, _current_user, q: str = "", limit: int = 10) -> list[dict]:
         source = (source or "").strip().lower()
         q = (q or "").strip()
         limit = max(1, min(limit or 10, 50))
@@ -1086,17 +1069,7 @@ class CaseManager:
         return is_valid
     
     async def verify_artifact_file(self, case_id: str, artifact_id: str, file_id: str, current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
-
-        if not record:
-            raise HTTPException(status_code=404, detail="Case not found")
-
-        if not CaseHelperMethods.can_view_case(record, current_user):
-            raise HTTPException(status_code=403, detail="Access forbidden")
+        record = await self._load_viewable_case(case_id, current_user)
 
         enc = await CaseHelperMethods.get_case_cipher(current_user)
         CaseHelperMethods.apply_sensitive_case_values(
@@ -1105,11 +1078,11 @@ class CaseManager:
         )
 
         artifact = next((item for item in record.artifacts if item.artifactId == artifact_id), None)
-        if not artifact:
+        if artifact is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
 
         artifact_file = next((item for item in artifact.files if item.fileId == file_id), None)
-        if not artifact_file:
+        if artifact_file is None:
             raise HTTPException(status_code=404, detail="Artifact file not found")
 
         is_valid = self._verify_file_integrity(artifact_file, enc)

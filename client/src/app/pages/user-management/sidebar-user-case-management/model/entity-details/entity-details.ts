@@ -39,7 +39,7 @@ export class EntityDetailsComponent implements OnChanges {
   @Output() save = new EventEmitter<void>();
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['entity'] && this.entity) {
+    if (changes.entity && this.entity) {
       this.entity.identifiers = this.entity.identifiers || [];
       this.entity.socialProfiles = this.entity.socialProfiles || [];
       this.entity.tags = this.entity.tags || [];
@@ -116,14 +116,6 @@ export class EntityDetailsComponent implements OnChanges {
     }
 
     return null;
-  }
-
-  getEntityTypeOtherError(): string | null {
-    return this.getOtherError(this.entity?.type, this.entity?.entityTypeOtherValue);
-  }
-
-  getEntitySourceOtherError(): string | null {
-    return this.getOtherError(this.entity?.source, this.entity?.entitySourceOtherValue);
   }
 
   getLinkedEntityLabel(entity: CaseEntity): string {

@@ -1,0 +1,15 @@
+@keyframes tenant-settings-fade-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.tenant-settings-fade-in {
+  animation: tenant-settings-fade-in 400ms ease-in-out;
+}

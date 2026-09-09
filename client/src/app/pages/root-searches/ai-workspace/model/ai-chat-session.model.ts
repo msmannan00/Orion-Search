@@ -10,9 +10,11 @@ export interface AiChatSession {
 
 export interface NexusChatSession {
     session_id: string;
+    id?: string;
     title: string;
     updated_at: string;
     message_count: number;
+    messages?: NexusChatMessage[];
 }
 
 export interface NexusChatMessage {
@@ -65,6 +67,11 @@ export interface NexusWorkspaceTreeResponse {
     status: string;
     message?: string;
     tree: NexusWorkspaceFileNode | null;
+    result?: {
+        status?: string;
+        message?: string;
+        tree: NexusWorkspaceFileNode | null;
+    };
 }
 
 export interface NexusWorkspaceFileReadResponse {

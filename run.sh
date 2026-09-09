@@ -4,10 +4,27 @@ set -o pipefail
 
 PROJECT_NAME="trusted-search"
 ENV_FILE=".env"
-LOCAL_SSL_DIR="backend/.ssl"
+LOCAL_SSL_DIR="backend/workspace/ssl"
 LOCAL_SSL_CERT="$LOCAL_SSL_DIR/localhost-cert.pem"
 LOCAL_SSL_KEY="$LOCAL_SSL_DIR/localhost-key.pem"
 MAINTENANCE_FLAG="backend/static/.maintenance"
+NG_SERVE_URL="http://127.0.0.1:4200/"
+NG_SERVE_PID_FILE="/tmp/orion-ng-serve.pid"
+NG_SERVE_PATTERNS=(
+    '(^|[[:space:]/])ng([[:space:]].*)? serve([[:space:]]|$)'
+    'node .*@angular/cli/bin/ng serve'
+    'npm run serve -- --host 127.0.0.1 --port 4200'
+)
+PRODUCTION_SERVICES=(web documentation arangodb elasticsearch redis_server mongo)
+
+compose() {
+    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
+}
+
+set_env_var() {
+    sed -i "/^$1=/d" "$ENV_FILE" 2>/dev/null || true
+    echo "$1=$2" >> "$ENV_FILE"
+}
 
 is_nginx_running() {
     docker inspect -f '{{.State.Running}}' trusted-web-nginx 2>/dev/null | grep -qx true
@@ -20,33 +37,35 @@ stop_docker() {
 }
 
 stop_production_services_preserving_nginx() {
-    local services=(web documentation arangodb elasticsearch redis_server mongo)
-
-    docker compose -p "$PROJECT_NAME" -f docker-compose-production.yml stop "${services[@]}"
-    docker compose -p "$PROJECT_NAME" -f docker-compose-production.yml rm -f "${services[@]}"
+    docker compose -p "$PROJECT_NAME" -f docker-compose-production.yml stop "${PRODUCTION_SERVICES[@]}"
+    docker compose -p "$PROJECT_NAME" -f docker-compose-production.yml rm -f "${PRODUCTION_SERVICES[@]}"
 }
 
 stop_ng_serve() {
-    local url="http://127.0.0.1:4200/"
-    local pid_file="/tmp/orion-ng-serve.pid"
+    local pattern
 
-    if [ -f "$pid_file" ]; then
-        kill -9 "$(cat "$pid_file")" 2>/dev/null || true
-        rm -f "$pid_file"
+    if [ -f "$NG_SERVE_PID_FILE" ]; then
+        kill -9 "$(cat "$NG_SERVE_PID_FILE")" 2>/dev/null || true
+        rm -f "$NG_SERVE_PID_FILE"
     fi
-    pkill -9 -f '(^|[[:space:]/])ng([[:space:]].*)? serve([[:space:]]|$)' 2>/dev/null || true
-    pkill -9 -f 'node .*@angular/cli/bin/ng serve' 2>/dev/null || true
-    pkill -9 -f "npm run serve -- --host 127.0.0.1 --port 4200" 2>/dev/null || true
+    for pattern in "${NG_SERVE_PATTERNS[@]}"; do
+        pkill -9 -f "$pattern" 2>/dev/null || true
+    done
 
-    while curl -fsS -o /dev/null "$url" >/dev/null 2>&1; do
+    while curl -fsS -o /dev/null "$NG_SERVE_URL" >/dev/null 2>&1; do
         sleep 1
     done
 }
 
 ng_serve_is_running() {
-    pgrep -f '(^|[[:space:]/])ng([[:space:]].*)? serve([[:space:]]|$)' >/dev/null \
-        || pgrep -f 'node .*@angular/cli/bin/ng serve' >/dev/null \
-        || pgrep -f 'npm run serve -- --host 127.0.0.1 --port 4200' >/dev/null
+    local pattern
+
+    for pattern in "${NG_SERVE_PATTERNS[@]}"; do
+        if pgrep -f "$pattern" >/dev/null; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 pull_image_if_missing() {
@@ -79,17 +98,37 @@ client_build() {
     rm -rf build-next
     if [ "$1" = "-t" ]; then
         npx ng build --configuration instrumented --output-path build-next
+        node instrument-build.js build-next/browser
     else
         npx ng build --configuration production --output-path build-next
     fi
-    test -d build-next
+    test -d build-next/browser
     mkdir -p build
-    rsync -a build-next/ build/
+    find build-next -maxdepth 1 -type f -exec mv -f {} build-next/browser/ \;
+    rsync -a --delete build-next/browser/ build/
     rm -rf build-next
     cd ..
+    local backups_holding
+    backups_holding=""
+    if [ -d backend/build/backups ]; then
+        backups_holding="$(mktemp -d)/backups"
+        mv backend/build/backups "$backups_holding"
+    fi
     rm -rf backend/build
     mkdir -p backend/build
     cp -r client/build/* backend/build/
+    if [ -n "$backups_holding" ]; then
+        rm -rf backend/build/backups
+        mv "$backups_holding" backend/build/backups
+        rmdir "$(dirname "$backups_holding")" 2>/dev/null || true
+    fi
+    mkdir -p backend/build/backups
+    if [ "$(stat -c %u backend/build/backups)" != "${APP_UID:-1000}" ]; then
+        sudo chown -R "${APP_UID:-1000}:${APP_GID:-1000}" backend/build/backups
+    fi
+    rm -rf backend/workspace/build
+    mkdir -p backend/workspace/build
+    cp -r client/build/* backend/workspace/build/
 }
 
 install_client_dependencies() {
@@ -111,28 +150,51 @@ install_client_dependencies() {
 }
 
 use_compose_file() {
-    if [ "$1" = "-t" ] || [ "$1" = "-tb" ]; then
-        COMPOSE_FILE="docker-compose-testing.yml"
-    elif [ "$1" = "production" ]; then
-        COMPOSE_FILE="docker-compose-production.yml"
-    else
-        COMPOSE_FILE="docker-compose.yml"
-    fi
+    case "$1" in
+        -t|-tb)     COMPOSE_FILE="docker-compose-testing.yml" ;;
+        production) COMPOSE_FILE="docker-compose-production.yml" ;;
+        *)          COMPOSE_FILE="docker-compose.yml" ;;
+    esac
+}
+
+report_unhealthy_web_main() {
+    echo "Last healthcheck output for trusted-web-main:" >&2
+    docker inspect -f '{{range .State.Health.Log}}{{.Start}} exit={{.ExitCode}} {{.Output}}
+{{end}}' trusted-web-main 2>/dev/null | tail -n 3 >&2 || true
+    docker logs --tail 50 trusted-web-main >&2 || true
 }
 
 wait_for_application_services() {
     local health
+    local now
+    local timeout_seconds="${APPLICATION_READY_TIMEOUT:-600}"
+    local unhealthy_grace_seconds="${APPLICATION_UNHEALTHY_GRACE:-90}"
+    local deadline=$(( $(date +%s) + timeout_seconds ))
+    local unhealthy_since=0
 
     echo "Waiting for application services to become ready..."
     until health="$(docker inspect -f '{{.State.Health.Status}}' trusted-web-main 2>/dev/null)" \
         && [ "$health" = "healthy" ]; do
+        now="$(date +%s)"
+        if [ "$health" = "unhealthy" ]; then
+            if [ "$unhealthy_since" -eq 0 ]; then
+                unhealthy_since="$now"
+                echo "trusted-web-main reports unhealthy; allowing ${unhealthy_grace_seconds}s for it to recover..."
+            elif [ $(( now - unhealthy_since )) -ge "$unhealthy_grace_seconds" ]; then
+                echo "ERROR: trusted-web-main stayed unhealthy for ${unhealthy_grace_seconds}s." >&2
+                report_unhealthy_web_main
+                return 1
+            fi
+        else
+            unhealthy_since=0
+        fi
+        if [ "$now" -ge "$deadline" ]; then
+            echo "ERROR: trusted-web-main did not become healthy within ${timeout_seconds}s (last status: ${health:-unknown})" >&2
+            report_unhealthy_web_main
+            return 1
+        fi
         sleep 2
     done
-}
-
-wait_for_server() {
-    wait_for_application_services
-    sudo systemctl restart tor@default
 }
 
 enable_maintenance_mode() {
@@ -176,7 +238,7 @@ wait_for_test_service() {
 
         if [ "$SECONDS" -ge "$deadline" ]; then
             echo "Timed out after ${timeout_seconds}s waiting for $url (container: ${container_health:-unknown}, HTTP: ${http_status:-unreachable})." >&2
-            docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" ps >&2 || true
+            compose ps >&2 || true
             docker logs --tail 100 trusted-web-main >&2 || true
             return 1
         fi
@@ -191,42 +253,37 @@ run_backend_tests_protected() {
         return 0
     fi
 
-    local test_timeout="${BACKEND_TEST_TIMEOUT:-1800}"
     local pytest_cmd='cd /app && python -m pytest -q tests --maxfail=1 --disable-warnings'
+    local runner=()
+
+    if command -v timeout >/dev/null 2>&1; then
+        runner=(timeout "${BACKEND_TEST_TIMEOUT:-1800}")
+    fi
 
     echo "Running backend tests in isolated protected test container..."
-    if command -v timeout >/dev/null 2>&1; then
-        timeout "$test_timeout" docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm --no-deps -T \
-            -e TESTING_ENABLED=1 -e PYTHONPATH=/app web sh -lc "$pytest_cmd"
-    else
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm --no-deps -T \
-            -e TESTING_ENABLED=1 -e PYTHONPATH=/app web sh -lc "$pytest_cmd"
-    fi
+    "${runner[@]}" docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm --no-deps -T \
+        -e TESTING_ENABLED=1 -e PYTHONPATH=/app web sh -lc "$pytest_cmd"
 }
 
 restart_ng_serve() {
-    local url="http://127.0.0.1:4200/"
-    local pid_file="/tmp/orion-ng-serve.pid"
-
     stop_ng_serve
 
     (
         cd client || exit
         nohup npm run serve -- --host 127.0.0.1 --port 4200 >/tmp/orion-ng-serve.log 2>&1 &
-        echo $! > "$pid_file"
+        echo $! > "$NG_SERVE_PID_FILE"
     )
 
-    until curl -fsS -o /dev/null "$url" >/dev/null 2>&1; do
+    until curl -fsS -o /dev/null "$NG_SERVE_URL" >/dev/null 2>&1; do
         sleep 2
     done
 }
 
 set_testing_enabled() {
-    sed -i '/^TESTING_ENABLED=/d' "$ENV_FILE" 2>/dev/null || true
     if [ "$1" = "-t" ] || [ "$1" = "-tb" ]; then
-        echo 'TESTING_ENABLED="1"' >> "$ENV_FILE"
+        set_env_var TESTING_ENABLED '"1"'
     else
-        echo 'TESTING_ENABLED="0"' >> "$ENV_FILE"
+        set_env_var TESTING_ENABLED '"0"'
     fi
 }
 set_swarm_url_to_local_ip() {
@@ -242,9 +299,7 @@ set_swarm_url_to_local_ip() {
         local_ip="$(ifconfig | awk '/inet / && $2 != "127.0.0.1" {print $2; exit}')"
     fi
 
-    sed -i.bak '/^SWARM_URL=/d' "$ENV_FILE" 2>/dev/null || true
-    echo "SWARM_URL=http://$local_ip:5132" >> "$ENV_FILE"
-    rm -f "${ENV_FILE}.bak"
+    set_env_var SWARM_URL "http://$local_ip:5132"
 }
 
 if [ "$1" = "-ip" ]; then
@@ -259,19 +314,29 @@ if [ "$1" = "stop" ]; then
     exit 0
 fi
 
-if [ "$1" = "-doc" ]; then
-    docker compose -p "$PROJECT_NAME" -f docker-compose-testing.yml down -v --remove-orphans
-    "$0" build -t
-    restart_ng_serve
-    bash docs/scripts/generate_docs.sh --clear
-    exit 0
+if [ "$1" = "restore" ]; then
+    BACKUP_NAME="$2"
+    if [ -z "$BACKUP_NAME" ]; then
+        echo "Usage: $0 restore <backup_name>"
+        exit 1
+    fi
+    if ! docker inspect -f '{{.State.Running}}' trusted-web-main 2>/dev/null | grep -qx true; then
+        echo "trusted-web-main is not running. Start the stack first."
+        exit 1
+    fi
+    docker exec trusted-web-main python3 restore_backup.py "$BACKUP_NAME"
+    exit $?
 fi
 
-if [ "$1" = "-docs" ]; then
+if [ "$1" = "-doc" ] || [ "$1" = "-docs" ]; then
     docker compose -p "$PROJECT_NAME" -f docker-compose-testing.yml down -v --remove-orphans
     "$0" build -t
     restart_ng_serve
-    bash docs/scripts/generate_docs.sh
+    if [ "$1" = "-doc" ]; then
+        bash docs/scripts/generate_docs.sh --clear
+    else
+        bash docs/scripts/generate_docs.sh
+    fi
     exit 0
 fi
 
@@ -281,6 +346,7 @@ EXTRA_FLAG=$3
 
 if [ "$COMMAND" = "production" ]; then
     enable_maintenance_mode
+    trap disable_maintenance_mode EXIT
     if is_nginx_running; then
         stop_production_services_preserving_nginx
     else
@@ -296,35 +362,31 @@ set_testing_enabled "$FLAG"
 if [ "$COMMAND" = "build" ]; then
     if [ "$FLAG" = "-p" ]; then
         enable_maintenance_mode
+        trap disable_maintenance_mode EXIT
     elif [ "$FLAG" = "-d" ] || [ "$FLAG" = "-t" ] || [ "$FLAG" = "-tb" ]; then
         if [ "$FLAG" = "-d" ]; then
             cp nginx/nginx-dev.conf nginx/nginx.conf
         else
             cp nginx/nginx-testing.conf nginx/nginx.conf
         fi
-        if docker inspect -f '{{.State.Running}}' trusted-web-nginx 2>/dev/null | grep -qx true; then
+        if is_nginx_running; then
             docker exec trusted-web-nginx nginx -t
             docker exec trusted-web-nginx nginx -s reload
         fi
-        enable_maintenance_mode
-        trap disable_maintenance_mode EXIT
+        if [ "$FLAG" != "-d" ]; then
+            enable_maintenance_mode
+            trap disable_maintenance_mode EXIT
+        fi
     fi
 
     pull_image_if_missing python:3.11-slim
     install_client_dependencies "$FLAG"
 
     case "$FLAG" in
-        -t)
+        -t|-tb)
             ensure_local_ssl_cert
             client_build "-t"
-            cp nginx/nginx-testing.conf nginx/nginx.conf
-            use_compose_file "-t"
-            ;;
-        -tb)
-            ensure_local_ssl_cert
-            client_build "-t"
-            cp nginx/nginx-testing.conf nginx/nginx.conf
-            use_compose_file "-tb"
+            use_compose_file "$FLAG"
             ;;
         -c)
             ensure_local_ssl_cert
@@ -342,7 +404,6 @@ if [ "$COMMAND" = "build" ]; then
             set_swarm_url_to_local_ip
             ensure_local_ssl_cert
             client_build "$FLAG"
-            cp nginx/nginx-dev.conf nginx/nginx.conf
             use_compose_file "default"
             ;;
         -p)
@@ -360,9 +421,9 @@ if [ "$COMMAND" = "build" ]; then
     esac
 
     if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" build web documentation
+        compose build web documentation
     else
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" build
+        compose build
     fi
 
 elif [ "$COMMAND" = "production" ]; then
@@ -371,6 +432,12 @@ else
     use_compose_file "default"
 fi
 
+mkdir -p backend/workspace/parser/parser_files
+chmod -R a+rwX backend/workspace/parser/parser_files 2>/dev/null || true
+
+mkdir -p backend/workspace/logs
+chmod a+rwX backend/workspace/logs 2>/dev/null || true
+
 docker network create --driver bridge shared_bridge 2>/dev/null || true
 docker network create --driver bridge orion_nexus_backend 2>/dev/null || true
 compose_up_services=()
@@ -378,9 +445,7 @@ compose_up_services=()
 if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
     compose_up_services=(web nginx)
 elif [ "$COMPOSE_FILE" = "docker-compose-production.yml" ] && is_nginx_running; then
-    # Keep the existing gateway alive so it can serve maintenance.html while
-    # the application and its dependencies are rebuilt or restarted.
-    compose_up_services=(web documentation arangodb elasticsearch redis_server mongo)
+    compose_up_services=("${PRODUCTION_SERVICES[@]}")
 fi
 
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
@@ -390,42 +455,46 @@ if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
     fi
 fi
 
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" pull --include-deps --ignore-buildable --policy missing "${compose_up_services[@]}"
+compose pull --include-deps --ignore-buildable --policy missing "${compose_up_services[@]}"
 
+up_extra_args=()
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ] && [ "$EXTRA_FLAG" = "-full" ]; then
-    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --pull missing --force-recreate "${compose_up_services[@]}"
-else
-    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --pull missing "${compose_up_services[@]}"
+    up_extra_args=(--force-recreate)
 fi
 
+compose up -d --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
+
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
-    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T nginx nginx -t
-    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T nginx nginx -s reload
-    wait_for_server
+    compose exec -T nginx nginx -t
+    compose exec -T nginx nginx -s reload
+    wait_for_application_services
+    sudo systemctl restart tor@default
     disable_maintenance_mode
+    trap - EXIT
 fi
 
 case "$COMMAND:$FLAG" in
     build:-t|build:-tb)
         wait_for_test_service
+        disable_maintenance_mode
+        trap - EXIT
+        if [ "$FLAG" = "-tb" ]; then
+            run_backend_tests_protected
+        fi
+        ;;
+    build:-d)
+        wait_for_application_services
+        disable_maintenance_mode
+        trap - EXIT
         ;;
     build:-p)
+        ;;
+    production:*)
+        wait_for_application_services
+        disable_maintenance_mode
+        trap - EXIT
         ;;
     *)
         wait_for_application_services
         ;;
 esac
-
-if [ "$COMMAND" = "build" ] \
-    && { [ "$FLAG" = "-d" ] || [ "$FLAG" = "-t" ] || [ "$FLAG" = "-tb" ]; }; then
-    disable_maintenance_mode
-    trap - EXIT
-fi
-
-if [ "$COMMAND" = "production" ]; then
-    disable_maintenance_mode
-fi
-
-if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-tb" ]; then
-    run_backend_tests_protected
-fi

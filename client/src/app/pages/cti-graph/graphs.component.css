@@ -1,0 +1,15 @@
+.ui-fade-in-item {
+  animation: ui-fade-in-item 400ms ease-in-out;
+}
+
+@keyframes ui-fade-in-item {
+  from {
+    opacity: 0%;
+    translate: 0 -5px;
+  }
+
+  to {
+    opacity: 100%;
+    translate: 0 0;
+  }
+}

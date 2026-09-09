@@ -3,32 +3,12 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../../shared/services/api.service';
 import { ArtifactReportOption, Case, CaseAnalyst, CaseRequest, CaseShareRequest, CaseShareResponse, CaseStatusReason, CaseUpdateRequest } from '../model/case.model';
 import { CaseStatusBoardConfig } from '../model/status-board-config.model';
+import { ArtifactFileIntegrityResult } from './model/case-management.model';
+import { ArtifactFileUploadResponse } from './model/case-management.model';
+import { AssignCaseAnalystRequest } from './model/case-management.model';
 
-type ArtifactFileIntegrityResult = {
-  fileId: string;
-  success: boolean;
-  status: 'verified' | 'failed';
-};
 
-type ArtifactFileUploadResponse = {
-  files: {
-    fileId: string;
-    fileName: string;
-    fileType: string;
-    fileSize: number;
-    fileResourceId: string;
-    fileHash?: string;
-    hashAlgorithm?: string;
-    integrityStatus?: 'unknown' | 'verified' | 'failed';
-    integrityCheckedAt?: string;
-    integrityMessage?: string;
-    uploadedAt?: string;
-  }[];
-};
 
-type AssignCaseAnalystRequest = {
-  analystId: string;
-};
 
 @Injectable({ providedIn: 'root' })
 export class CaseManagement {
@@ -100,7 +80,7 @@ export class CaseManagement {
     return this.api.delete<{ success: boolean }>(`profile/cases/${caseId}/artifacts/${artifactId}/files/${fileId}`);
   }
 
-  getArtifactReports(source: string, q: string = '', limit: number = 10): Observable<ArtifactReportOption[]> {
+  getArtifactReports(source: string, q = '', limit = 10): Observable<ArtifactReportOption[]> {
     const params = new URLSearchParams();
 
     params.set('source', source);

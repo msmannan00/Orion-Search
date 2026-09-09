@@ -12,7 +12,14 @@
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text4)]">{{
                         'Case ID' | translate }}</label>
-                    <input type="text" [value]="caseForm.caseId" disabled class="mt-1 w-full cursor-not-allowed rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-790)] px-3 py-2 text-[var(--color-text4)] outline-none" data-testid="case-add-id-input" />
+                    <div class="mt-1 flex items-center gap-2">
+                        <input type="text" [value]="caseForm.caseId" disabled class="w-full cursor-not-allowed rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-790)] px-3 py-2 text-[var(--color-text4)] outline-none" data-testid="case-add-id-input" />
+                        @if (validationErrors['caseId']) {
+                        <button type="button" (click)="generateCaseId()" class="h-9 shrink-0 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 text-xs font-semibold text-[var(--color-text2)] transition-colors hover:border-sky-400/40 hover:text-[var(--color-text1)]" data-testid="case-add-id-retry">
+                            {{ 'Retry' | translate }}
+                        </button>
+                        }
+                    </div>
                     @if (validationErrors['caseId']) {
                     <p class="case-form-error mt-1 text-xs text-red-400 [body.light-theme_&]:text-red-700">{{ validationErrors['caseId'] }}</p>
                     }

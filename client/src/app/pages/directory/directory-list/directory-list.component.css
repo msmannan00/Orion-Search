@@ -1,0 +1,15 @@
+@keyframes directory-list-item-fade-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.directory-list-item-fade-in {
+  animation: directory-list-item-fade-in 400ms ease-in-out;
+}

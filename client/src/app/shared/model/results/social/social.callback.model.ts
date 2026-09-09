@@ -7,7 +7,7 @@ export class SocialResultItem {
   m_message_id?: string;
   m_message_sharable_link?: string;
   m_weblink!: string[];
-  m_content_type?: string[];
+  m_content_type?: string | string[];
   m_hash?: string;
   m_views?: string;
   m_channel_name?: string;
@@ -30,6 +30,8 @@ export class SocialResultItem {
   m_likes?: string;
   m_retweets?: string;
   m_commenters!: string[];
+
+  [key: string]: unknown;
 
   constructor(init?: Partial<SocialResultItem>) {
     this.m_summary = [];

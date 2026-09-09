@@ -96,12 +96,14 @@ class AlertManager:
 
     async def _get_alert_mail_recipient(self, tenant_id: str, current_user=None) -> tuple[str, str]:
         if current_user is not None:
-            return (current_user.email,current_user.username)
+            return current_user.email, current_user.username
         maintainer_user = None
-        
+
         if tenant_id:
             maintainer_user = await self._engine.find_one(db_user_account,(db_user_account.tenant_uuid == str(tenant_id)) & (db_user_account.licenses == LicenseName.MAINTAINER))
-        return (maintainer_user.email,maintainer_user.username)
+        if maintainer_user:
+            return maintainer_user.email, maintainer_user.username
+        return "", ""
 
     @staticmethod
     def _alert_ioc_rows(alert: AlertModel) -> list[dict[str, str]]:
@@ -208,7 +210,7 @@ class AlertManager:
             return True
 
         module_rows = []
-        for category, count in sorted(counts_by_category.items(), key=lambda item: item[0]):
+        for category, count in sorted(counts_by_category.items(), key=lambda row: row[0]):
             display_name = self._display_alert_label(category)
             count = int(count or 0)
             module_rows.append({
@@ -435,7 +437,7 @@ class AlertManager:
 
         return {"message": "Alerts updated successfully", "updated": updated_count}
 
-    async def delete_alert(self, id: str, current_user):
+    async def delete_alert(self, alert_id: str, current_user):
         tenant_uuid = str(current_user.tenant_uuid)
 
         existing_doc = await self._engine.find_one(
@@ -446,7 +448,7 @@ class AlertManager:
 
         deleted_alert = None
         for alert in visible_alerts(existing_doc.alerts):
-            if alert.alert_id == id:
+            if alert.alert_id == alert_id:
                 alert.is_deleted = True
                 deleted_alert = alert
                 break
@@ -457,7 +459,7 @@ class AlertManager:
         await self._engine.save(existing_doc)
         await self._summary_helper.invalidate_alert_summary_cache(tenant_uuid)
 
-        return {"message": "Alert deleted successfully", "id": id}
+        return {"message": "Alert deleted successfully", "id": alert_id}
 
     def _to_notification_item(self, alert: AlertModel) -> dict[str, Any]:
         risk = AlertSummaryHelper.risk_from_alert(alert).title()
@@ -638,7 +640,7 @@ class AlertManager:
                 tenant_id=str(tenant_id), scan_running=value, alerts=[])
             await self._engine.save(alert_doc)
 
-        if(cancle_scan==True):
+        if cancle_scan:
             alert_job = self.get_alert_job()
             await alert_job.get_instance().cancel_tenant_scan(tenant_id)
 

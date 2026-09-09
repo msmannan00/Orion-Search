@@ -1,7 +1,7 @@
 <div [ngClass]="isConsolidatedView ? 'w-full min-w-0' : 'w-full'">
   @if (!isConsolidatedView) {
     @if (getAptIntelSummary(); as summary) {
-      <div class="mb-3 flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3" @fadeInDashboardItem>
+      <div class="mb-3 flex min-h-[50px] w-full flex-wrap items-center gap-8 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blur-920)] px-3 py-[6px] max-[640px]:gap-3 apt-summary-fade-in">
         <div class="flex min-w-0 items-center gap-2">
           <div class="max-w-[110px] truncate text-sm font-semibold text-[var(--color-text1)]">{{ summary.latestSeen ? (summary.latestSeen | date:'MMM d, y') : '-' }}</div>
           <div class="text-xs text-[var(--color-text4)]">{{ 'Latest Seen' | translate }}</div>

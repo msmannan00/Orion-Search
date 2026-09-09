@@ -13,7 +13,7 @@ import { TranslatePipe } from '../../../../../../../shared/pipes/translate.pipe'
 export class OrionFacilityPopupComponent {
   private currentFeature: OrionSatelliteFeature | null = null;
 
-  rows: Array<{ label: string; value: string; stacked: boolean }> = [];
+  rows: { label: string; value: string; stacked: boolean }[] = [];
 
   set feature(value: OrionSatelliteFeature | null) {
     this.currentFeature = value;
@@ -26,20 +26,20 @@ export class OrionFacilityPopupComponent {
 
   get title(): string {
     const name = this.feature?.name?.trim();
-    return name || 'Feature';
+    return name ?? 'Feature';
   }
 
-  private buildRows(feature: OrionSatelliteFeature | null): Array<{ label: string; value: string; stacked: boolean }> {
+  private buildRows(feature: OrionSatelliteFeature | null): { label: string; value: string; stacked: boolean }[] {
     if (!feature) {
       return [];
     }
 
     const properties = feature.properties && typeof feature.properties === 'object' ? feature.properties : {};
     const rows = [
-      this.createRow('Country', properties['country']),
-      this.createRow('Fuel', properties['fuel'] ?? properties['primary_fuel']),
-      this.createRow('Capacity', this.formatCapacityValue(properties['capacity_mw'] ?? feature.capacityMw)),
-      this.createRow('Source', properties['source'] ?? feature.source),
+      this.createRow('Country', properties.country),
+      this.createRow('Fuel', properties.fuel ?? properties.primary_fuel),
+      this.createRow('Capacity', this.formatCapacityValue(properties.capacity_mw ?? feature.capacityMw)),
+      this.createRow('Source', properties.source ?? feature.source),
     ].filter((row): row is { label: string; value: string; stacked: boolean } => row !== null);
 
     Object.entries(properties).forEach(([key, rawValue]) => {

@@ -1,0 +1,15 @@
+@keyframes ui-fade-in-dashboard-item {
+  from {
+    opacity: var(--ui-opacity-hidden);
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.ui-fade-in-dashboard-item {
+  animation: ui-fade-in-dashboard-item 400ms ease-in-out;
+}

@@ -30,12 +30,12 @@ client/cypress/screenshots/
 client/cypress/videos/
 backend/coverage.xml
 backend/htmlcov/
-backend/build/
-backend/orion/logs/
-orion/logs/
+backend/workspace/build/
+backend/workspace/logs/
+workspace/logs/
 coverage-merged/
 *.log
 
-backend/static/resource/**
-!backend/static/resource/**/
-!backend/static/resource/**/*default*
+backend/workspace/resource/**
+!backend/workspace/resource/**/
+!backend/workspace/resource/**/*default*

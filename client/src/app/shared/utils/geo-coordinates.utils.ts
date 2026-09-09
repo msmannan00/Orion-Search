@@ -1,4 +1,4 @@
-export type ParsedCoordinates = { lat: number; lon: number };
+import { ParsedCoordinates } from './model/geo-coordinates.model';
 
 export function parseCoordinates(value: string): ParsedCoordinates | null {
   const parts = value.trim().split(/[\s,]+/);

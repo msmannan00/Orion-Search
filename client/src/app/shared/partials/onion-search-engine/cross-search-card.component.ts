@@ -35,12 +35,14 @@ export class CrossSearchCardComponent {
   toggleResultsBarCollapse(): void {
     this.isExpandable = !this.isExpandable;
 
-    // trigger search when opening
+
     if (this.isExpandable && !this.isLoading && this.engines.length === 0 && !this.hasError) {
       this.onSearch();
     }
     else if (this.isExpandable) {
-      setTimeout(() => this.updateScrollState());
+      setTimeout(() => {
+        this.updateScrollState();
+      });
     }
   }
 
@@ -96,7 +98,9 @@ export class CrossSearchCardComponent {
               search_url: r.search_url,
               first_result: r.first_result,
             }));
-          setTimeout(() => this.updateScrollState());
+          setTimeout(() => {
+            this.updateScrollState();
+          });
         },
         error: () => (this.hasError = true),
       });
@@ -109,7 +113,9 @@ export class CrossSearchCardComponent {
       return;
     }
     el.scrollBy({ left: direction === 'left' ? -332 : 332, behavior: 'smooth' });
-    setTimeout(() => this.updateScrollState(), 250);
+    setTimeout(() => {
+      this.updateScrollState();
+    }, 250);
   }
 
   onScrollRow(): void {
@@ -118,7 +124,7 @@ export class CrossSearchCardComponent {
 
   openEngineCard(entry: CrossSearchEntry, event?: Event): void {
     event?.stopPropagation();
-    const targetUrl = entry.first_result?.url || entry.search_url;
+    const targetUrl = entry.first_result?.url ?? entry.search_url;
     if (!targetUrl) {
       return;
     }
@@ -141,8 +147,8 @@ export class CrossSearchCardComponent {
   }
 
   private isPendingResponse(res: CrossSearchResponse): boolean {
-    const topStatus = (res?.status || '').toLowerCase();
-    const nestedStatus = (res?.result?.status || '').toLowerCase();
+    const topStatus = (res?.status ?? '').toLowerCase();
+    const nestedStatus = (res?.result?.status ?? '').toLowerCase();
     return (
       ['pending', 'processing', 'running', 'busy'].includes(topStatus) ||
       ['pending', 'processing', 'running', 'busy'].includes(nestedStatus)

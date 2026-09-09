@@ -1,59 +1,21 @@
-type SearchEndpoint16 = 'strategic' | 'breach' | 'defacement' | 'social' | 'exploit';
 
-export interface ExpectedSearchResult16 {
-  title?: string;
-  linkAddress?: string | string[];
-  date?: string | null;
-  responseDate?: string | null;
-  description?: string | null;
-  baseUrl?: string | string[];
-  team?: string;
-  webUrl?: string | string[];
-  queryMatches: string[];
-}
+import type { AdvancedEntityFilterCase16, DateRangeSelection16, DirectSearchCase16, ExpectedSearchResult16, SearchEndpoint16, SearchInterception16, SidebarFilterCase16, SidebarFilterGroup16 } from '../model/15-search-api-validation.model';
+export type { AdvancedEntityFilterCase16, DateRangeSelection16, DirectSearchCase16, ExpectedSearchResult16, SearchEndpoint16, SidebarFilterCase16, SidebarFilterGroup16 } from '../model/15-search-api-validation.model';
 
-export interface DirectSearchCase16 {
-  section: string;
-  route: string;
-  endpoint: SearchEndpoint16;
-  searchQuery: string;
-  expected: ExpectedSearchResult16;
-}
+type SearchRecord16 = Record<string, unknown>;
 
-interface DateRangeSelection16 {
-  monthLabel: string;
-  startDay: number;
-  endDay: number;
-}
 
-export interface SidebarFilterCase16 extends DirectSearchCase16 {
-  selectTestId?: string;
-  option?: string;
-  requestField: string;
-  requestValue: string;
-  filterKind?: 'dropdown' | 'daterange';
-  dateRange?: DateRangeSelection16;
-  responseFields?: string[];
-  responseValue?: string;
-}
 
-export interface SidebarFilterGroup16 {
-  section: string;
-  cases: SidebarFilterCase16[];
-}
 
-export interface AdvancedEntityFilterCase16 {
-  section: string;
-  route: string;
-  endpoint: SearchEndpoint16;
-  category: string;
-  requestField: string;
-  value: string;
-  searchQuery?: string;
-  expected: ExpectedSearchResult16;
-  responseFields?: string[];
-  responseValue?: string;
-}
+
+
+
+
+
+
+
+
+
 
 const API_BASE_16 = '**/api/search';
 const SEARCH_INPUT_16 = 'input[data-testid="dashboard-general-input"][name="q"]';
@@ -553,21 +515,21 @@ function resetSearchStorage16(win: Window) {
 }
 
 function waitForSearchReady16() {
-  cy.get('app-loading-form').should('not.exist');
-  cy.get('.ui-shimmer', { timeout: 60000 }).should('not.exist');
-  cy.get(SEARCH_INPUT_16).first().should('be.visible').and('be.enabled');
+  void cy.get('app-loading-form').should('not.exist');
+  void cy.get('.ui-shimmer', { timeout: 60000 }).should('not.exist');
+  void cy.get(SEARCH_INPUT_16).first().should('be.visible').and('be.enabled');
 }
 
 function visitSearchSection16(route: string) {
-  cy.visit(`${route}?page=1`, {
+  void cy.visit(`${route}?page=1`, {
     onBeforeLoad: resetSearchStorage16,
   });
-  cy.location('pathname').should('eq', route);
+  void cy.location('pathname').should('eq', route);
   waitForSearchReady16();
 }
 
 function searchAlias16(endpoint: SearchEndpoint16, alias: string) {
-  cy.intercept('POST', `${API_BASE_16}/${endpoint}`).as(alias);
+  void cy.intercept('POST', `${API_BASE_16}/${endpoint}`).as(alias);
 }
 
 function aliasKey16(value: string): string {
@@ -575,22 +537,22 @@ function aliasKey16(value: string): string {
 }
 
 function typeDashboardSearch16(value: string) {
-  cy.scrollDashboardToTop();
+  void cy.scrollDashboardToTop();
   waitForSearchReady16();
-  cy.get(SEARCH_INPUT_16).first()
+  void cy.get(SEARCH_INPUT_16).first()
     .type(`{selectall}{backspace}${value}`, { force: true });
   submitDashboardSearch16();
 }
 
 function submitDashboardSearch16() {
-  cy.scrollDashboardToTop();
+  void cy.scrollDashboardToTop();
   cy.get('body').then(($body) => {
     const submitButton = $body.find('[data-testid="dashboard-search-submit"]:visible').first();
     if (submitButton.length > 0) {
-      cy.wrap(submitButton).scrollIntoView().should('be.visible').click({ force: true });
+      void cy.wrap(submitButton).scrollIntoView().should('be.visible').click({ force: true });
       return;
     }
-    cy.get(SEARCH_INPUT_16).first().type('{enter}', { force: true });
+    void cy.get(SEARCH_INPUT_16).first().type('{enter}', { force: true });
   });
 }
 
@@ -621,24 +583,32 @@ function values16(value: unknown): string[] {
   return [String(value ?? '').trim()].filter(Boolean);
 }
 
-function fieldValues16(item: any, fields: string[]): string[] {
+function record16(value: unknown): SearchRecord16 {
+  return value as SearchRecord16;
+}
+
+function fieldValues16(item: unknown, fields: string[]): string[] {
+  const itemRecord = record16(item);
   return fields
-    .flatMap(field => values16(item?.[field]))
+    .flatMap(field => values16(itemRecord[field]))
     .filter(Boolean);
 }
 
-function resultItems16(body: any): any[] {
-  if (Array.isArray(body?.Result)) {
-    return body.Result;
+function resultItems16(body: unknown): unknown[] {
+  const bodyRecord = record16(body);
+  const dataRecord = record16(bodyRecord['data']);
+  const hitsRecord = record16(bodyRecord['hits']);
+  if (Array.isArray(bodyRecord['Result'])) {
+    return bodyRecord['Result'];
   }
-  if (Array.isArray(body?.result)) {
-    return body.result;
+  if (Array.isArray(bodyRecord['result'])) {
+    return bodyRecord['result'];
   }
-  if (Array.isArray(body?.data?.Result)) {
-    return body.data.Result;
+  if (Array.isArray(dataRecord['Result'])) {
+    return dataRecord['Result'];
   }
-  if (Array.isArray(body?.hits?.hits)) {
-    return body.hits.hits.map((hit: any) => hit?._source || hit);
+  if (Array.isArray(hitsRecord['hits'])) {
+    return hitsRecord['hits'].map((hit: unknown) => record16(hit)['_source'] || hit);
   }
   return [];
 }
@@ -650,17 +620,17 @@ function expectedList16(value: string | string[] | undefined): string[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function hasExpectedText16(item: any, fields: string[], expected: string): boolean {
+function hasExpectedText16(item: unknown, fields: string[], expected: string): boolean {
   const normalizedExpected = normalize16(expected);
   return fieldValues16(item, fields).some(value => normalize16(value) === normalizedExpected);
 }
 
-function hasExpectedUrl16(item: any, fields: string[], expected: string): boolean {
+function hasExpectedUrl16(item: unknown, fields: string[], expected: string): boolean {
   const normalizedExpected = normalizeUrl16(expected);
   return fieldValues16(item, fields).some(value => normalizeUrl16(value) === normalizedExpected);
 }
 
-function resultMatchesExpected16(item: any, expected: ExpectedSearchResult16): boolean {
+function resultMatchesExpected16(item: unknown, expected: ExpectedSearchResult16): boolean {
   const titleMatches = expected.title
     ? hasExpectedText16(item, ['title', 'm_title', 'm_name', 'name'], expected.title)
     : true;
@@ -683,7 +653,7 @@ function resultMatchesExpected16(item: any, expected: ExpectedSearchResult16): b
   return titleMatches && linkMatches && baseUrlMatches && webUrlMatches && teamMatches && dateMatches;
 }
 
-function findExpectedResult16(body: any, expected: ExpectedSearchResult16): any {
+function findExpectedResult16(body: unknown, expected: ExpectedSearchResult16): unknown {
   const items = resultItems16(body);
   expect(items.length, 'Search API returned result count').to.be.greaterThan(0);
 
@@ -692,20 +662,20 @@ function findExpectedResult16(body: any, expected: ExpectedSearchResult16): any 
   return match;
 }
 
-function assertQueryEvidence16(item: any, expected: ExpectedSearchResult16) {
+function assertQueryEvidence16(item: unknown, expected: ExpectedSearchResult16) {
   const haystack = normalize16(JSON.stringify(item));
   expected.queryMatches.forEach(queryMatch => {
     expect(haystack, `query evidence "${queryMatch}"`).to.include(normalize16(queryMatch));
   });
 }
 
-function assertResponseResult16(interception: any, expected: ExpectedSearchResult16): any {
+function assertResponseResult16(interception: SearchInterception16, expected: ExpectedSearchResult16): unknown {
   const result = findExpectedResult16(interception.response?.body, expected);
   assertQueryEvidence16(result, expected);
   return result;
 }
 
-function assertFilterFields16(result: any, fields?: string[], value?: string) {
+function assertFilterFields16(result: unknown, fields?: string[], value?: string) {
   if (!fields || !value) {
     return;
   }
@@ -715,30 +685,31 @@ function assertFilterFields16(result: any, fields?: string[], value?: string) {
   expect(values.some(fieldValue => fieldValue === expectedValue || fieldValue.includes(expectedValue)), fields.join(',')).to.eq(true);
 }
 
-function assertFilteredResponse16(interception: any, filterCase: SidebarFilterCase16) {
+function assertFilteredResponse16(interception: SearchInterception16, filterCase: SidebarFilterCase16) {
   const result = assertResponseResult16(interception, filterCase.expected);
   assertFilterFields16(result, filterCase.responseFields, filterCase.responseValue);
 }
 
-function requestValue16(body: any, field: string): string {
-  const value = body?.[field];
+function requestValue16(body: unknown, field: string): string {
+  const value = record16(body)[field];
   if (Array.isArray(value)) {
     return normalize16(value[0]);
   }
   return normalize16(value);
 }
 
-function assertSearchRequest16(interception: any, searchCase: DirectSearchCase16) {
-  expect(normalize16(interception.request.body?.q), `${searchCase.section} request q`).to.eq(normalize16(searchCase.searchQuery));
+function assertSearchRequest16(interception: SearchInterception16, searchCase: DirectSearchCase16) {
+  expect(normalize16(interception.request.body['q']), `${searchCase.section} request q`).to.eq(normalize16(searchCase.searchQuery));
 }
 
-function assertSidebarRequest16(interception: any, filterCase: SidebarFilterCase16) {
-  expect(normalize16(interception.request.body?.q), `${filterCase.section} filter request q`).to.eq(normalize16(filterCase.searchQuery));
+function assertSidebarRequest16(interception: SearchInterception16, filterCase: SidebarFilterCase16) {
+  expect(normalize16(interception.request.body['q']), `${filterCase.section} filter request q`).to.eq(normalize16(filterCase.searchQuery));
   expect(requestValue16(interception.request.body, filterCase.requestField), `${filterCase.section} request ${filterCase.requestField}`).to.eq(filterCase.requestValue);
 }
 
-function waitForMatchingSearch16(alias: string, matches: (interception: any) => boolean, label: string, attempts = 5): Cypress.Chainable<any> {
-  return cy.wait(`@${alias}`).then((interception) => {
+function waitForMatchingSearch16(alias: string, matches: (interception: SearchInterception16) => boolean, label: string, attempts = 5): Cypress.Chainable<SearchInterception16> {
+  return cy.wait(`@${alias}`).then((captured) => {
+    const interception = captured as unknown as SearchInterception16;
     if (matches(interception)) {
       return interception;
     }
@@ -746,26 +717,26 @@ function waitForMatchingSearch16(alias: string, matches: (interception: any) => 
       throw new Error(`Expected matching ${label} request was not captured.`);
     }
     return waitForMatchingSearch16(alias, matches, label, attempts - 1);
-  });
+  }) as unknown as Cypress.Chainable<SearchInterception16>;
 }
 
 function matchesQueryRequest16(searchCase: DirectSearchCase16) {
-  return (interception: any) => normalize16(interception.request.body?.q) === normalize16(searchCase.searchQuery);
+  return (interception: SearchInterception16) => normalize16(interception.request.body['q']) === normalize16(searchCase.searchQuery);
 }
 
 function matchesSidebarRequest16(filterCase: SidebarFilterCase16) {
-  return (interception: any) => normalize16(interception.request.body?.q) === normalize16(filterCase.searchQuery)
+  return (interception: SearchInterception16) => normalize16(interception.request.body['q']) === normalize16(filterCase.searchQuery)
     && requestValue16(interception.request.body, filterCase.requestField) === filterCase.requestValue;
 }
 
-function entityFilterValues16(interception: any, field: string): string[] {
-  return values16(interception.request.body?.entity_filter?.[field]);
+function entityFilterValues16(interception: SearchInterception16, field: string): string[] {
+  return values16(record16(interception.request.body['entity_filter'])[field]);
 }
 
 function matchesEntityFilterRequest16(filterCase: AdvancedEntityFilterCase16) {
-  return (interception: any) => {
+  return (interception: SearchInterception16) => {
     const queryMatches = filterCase.searchQuery
-      ? normalize16(interception.request.body?.q) === normalize16(filterCase.searchQuery)
+      ? normalize16(interception.request.body['q']) === normalize16(filterCase.searchQuery)
       : true;
     const entityMatches = entityFilterValues16(interception, filterCase.requestField)
       .map(value => normalize16(value))
@@ -777,32 +748,32 @@ function matchesEntityFilterRequest16(filterCase: AdvancedEntityFilterCase16) {
 function assertRenderedSearchResult16(expected: ExpectedSearchResult16) {
   if (expected.baseUrl || expected.team) {
     if (expected.team) {
-      cy.get('body').should('contain.text', expected.team);
+      void cy.get('body').should('contain.text', expected.team);
     }
     expected.queryMatches.forEach(queryMatch => {
-      cy.get('body').should('contain.text', queryMatch);
+      void cy.get('body').should('contain.text', queryMatch);
     });
     return;
   }
 
-  cy.get('[data-testid="result-card"]', { timeout: 20000 }).should('have.length.at.least', 1);
-  cy.contains('[data-testid="result-card"]', displayText16(expected.title), { matchCase: false })
+  void cy.get('[data-testid="result-card"]', { timeout: 20000 }).should('have.length.at.least', 1);
+  void cy.contains('[data-testid="result-card"]', displayText16(expected.title), { matchCase: false })
     .scrollIntoView()
     .should('be.visible')
     .within(() => {
       expectedList16(expected.linkAddress).forEach(link => {
-        cy.contains(link).should('exist');
+        void cy.contains(link).should('exist');
       });
       if (expected.date) {
-        cy.contains(expected.date).should('exist');
+        void cy.contains(expected.date).should('exist');
       }
     });
 }
 
 function openSidebar16() {
-  cy.scrollDashboardToTop();
-  cy.openSideFilter();
-  cy.get('[data-testid="side-filter-apply"]').filter(':visible')
+  void cy.scrollDashboardToTop();
+  void cy.openSideFilter();
+  void cy.get('[data-testid="side-filter-apply"]').filter(':visible')
     .first()
     .should('be.visible');
 }
@@ -816,25 +787,25 @@ function selectSidebarFilterOption16(selectTestId: string, option: string) {
 
       return cy.wrap($select).scrollIntoView().then(($select) => {
         if ($select.is('select')) {
-          cy.wrap($select).select(option, { force: true });
+          void cy.wrap($select).select(option, { force: true });
           return;
         }
 
         const menuId = $select.attr('aria-controls');
         expect(menuId, `${selectTestId} menu id`).to.exist;
-        cy.wrap($select).click({ force: true });
-        cy.wrap($select).should('have.attr', 'aria-expanded', 'true');
+        void cy.wrap($select).click({ force: true });
+        void cy.wrap($select).should('have.attr', 'aria-expanded', 'true');
         const typeOption = () => cy.get(`#${menuId}`).parent()
           .find('input')
           .then(($input) => {
             if ($input.length > 0) {
-              cy.wrap($input.first()).clear({ force: true }).type(option, { force: true });
+              void cy.wrap($input.first()).clear({ force: true }).type(option, { force: true });
             }
           });
 
-        typeOption();
+        void typeOption();
         if (selectTestId !== 'side-filter-select-m_cve') {
-          cy.contains(`#${menuId} [role="option"]`, option, { timeout: 15000, matchCase: false }).click({ force: true });
+          void cy.contains(`#${menuId} [role="option"]`, option, { timeout: 15000, matchCase: false }).click({ force: true });
           return;
         }
 
@@ -852,7 +823,7 @@ function selectSidebarFilterOption16(selectTestId: string, option: string) {
           }
           return typeOption().then(() => clickOption(attempt + 1));
         });
-        clickOption();
+        void clickOption();
       });
     });
 }
@@ -873,16 +844,16 @@ function moveDatePickerToMonth16(targetLabel: string, attempts = 0): void {
     const navSelector = currentDate.getTime() > targetDate.getTime()
       ? '[data-testid="side-filter-date-prev-month"]'
       : '[data-testid="side-filter-date-next-month"]';
-    cy.get(navSelector).filter(':visible').first().scrollIntoView().click({ force: true });
+    void cy.get(navSelector).filter(':visible').first().scrollIntoView().click({ force: true });
     moveDatePickerToMonth16(targetLabel, attempts + 1);
   });
 }
 
 function selectSidebarDateRange16(dateRange: DateRangeSelection16) {
-  cy.get('[data-testid="side-filter-date-toggle"]').filter(':visible').first().scrollIntoView().click({ force: true });
+  void cy.get('[data-testid="side-filter-date-toggle"]').filter(':visible').first().scrollIntoView().click({ force: true });
   moveDatePickerToMonth16(dateRange.monthLabel);
-  cy.get(`[data-testid="side-filter-date-day-${dateRange.startDay}"]`).filter(':visible').first().scrollIntoView().click({ force: true });
-  cy.get(`[data-testid="side-filter-date-day-${dateRange.endDay}"]`).filter(':visible').first().scrollIntoView().click({ force: true });
+  void cy.get(`[data-testid="side-filter-date-day-${dateRange.startDay}"]`).filter(':visible').first().scrollIntoView().click({ force: true });
+  void cy.get(`[data-testid="side-filter-date-day-${dateRange.endDay}"]`).filter(':visible').first().scrollIntoView().click({ force: true });
 }
 
 function selectSidebarFilter16(filterCase: SidebarFilterCase16) {
@@ -898,35 +869,35 @@ function selectSidebarFilter16(filterCase: SidebarFilterCase16) {
 }
 
 function ensureAdvancedFiltersOpen16() {
-  cy.get(SEARCH_INPUT_16).first().click({ force: true });
+  void cy.get(SEARCH_INPUT_16).first().click({ force: true });
   cy.get('[data-testid="dashboard-advance-toggle"]').should('exist')
     .then(($toggle) => {
       if (!($toggle[0] as HTMLInputElement).checked) {
-        cy.wrap($toggle).closest('label').click({ force: true });
+        void cy.wrap($toggle).closest('label').click({ force: true });
       }
     });
-  cy.get(SEARCH_INPUT_16).first().click({ force: true });
-  cy.get('app-search-filters').should('be.visible');
+  void cy.get(SEARCH_INPUT_16).first().click({ force: true });
+  void cy.get('app-search-filters').should('be.visible');
 }
 
 function applyEntityFilter16(category: string, value: string) {
   const categoryKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  cy.get('app-search-filters input').first().clear({ force: true }).type(category, { force: true });
-  cy.get(`[data-testid="entity-filter-category-${categoryKey}"]`).should('be.visible')
+  void cy.get('app-search-filters input').first().clear({ force: true }).type(category, { force: true });
+  void cy.get(`[data-testid="entity-filter-category-${categoryKey}"]`).should('be.visible')
     .scrollIntoView()
     .click({ force: true });
-  cy.get('[data-testid="entity-filter-value-input"]').scrollIntoView()
+  void cy.get('[data-testid="entity-filter-value-input"]').scrollIntoView()
     .clear({ force: true })
     .type(value, { force: true });
-  cy.get('[data-testid="entity-filter-add-value"]').should('be.visible')
+  void cy.get('[data-testid="entity-filter-add-value"]').should('be.visible')
     .scrollIntoView()
     .click({ force: true });
-  cy.contains('app-search-filters', value).should('be.visible');
+  void cy.contains('app-search-filters', value).should('be.visible');
 }
 
 function clearEntityFilters16() {
   ensureAdvancedFiltersOpen16();
-  cy.get('[data-testid="entity-filter-clear-selection"]').scrollIntoView()
+  void cy.get('[data-testid="entity-filter-clear-selection"]').scrollIntoView()
     .click({ force: true });
 }
 
@@ -961,7 +932,7 @@ export function assertSidebarFilterResult16(filterCase: SidebarFilterCase16) {
   openSidebar16();
   selectSidebarFilter16(filterCase);
   searchAlias16(filterCase.endpoint, filterAlias);
-  cy.get('[data-testid="side-filter-apply"]').filter(':visible')
+  void cy.get('[data-testid="side-filter-apply"]').filter(':visible')
     .first()
     .click({ force: true });
 

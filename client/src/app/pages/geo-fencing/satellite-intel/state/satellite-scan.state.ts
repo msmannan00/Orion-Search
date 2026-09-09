@@ -49,13 +49,13 @@ export class SatelliteScanState {
     const request$ = this.monthCompareService.runCompare(viewport.lat, viewport.lon, viewport.delta, imageType, month)
       .pipe(filter((response) => !this.satelliteService.isPendingResponse(response)),
         take(1),
-        map((response) => this.satelliteService.getResponseResult(response)),
+        map((response) => response.result ?? null),
         switchMap((compareResult) => this.monthCompareService.runAnomalyScan(viewport.lat, viewport.lon, viewport.delta)
           .pipe(filter((response) => !this.satelliteService.isPendingResponse(response)),
             take(1),
             map((response) => ({
               compareResult,
-              anomalyResult: this.satelliteService.getResponseResult(response),
+              anomalyResult: response.result ?? null,
             })),),),);
 
     this.sub = request$.subscribe({

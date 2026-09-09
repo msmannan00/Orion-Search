@@ -96,7 +96,7 @@ fi
         [ -e "$f" ] || continue
         cp "$f" "${f%.png}-20260326.png"
     done
-    "$postprocess_python" "$SCRIPT_DIR/postprocess_screenshots.py" *-20260326.png
+    "$postprocess_python" "$SCRIPT_DIR/postprocess_screenshots.py" ./*-20260326.png
     find . -maxdepth 1 -type f -name '*.png' ! -name '*-20260326.png' -delete
 )
 

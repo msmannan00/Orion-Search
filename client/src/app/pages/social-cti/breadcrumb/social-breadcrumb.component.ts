@@ -11,5 +11,5 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 })
 export class SocialBreadcrumbComponent {
   profileLabel = input<string | null>(null);
-  backClicked = output<void>();
+  backClicked = output();
 }

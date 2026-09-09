@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from 
 import { FormsModule } from '@angular/forms';
 import { OrionSatelliteDashboardFilter, OrionSatelliteFeature, OrionSatelliteFeatureType } from '../../../models/geo-fencing.models';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
+import { SatelliteFacilitiesResponse } from '../../model/satellite-intel-api.models';
 
 @Component({
   selector: 'app-satellite-dashboard-section',
@@ -18,7 +19,7 @@ export class DashboardSectionComponent {
   @Input() selectedFilters: OrionSatelliteFeatureType[] = [];
   @Input() visiblePowerCount = 0;
   @Input() wriDataCount = 0;
-  @Input() facilitiesData: any | null = null;
+  @Input() facilitiesData: SatelliteFacilitiesResponse['result'] | null = null;
   @Input() facilityEntries: [string, number][] = [];
   @Input() hasSearched = false;
   @Input() isScanning = false;
@@ -50,6 +51,6 @@ export class DashboardSectionComponent {
   }
 
   dotColor(feature: OrionSatelliteFeature | null): string {
-    return feature?.color || '#6b7280';
+    return feature?.color ?? '#6b7280';
   }
 }

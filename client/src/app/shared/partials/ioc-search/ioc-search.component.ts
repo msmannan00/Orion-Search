@@ -2,20 +2,25 @@ import { Component, OnInit, input, output, ChangeDetectionStrategy } from '@angu
 import { KeyValuePipe, NgClass, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
-import { advancedRowMotionAnimation } from '../../../shared/animations/advanced.row.motion.animation';
+import { fadeInDashboardItem } from '../../animations/dashboard.item.animation';
+import { advancedRowMotionAnimation } from '../../animations/advanced.row.motion.animation';
 import { popupAnimation } from '../../animations/popup.animations';
-import { StealerlogsSearchFilters, StealerlogsSearchFilterLabels } from '../../../shared/model/stealerlogs-filter/stealerlogs-filters';
-import { SidebarService } from '../../../shared/services/sidebar.service';
-import { TooltipDirective } from '../../../shared/directive/tooltip-directive.directive';
+import { StealerlogsSearchFilters, StealerlogsSearchFilterLabels } from '../../model/stealerlogs-filter/stealerlogs-filters';
+import { SidebarService } from '../../services/sidebar.service';
+import { TooltipDirective } from '../../directive/tooltip-directive.directive';
 import { ChatWidgetComponent } from '../../../pages/root-searches/ai-workspace/chat-widget/chat-widget.component';
-import { LicenseService } from '../../../services/licenses/licenses.service';
 import { AppService } from '../../../services/core/app/app.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AiToolRoutingService } from '../../services/ai-tool-routing.service';
+import { DOMAIN_NAME_PATTERN, EMAIL_ADDRESS_PATTERN, IPV4_ADDRESS_PATTERN } from '../../utils/network-validation.util';
+import type { SharedSearchAdvancedChip, SharedSearchAdvancedFilter } from './model/ioc-search.model';
+import { getOwnProperty } from '../../utils/type-guards.util';
 
-interface SharedSearchAdvancedFilter { id: string; tag: string; value: string; operator: '&&' | '||' }
-interface SharedSearchAdvancedChip { id: string; label: string }
+export type { SharedSearchAdvancedChip, SharedSearchAdvancedFilter } from './model/ioc-search.model';
+
+
+
+
 
 @Component({
   selector: 'app-ioc-search',
@@ -25,8 +30,8 @@ interface SharedSearchAdvancedChip { id: string; label: string }
   animations: [fadeInDashboardItem, advancedRowMotionAnimation, popupAnimation],
 })
 export class IocSearchComponent implements OnInit {
-  private readonly DEFAULT_VALUE_VALIDATORS: RegExp[] = [ /^[^\s@]+@[^\s@]+\.[^\s@]+$/, /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/, /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/, /^(?:\d{6}|\d{13,19})$/ ];
-  private readonly DEFAULT_TAG_VALIDATORS: Record<string, RegExp> = { [StealerlogsSearchFilters.EMAIL]: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, [StealerlogsSearchFilters.DOMAIN]: /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/, [StealerlogsSearchFilters.IP]: /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/, [StealerlogsSearchFilters.CREDITCARD]: /^(?:\d{6}|\d{13,19})$/, [StealerlogsSearchFilters.CHANNEL]: /^.*$/ };
+  private readonly DEFAULT_VALUE_VALIDATORS: RegExp[] = [EMAIL_ADDRESS_PATTERN, DOMAIN_NAME_PATTERN, IPV4_ADDRESS_PATTERN, /^(?:\d{6}|\d{13,19})$/];
+  private readonly DEFAULT_TAG_VALIDATORS: Record<string, RegExp> = { [StealerlogsSearchFilters.EMAIL]: EMAIL_ADDRESS_PATTERN, [StealerlogsSearchFilters.DOMAIN]: DOMAIN_NAME_PATTERN, [StealerlogsSearchFilters.IP]: IPV4_ADDRESS_PATTERN, [StealerlogsSearchFilters.CREDITCARD]: /^(?:\d{6}|\d{13,19})$/, [StealerlogsSearchFilters.CHANNEL]: /^.*$/ };
 
   readonly basicTags = input<string[]>([StealerlogsSearchFilters.ALL, StealerlogsSearchFilters.DOMAIN, StealerlogsSearchFilters.EMAIL, StealerlogsSearchFilters.CREDITCARD, StealerlogsSearchFilters.IP]);
   readonly filterLabels = input<Record<string, string>>(StealerlogsSearchFilterLabels);
@@ -51,7 +56,7 @@ export class IocSearchComponent implements OnInit {
   advancedFilters: SharedSearchAdvancedFilter[] = [{ id: this.generateId(), tag: this.defaultAdvancedTag(), value: '', operator: '&&' }];
   readonly searchTriggered = output<string>();
 
-  constructor(protected sidebarService: SidebarService, private route: ActivatedRoute, protected licenseService: LicenseService, protected appService: AppService, protected aiToolRoutingService: AiToolRoutingService) { }
+  constructor(protected sidebarService: SidebarService, private route: ActivatedRoute, protected appService: AppService, protected aiToolRoutingService: AiToolRoutingService) { }
 
   get resolvedAiType(): string {
     return this.aiType() || this.aiToolRoutingService.getTypeForApiType('stealer-ioc');
@@ -66,7 +71,7 @@ export class IocSearchComponent implements OnInit {
     this.advancedFilters = [{ id: this.generateId(), tag: this.defaultAdvancedTag(), value: '', operator: '&&' }];
     if (this.useRouteQuery()) {
       this.route.queryParams.subscribe(params => {
-        const q = params['q'];
+        const q = params.q;
         if (q) {
           this.basicQuery = this.stripUrlPrefixes(q);
         }
@@ -90,8 +95,8 @@ export class IocSearchComponent implements OnInit {
   }
 
   onAdvancedBuilderBackdrop(event: MouseEvent): void {
-    const eventTargetElement = event.target as HTMLElement | null;
-    if (eventTargetElement?.dataset?.['role'] === 'backdrop') {
+    const eventTargetElement = event.target;
+    if (eventTargetElement instanceof HTMLElement && eventTargetElement.dataset.role === 'backdrop') {
       this.closeAdvancedBuilder();
     }
   }
@@ -152,7 +157,7 @@ export class IocSearchComponent implements OnInit {
 
   triggerSearch(): boolean {
     this.basicSubmitted = true;
-    let finalQuery = '';
+    let finalQuery: string;
     if (this.isAdvanced) {
       this.advancedFilters = this.advancedFilters.map(f => ({ ...f, value: this.stripUrlPrefixes(f.value) }));
       const invalidFilter = this.advancedFilters.find(f => f.value && !this.validateValue(f.tag, f.value));
@@ -252,7 +257,7 @@ export class IocSearchComponent implements OnInit {
     if (/\s+/.test(value) && !/&&|\|\|/.test(value)) {
       return false;
     }
-    const validator = this.tagValidators()[tag];
+    const validator = getOwnProperty(this.tagValidators(), tag);
     if (!validator) {
       return true;
     }
@@ -275,16 +280,16 @@ export class IocSearchComponent implements OnInit {
       .replace(/\s*&&\s*/g, ' && ')
       .trim();
     const parts = normalized.split(/\s+(?:\|\||&&)\s+/g);
-    const operators = normalized.match(/(\|\||&&)/g) || [];
+    const operators = normalized.match(/(\|\||&&)/g) ?? [];
     const result: string[] = [];
     for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].trim();
+      const part = getOwnProperty(parts, i).trim();
       if (!part || part === '&&' || part === '||') {
         continue;
       }
       result.push(`${tag}:${part}`);
-      if (operators[i]) {
-        result.push(operators[i]);
+      if (getOwnProperty(operators, i)) {
+        result.push(getOwnProperty(operators, i));
       }
     }
     return result.join(' ');
@@ -336,7 +341,10 @@ export class IocSearchComponent implements OnInit {
   }
 
   filterBasicInput(event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
+    const inputElement = event.target;
+    if (!(inputElement instanceof HTMLInputElement)) {
+      return;
+    }
     const value = this.stripUrlPrefixes(inputElement.value);
     if (this.selectedTag === this.allTag()) {
       this.updateBasicInput(inputElement, value);

@@ -8,6 +8,8 @@ import { MessageNotificationService } from '../../../../services/message_notific
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../shared/services/translation.service';
 import { UserImagePickerComponent } from '../../sidebar-user-settings/user-image-picker/user-image-picker.component';
+import { getOwnProperty, setOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 const DEFAULT_APP_NAME = 'Orion Intelligence';
 type SystemResourceKey = 'auth_dashboard_icon' | 'logo_url' | 'logo_wide_light' | 'logo_wide_dark';
@@ -57,31 +59,32 @@ export class TenantBrandingSettingsComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
     this.apiService
-      .put<any>(`system/image?key=${key}`, formData)
+      .put<Record<string, unknown>>(`system/image?key=${key}`, formData)
       .subscribe({
         next: (res) => {
           const updatedAssets: Partial<AppSettingsModel> = {};
           for (const assetKey of Object.keys(DEFAULT_SYSTEM_ASSETS) as SystemResourceKey[]) {
-            if (typeof res?.[assetKey] === 'string' && res[assetKey]) {
-              updatedAssets[assetKey] = res[assetKey];
+            const assetValue = getOwnProperty(res, assetKey);
+            if (typeof assetValue === 'string' && assetValue) {
+              setOwnProperty(updatedAssets, assetKey, assetValue);
             }
           }
           this.applySettings(updatedAssets);
         },
         error: (err) => {
-          const message = err?.error?.detail || this.translationService.translate('Failed to upload image');
+          const message = err?.error?.detail ?? this.translationService.translate('Failed to upload image');
           this.messageNotificationService.show(message);
         }
       });
   }
 
   deleteUserResource(key: SystemResourceKey = 'logo_url'): void {
-    this.apiService.delete<any>(`system/image?key=${key}`).subscribe({
+    this.apiService.delete<unknown>(`system/image?key=${key}`).subscribe({
       next: () => {
-        this.applySettings({ [key]: DEFAULT_SYSTEM_ASSETS[key] } as Partial<AppSettingsModel>);
+        this.applySettings({ [key]: getOwnProperty(DEFAULT_SYSTEM_ASSETS, key) });
       },
       error: (err) => {
-        const message = err?.error?.detail || this.translationService.translate('Failed to remove image');
+        const message = err?.error?.detail ?? this.translationService.translate('Failed to remove image');
         this.messageNotificationService.show(message);
       }
     });
@@ -94,7 +97,7 @@ export class TenantBrandingSettingsComponent implements OnInit {
       return false;
     }
     this.form.app_name = this.form.app_name.trim() || DEFAULT_APP_NAME;
-    this.apiService.post<any>('public/update', { settings: { app_name: this.form.app_name } }).subscribe({
+    this.apiService.post<{ settings?: Partial<AppSettingsModel> }>('public/update', { settings: { app_name: this.form.app_name } }).subscribe({
       next: (response) => {
         if (response?.settings) {
           this.applySettings(response.settings);

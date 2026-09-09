@@ -4,9 +4,11 @@ temo.env
 .DS_Store
 **/.DS_Store
 **/.ssl/
+backend/workspace/ssl/
 **/package-lock.json
 !client/package-lock.json
-backend/static/.well-known/parser_files/*
+backend/build/backups/*
+backend/workspace/parser/parser_files/*
 backend/static/.maintenance
 backend/backend_cov_app/*
 *.bak
@@ -16,7 +18,7 @@ backend/backend_cov_app/*
 *.tmp
 */.dll
 */.pyc
-backend/static/test/mocks/api/**/*.state
+backend/tests/mock/api/**/*.state
 __pycache__/
 **/_pycache_/
 
@@ -31,7 +33,8 @@ client/node_modules/
 client/.angular/cache/
 backend_cov_app/*
 backend/build/
-backend/build/*
+backend/workspace/build/
+backend/workspace/build/*
 client/build/
 
 logs/
@@ -57,7 +60,7 @@ backend/.coverage
 backend/.coverage.*
 
 static/trustly/.well-known/model/*
-backend/static/.well-known/parser_files.zip
+backend/workspace/parser/parser_files.zip
 
 swagconfig/index.css.gz
 swagconfig/index.html.gz
@@ -68,8 +71,9 @@ swagconfig/swagger-ui-standalone-preset.js.gz
 swagconfig/swagger-ui.css.gz
 swagconfig/swaggerconfigv1.js.gz
 
-backend/static/resource/**
-!backend/static/resource/**/
-!backend/static/resource/**/*default*
+backend/workspace/resource/**
+!backend/workspace/resource/**/
+!backend/workspace/resource/**/*default*
 
 nginx/nginx.conf
+.pytest_cache/

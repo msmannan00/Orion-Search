@@ -1,51 +1,45 @@
-import { Component, computed, effect, ElementRef, HostListener, OnChanges, OnInit, SimpleChanges, ViewChild, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, effect, ElementRef, HostListener, OnChanges, OnInit, ViewChild, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EmptyResultComponent } from '../empty-result/empty-result.component';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { LoadingFormComponent } from '../loading-form/loading-form.component';
-import { fadeInDashboardItem } from '../../animations/dashboard.item.animation';
 import { SidebarService } from '../../services/sidebar.service';
 import { FiltersComponent } from '../filters/filters.component';
-import { FilterCategory, FilterModel } from '../../model/filter/filter.model';
+import { FilterCategory, FilterModel, FilterOption } from '../../model/filter/filter.model';
 import { SortType } from '../../constants/shared-enums';
 import { EmptyQueryComponent } from '../empty-query/empty-query.component';
-import { query } from '@angular/animations';
 import { Category } from "../../constants/pages";
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ScrollTopComponent } from '../scroll-top/scroll-top.component';
 import { TooltipDirective } from '../../directive/tooltip-directive.directive';
 import { AppService } from '../../../services/core/app/app.service';
 import { SearchFiltersComponent } from "../../../pages/homepage/search-filters/search-filters.component";
-import { searchFilterAnimation } from '../../animations/search.filter.animation';
 import { SelectedFilterBarComponent } from '../../../pages/homepage/selected-filter-bar/selected-filter-bar.component';
 import { DashboardService } from '../../../services/dashboard/dashboard.service';
 import { HelperService } from '../../services/helper.service';
 import { ScrollService } from '../../services/scroll.service';
 import { AuthService } from '../../../services/authetication/auth.service';
-import { LicenseService } from '../../../services/licenses/licenses.service';
 import { HomeSearchService } from './services/home.search.service';
 import { normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../utils/intel-report.util';
-import { ProxyController } from '../../services/proxy-controller';
 import { CrossSearchCardComponent } from '../onion-search-engine/cross-search-card.component';
 import { ChatWidgetComponent } from '../../../pages/root-searches/ai-workspace/chat-widget/chat-widget.component';
 import { AiToolRoutingService } from '../../services/ai-tool-routing.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { getOwnProperty, setOwnProperty } from '../../utils/type-guards.util';
+
 
 @Component({
   selector: 'app-result',
   standalone: true,
   templateUrl: './result.component.html',
-  animations: [fadeInDashboardItem, searchFilterAnimation],
+  styleUrls: ['./result.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, EmptyResultComponent, FormsModule, NgOptimizedImage, LoadingFormComponent, FiltersComponent, EmptyQueryComponent, RouterLink, ScrollTopComponent, TooltipDirective, SearchFiltersComponent, SelectedFilterBarComponent, CrossSearchCardComponent, ChatWidgetComponent, TranslatePipe],
 })
 export class ResultComponent implements OnInit, OnChanges {
-  private readonly proxied_resource = inject(ProxyController);
-
   protected readonly SortType = SortType;
   protected readonly Category = Category;
-  protected readonly query = query;
 
   readonly resultCountInput = input<number | undefined>(undefined, { alias: 'result_count' });
   readonly searchQueryInput = input('', { alias: 'searchQuery' });
@@ -53,20 +47,19 @@ export class ResultComponent implements OnInit, OnChanges {
   readonly filterModelInput = input<FilterModel | undefined>(undefined, { alias: 'filterModel' });
   readonly activeTabInput = input('IOCs', { alias: 'activeTab' });
   @ViewChild('filtersWrapper', { static: false }) filtersWrapperRef!: ElementRef;
-  @ViewChild('searchInput', { static: false }) searchInputRef!: ElementRef;
+  @ViewChild('searchInput', { static: false }) searchInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('sortMenuRef', { static: false }) sortMenuRef?: ElementRef;
   @ViewChild('searchMenuRef', { static: false }) searchMenuRef?: ElementRef;
   isFilterOpen$: Observable<boolean>;
   result_triggered = true;
   selectedSortBy: SortType = SortType.DEFAULT;
-  selectedSearchBy = 'Match any term';
   local_query = '';
   showScans = false;
   sortMenuOpen = false;
   searchMenuOpen = false;
   scandomains: string[] = [];
   matchTypeLabel = computed(() => {
-    const matchtype = this.dashboardService.selectedFilters()["matchtype"];
+    const matchtype = this.dashboardService.selectedFilters().matchtype;
     if (matchtype === "full") {
       return "Match full query";
     }
@@ -99,7 +92,7 @@ export class ResultComponent implements OnInit, OnChanges {
   filterModel!: FilterModel;
   readonly showSorting = input<boolean>(true);
   readonly showSelectedFilters = input<boolean>(true);
-  activeTab: string = 'IOCs';
+  activeTab = 'IOCs';
   readonly reloadSearchFilters = output<FilterCategory[]>();
   readonly resetFilter = output<undefined>();
   readonly onToggleSwitch = output<string>();
@@ -124,7 +117,7 @@ export class ResultComponent implements OnInit, OnChanges {
   }
 
   showResultCardShimmer(): boolean {
-    const currentType = String(this.type() || '').toLowerCase();
+    const currentType = String(this.type() ?? '').toLowerCase();
     const currentEndpoint = String(this.apiEndpoint() || '').toLowerCase();
     return currentEndpoint === 'search/defacement'
       || currentEndpoint === 'search/apt-intel'
@@ -136,11 +129,11 @@ export class ResultComponent implements OnInit, OnChanges {
 
   showDefacementResultShimmer(): boolean {
     return String(this.apiEndpoint() || '').toLowerCase() === 'search/defacement'
-      || String(this.type() || '').toLowerCase() === Category.DEFACEMENT.toLowerCase();
+      || String(this.type() ?? '').toLowerCase() === Category.DEFACEMENT.toLowerCase();
   }
 
   private isCrossSearchExcludedRoute(): boolean {
-    const currentType = String(this.type() || '').toLowerCase();
+    const currentType = String(this.type() ?? '').toLowerCase();
     const currentEndpoint = String(this.apiEndpoint() || '').toLowerCase();
     const currentRoute = this.router.url.toLowerCase();
     return currentEndpoint === 'search/defacement'
@@ -152,7 +145,7 @@ export class ResultComponent implements OnInit, OnChanges {
       || currentRoute.includes('/defacement');
   }
 
-  constructor( protected scrollService: ScrollService, private router: Router, public helperService: HelperService, public app_service: AppService, protected dashboardService: DashboardService, public sidebarService: SidebarService, private route: ActivatedRoute, public authService: AuthService, protected licenseService: LicenseService, protected homeSearchService: HomeSearchService, protected aiToolRoutingService: AiToolRoutingService ) {
+  constructor( protected scrollService: ScrollService, private router: Router, public helperService: HelperService, public app_service: AppService, protected dashboardService: DashboardService, public sidebarService: SidebarService, private route: ActivatedRoute, public authService: AuthService, protected homeSearchService: HomeSearchService, protected aiToolRoutingService: AiToolRoutingService ) {
     this.isFilterOpen$ = this.sidebarService.sidebarState$;
     effect(() => {
       const resultCount = this.resultCountInput();
@@ -169,7 +162,7 @@ export class ResultComponent implements OnInit, OnChanges {
     });
   }
 
-  ngOnChanges(_: SimpleChanges): void {
+  ngOnChanges(): void {
     this.searchQuery = this.searchQuery
       ?.replace(/"/g, ' ')
       .replace(/\s+/g, ' ')
@@ -183,12 +176,15 @@ export class ResultComponent implements OnInit, OnChanges {
   }
 
   onTabClick(event: Event): void {
-    const eventTargetElement = event.target as HTMLElement | null;
-    const tabElement = eventTargetElement?.closest('[data-tab]') as HTMLElement | null;
+    const eventTargetElement = event.target;
+    if (!(eventTargetElement instanceof Element)) {
+      return;
+    }
+    const tabElement = eventTargetElement.closest('[data-tab]');
     if (!tabElement) {
       return;
     }
-    const tab = tabElement.getAttribute('data-tab') || '';
+    const tab = tabElement.getAttribute('data-tab') ?? '';
     if (!tab) {
       return;
     }
@@ -203,19 +199,19 @@ export class ResultComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      const newFilters: any = {};
+      const newFilters: Record<string, FilterOption> = {};
       if (this.filterModel) {
         Object.keys(this.filterModel.filters).forEach(key => {
-          const base = this.filterModel.filters[key];
-          let value = params[key];
+          const base = getOwnProperty(this.filterModel.filters, key);
+          let value = getOwnProperty(params, key);
           if (key === 'mSearchParamSafeSearch') {
             value = value === 'true' ? 'yes' : value === 'false' ? 'no' : value;
           }
           if (value && base.options.includes(value)) {
-            newFilters[key] = { ...base, selected: value };
+            setOwnProperty(newFilters, key, { ...base, selected: value });
           }
           else {
-            newFilters[key] = { ...base };
+            setOwnProperty(newFilters, key, { ...base });
           }
         });
         this.filterModel = { ...this.filterModel, filters: newFilters };
@@ -238,7 +234,7 @@ export class ResultComponent implements OnInit, OnChanges {
     this.result_triggered = true;
     this.showScans = false;
     this.updateQuery.emit(query);
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.reloadData.emit(undefined);
     this.init_domains();
   }
@@ -255,7 +251,7 @@ export class ResultComponent implements OnInit, OnChanges {
 
   entityFiltersCount(): number {
     const categories = this.app_service.configData().localSettings.entityfilterCategories;
-    return Object.values(categories).reduce((count, val) => {
+    return Object.values(categories).reduce<number>((count, val) => {
       if (Array.isArray(val)) {
         return count + val.length;
       }
@@ -308,21 +304,10 @@ export class ResultComponent implements OnInit, OnChanges {
   init_domains() {
     const filters = this.app_service.configData().localSettings.entityfilterCategories;
     const queryDomains = this.helperService.extractLinks(this.searchQuery) || [];
-    const filterDomains = Array.isArray(filters['m_domain'])
-      ? filters['m_domain'].map((domain: string) => `https://${domain}`)
+    const filterDomains = Array.isArray(filters.m_domain)
+      ? filters.m_domain.map((domain: string) => `https://${domain}`)
       : [];
     this.scandomains = Array.from(new Set([...queryDomains, ...filterDomains]));
-  }
-
-  toggleScan() {
-    this.showScans = !this.showScans;
-  }
-
-  onScanSelected(domain: string) {
-    const url = this.router.serializeUrl(this.router.createUrlTree(['/dashboard/scan'], {
-      queryParams: { domain }
-    }));
-    this.proxied_resource.open(url);
   }
 
   normalizeDisplayUrl(url?: string | null): string {
@@ -335,17 +320,18 @@ export class ResultComponent implements OnInit, OnChanges {
 
   hasIOCs(): boolean {
     const categories = this.app_service.configData().localSettings.entityfilterCategories;
-    return Object.values(categories).some((arr: any) => Array.isArray(arr) && arr.length > 0);
+    return Object.values(categories).some((arr) => Array.isArray(arr) && arr.length > 0);
   }
 
   onSearchInput(event: Event): void {
-    const inputElement = event.target as HTMLInputElement | null;
-    if (inputElement) {
-      this.local_query = inputElement.value;
-      if (!inputElement.value.trim()) {
-        this.updateQuery.emit('');
-        this.clearQueryParam();
-      }
+    const inputElement = event.target;
+    if (!(inputElement instanceof HTMLInputElement)) {
+      return;
+    }
+    this.local_query = inputElement.value;
+    if (!inputElement.value.trim()) {
+      this.updateQuery.emit('');
+      this.clearQueryParam();
     }
     this.homeSearchService.handleSearchInput(event);
   }
@@ -364,7 +350,7 @@ export class ResultComponent implements OnInit, OnChanges {
   clearSearchInput(focusInput = true): void {
     this.searchQuery = '';
     this.local_query = '';
-    const inputElement = this.searchInputRef?.nativeElement as HTMLInputElement | undefined;
+    const inputElement = this.searchInputRef?.nativeElement;
     if (inputElement) {
       inputElement.value = '';
       if (focusInput) {

@@ -13,7 +13,6 @@ import { take } from 'rxjs/operators';
 import { SidebarService } from '../../../shared/services/sidebar.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../shared/services/translation.service';
-import { ChatWidgetComponent } from '../../root-searches/ai-workspace/chat-widget/chat-widget.component';
 import { AiToolRoutingService } from '../../../shared/services/ai-tool-routing.service';
 import { ExportChoiceModalComponent } from "../../../shared/partials/export-choice-modal/export-choice-modal.component";
 import { AUDITLOG_REPORT_EXPORT_OPTIONS } from '../../../shared/model/report/export-choice.model';
@@ -22,7 +21,7 @@ import { GraphReportPayload } from '../../../shared/model/report/report-export.m
 
 @Component({
   selector: 'app-auditlog',
-  imports: [FormsModule, PaginationComponent, AsyncPipe, AuditlogListComponent, FiltersComponent, NgOptimizedImage, NgClass, TranslatePipe, ChatWidgetComponent, ExportChoiceModalComponent],
+  imports: [FormsModule, PaginationComponent, AsyncPipe, AuditlogListComponent, FiltersComponent, NgOptimizedImage, NgClass, TranslatePipe, ExportChoiceModalComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './auditlog.component.html'
 })
@@ -76,13 +75,13 @@ export class AuditlogComponent extends BaseListingComponent<AuditLogCallbackMode
     this.reload();
   }
 
-  exportAuditLogs(type: string = 'csv') {
+  exportAuditLogs(type = 'csv') {
     this.auditService.auditData$.pipe(take(1)).subscribe(data => {
-      const items = data?.items || [];
+      const items = data?.items ?? [];
       if (!items.length) {
         return;
       }
-      const page = data?.page || 1;
+      const page = data?.page ?? 1;
       const rows = items.map((item, index) => ({
         id: index + 1 + (page - 1) * 100,
         timestamp: item.ts,

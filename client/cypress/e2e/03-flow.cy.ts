@@ -1,5 +1,6 @@
 import {FLOW_ADMIN_SECTIONS, FLOW_ENTITY_API_SECTIONS} from '../support/constants';
 import {applyDateRange, applyDirectoryDropdown, assertDirectoryContentVisible, assertFreeModeDashboardChrome, clickSidebarSubItem, DIRECTORY_CONTENT_OPTION, DIRECTORY_INDEX_OPTION, DIRECTORY_NETWORK_OPTION, getHeatmapComponent, openCountryReportFromMap, openSidebarGroup, resetDirectoryFilters, typeVisibleInputSlow, waitForDirectoryRequest} from './controllers/03-flow.controller';
+import type { FlowTestData, HeatmapCountryPathElement } from './model/03-flow.model';
 
 describe('Orion Intelligence - Free Mode Flow', () => {
   after(() => {
@@ -28,11 +29,11 @@ describe('Orion Intelligence - Free Mode Flow', () => {
 });
 
 describe('Orion Intelligence - Full Navigation and Heatmap Flow', () => {
-  let testData: any = {};
+  let testData = {} as FlowTestData;
 
   before(() => {
     cy.env(['TEST_DATA']).then(({TEST_DATA}) => {
-      testData = TEST_DATA || {};
+      testData = (TEST_DATA || {}) as FlowTestData;
     });
     cy.loginAsAdmin();
   });
@@ -105,10 +106,10 @@ describe('Orion Intelligence - Full Navigation and Heatmap Flow', () => {
       .then(($paths) => {
         const aliases = ['united states', 'united states of america', 'usa', 'us'];
         const target = Array.from($paths).find((el) => {
-          const name = (((el as any).__data__?.properties?.name) || '').toString().trim().toLowerCase();
+          const name = (((el as HeatmapCountryPathElement).__data__?.properties?.name) || '').toString().trim().toLowerCase();
           return aliases.includes(name);
         }) || $paths[0];
-        expect(target, 'USA country path').to.exist;
+        assert.exists(target, 'USA country path');
         cy.wrap((target as unknown as SVGPathElement)).as('usaCountryPath');
       });
 
@@ -149,7 +150,7 @@ describe('Orion Intelligence - Full Navigation and Heatmap Flow', () => {
   it('covers branch paths by invoking heatmap component API', () => {
     cy.loginAsAdmin();
 
-    getHeatmapComponent().then((comp: any) => {
+    getHeatmapComponent().then((comp) => {
       let appService = comp['appService'];
       let originalWorld = appService.worldJson();
       appService.worldJson.set(null);

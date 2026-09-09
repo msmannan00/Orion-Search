@@ -7,6 +7,10 @@ import { sidebarItemTooltips } from '../../../../shared/constants/shared-enums';
 import { LicenseService } from '../../../../services/licenses/licenses.service';
 import { SidebarHomepageService } from '../../../../services/dashboard/sidebar.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { Category } from '../../../../shared/constants/pages';
+import { SelectionStoreService } from '../../../../services/dashboard/selection.service';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-dashboard-sidebar-collapsed',
@@ -21,11 +25,11 @@ export class SidebarSectionComponent {
   readonly title = input('');
   readonly icon = input('');
   readonly items = input<string[]>([]);
-  readonly category = input<any>();
+  readonly category = input.required<Category>();
   readonly routePrefix = input('');
-  readonly selectionStore = input<any>();
+  readonly selectionStore = input.required<SelectionStoreService>();
   readonly tooltip = input('');
-  readonly sectionSelected = output<any>();
+  readonly sectionSelected = output<Category>();
   readonly optionSelected = output<string>();
 
   constructor(protected licenseService: LicenseService, private sidebarHomepageService: SidebarHomepageService) {}
@@ -47,7 +51,7 @@ export class SidebarSectionComponent {
   }
 
   getItemTooltip(item: string): string {
-    const mapped = this.itemTooltips[item];
+    const mapped = getOwnProperty(this.itemTooltips, item);
     if (mapped) {
       return mapped;
     }
@@ -56,7 +60,7 @@ export class SidebarSectionComponent {
 
   getItemIcon(item: string): string {
     const normalized = item.toLowerCase().replace(/\s+/g, '-');
-    const mapped = {
+    const iconAliases: Record<string, string> = {
       apt: 'mitre',
       malware: 'phishing',
       iocs: 'ioc',
@@ -64,7 +68,8 @@ export class SidebarSectionComponent {
       'text-analysis': 'phishing',
       'crypto-scanner': 'cryptocurrency',
       feeder: 'account',
-    }[normalized] || normalized;
+    };
+    const mapped = getOwnProperty(iconAliases, normalized) ?? normalized;
     return `/assets/images/sidebar/sub_${mapped}.svg`;
   }
 }

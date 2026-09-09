@@ -42,12 +42,12 @@ export class MonthCompareService {
   }
 
   runAnomalyScan(lat: number, lon: number, delta = 0.05, shClientId?: string, shClientSecret?: string): Observable<SatelliteAnomalyResponse> {
-    const payload: Record<string, any> = { lat, lon, delta };
+    const payload: Record<string, unknown> = { lat, lon, delta };
     if (shClientId) {
-      payload['sh_client_id'] = shClientId;
+      payload.sh_client_id = shClientId;
     }
     if (shClientSecret) {
-      payload['sh_client_secret'] = shClientSecret;
+      payload.sh_client_secret = shClientSecret;
     }
     return this.satelliteIntelService.createPolledRequest(() => this.api.post<SatelliteAnomalyResponse>('satellite/anomaly', payload),
       (res) => this.getPollStatus(res),
@@ -56,7 +56,7 @@ export class MonthCompareService {
   }
 
   private getPollStatus(res: SatelliteAnomalyResponse | SatelliteCompareResponse | SatelliteImageResponse): string | undefined {
-    return res?.result?.status || res?.status;
+    return res?.result?.status ?? res?.status;
   }
 
   private runTimedCompare(lat: number, lon: number, delta: number, imageType: string, monthKey: string): Observable<SatelliteCompareResponse> {
@@ -96,7 +96,7 @@ export class MonthCompareService {
 
   private toCompareMonth(response: SatelliteImageResponse, monthKey: string, isYearAgo: boolean): SatelliteCompareMonth | null {
     const imageResult = response?.result;
-    const imageUrl = imageResult?.image_url || imageResult?.data_url || this.toDataUrl(imageResult);
+    const imageUrl = imageResult?.image_url ?? imageResult?.data_url ?? this.toDataUrl(imageResult);
     if (!imageUrl) {
       return null;
     }
@@ -111,7 +111,7 @@ export class MonthCompareService {
   private withYearAgoImage(response: SatelliteCompareResponse, imageResponse: SatelliteImageResponse, monthKey: string): SatelliteCompareResponse {
     const result = response?.result;
     const imageResult = imageResponse?.result;
-    const imageUrl = imageResult?.image_url || imageResult?.data_url || this.toDataUrl(imageResult);
+    const imageUrl = imageResult?.image_url ?? imageResult?.data_url ?? this.toDataUrl(imageResult);
     if (!result || !imageUrl) {
       return response;
     }
@@ -132,11 +132,11 @@ export class MonthCompareService {
   }
 
   private toDataUrl(imageResult: SatelliteImageResponse['result']): string {
-    const imageBase64 = imageResult?.image_base64 || imageResult?.['image_b64'];
+    const imageBase64 = imageResult?.image_base64 ?? imageResult?.image_b64;
     if (typeof imageBase64 !== 'string' || !imageBase64.trim()) {
       return '';
     }
-    return `data:${imageResult?.mime_type || imageResult?.content_type || 'image/png'};base64,${imageBase64}`;
+    return `data:${imageResult?.mime_type ?? imageResult?.content_type ?? 'image/png'};base64,${imageBase64}`;
   }
 
   private getYearAgoMonthKey(monthKey?: string): string {

@@ -10,14 +10,15 @@ import {
   transferFirstVisibleScriptOwner,
   validateFixtureOperationsForAllFeederRules,
 } from './controllers/16-feeder-management.controller';
+import type { ManagedUsers } from './model/05-user-management.model';
 
-let testUsers: any = {};
+let testUsers = {} as ManagedUsers;
 let adminUsername = '';
 
 describe('Orion Intelligence - Feeder Management', () => {
   before(() => {
     cy.env(['TEST_USERS', 'ADMIN_USERNAME']).then(({ TEST_USERS, ADMIN_USERNAME }) => {
-      testUsers = TEST_USERS || {};
+      testUsers = (TEST_USERS || {}) as ManagedUsers;
       adminUsername = ADMIN_USERNAME || '';
     });
     loadFeederValidationData();

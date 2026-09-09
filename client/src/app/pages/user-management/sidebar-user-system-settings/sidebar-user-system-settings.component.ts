@@ -4,26 +4,35 @@ import { ApiService } from '../../../shared/services/api.service';
 import { FormsModule } from '@angular/forms';
 import { AppService } from '../../../services/core/app/app.service';
 import { AppSettingsModel, ConfigSettings } from '../../../shared/model/app/config';
-import { fadeInDashboardItem } from '../../../shared/animations/dashboard.item.animation';
 import { MessageNotificationService } from '../../../services/message_notification/message-notification.service';
 import { SmtpSettingsBlockComponent } from '../../../shared/partials/smtp-settings-block/smtp-settings-block.component';
 import { AlertWebhookSettingsBlockComponent } from '../../../shared/partials/alert-webhook-settings-block/alert-webhook-settings-block.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../shared/services/translation.service';
-import { LANGUAGE_OPTIONS, LanguageOption } from '../../../shared/constants/shared-enums';
+import { LANGUAGE_OPTIONS } from '../../../shared/constants/shared-enums';
+import { LanguageOption } from '../../../shared/constants/model/shared-enums.model';
 import { ActivatedRoute } from '@angular/router';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { TenantBrandingSettingsComponent } from './tenant-branding-settings/tenant-branding-settings.component';
 import { AlertConnectorSettingsResponse, AlertWebhookSettingsForm } from '../../../shared/partials/alert-webhook-settings-block/model/alert-webhook-settings.model';
-import { UserImagePickerComponent } from '../sidebar-user-settings/user-image-picker/user-image-picker.component';
+import type { SystemSettingsResponse } from './model/sidebar-user-system-settings.model';
+import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
+
+export type { SystemSettingsResponse } from './model/sidebar-user-system-settings.model';
+
 
 const DEFAULT_APP_NAME = 'Orion Intelligence';
 type SystemSettingsTab = 'branding' | 'platform';
+type SystemImageKey = 'auth_dashboard_icon' | 'logo_url' | 'logo_wide_light' | 'logo_wide_dark';
+type SystemImageResponse = Partial<Pick<AppSettingsModel, SystemImageKey>>;
+type AppSettingsWire = Partial<Record<keyof AppSettingsModel, string | boolean>>;
+interface UpdateSettingsResponse { settings?: AppSettingsWire; appSettings?: AppSettingsWire }
+
 
 @Component({
   selector: 'app-sidebar-user-system-settings',
-  imports: [FormsModule, CommonModule, UserImagePickerComponent, SmtpSettingsBlockComponent, TenantBrandingSettingsComponent, AlertWebhookSettingsBlockComponent, TranslatePipe],
-  animations: [fadeInDashboardItem],
+  imports: [FormsModule, CommonModule, SmtpSettingsBlockComponent, TenantBrandingSettingsComponent, AlertWebhookSettingsBlockComponent, TranslatePipe],
+  styleUrls: ['./sidebar-user-system-settings.component.scss'],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './sidebar-user-system-settings.component.html'
 })
@@ -36,19 +45,21 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
   configurationError = '';
   mailErrorState = false;
   webhookErrorState = false;
+  scheduledBackup = false;
   form = { language: '', version: '', app_name: '0', ai_endpoint_enabled: true, admin_root_allowed: false, s_onion: '', data_sources_url: '', adversaries_url: '', pricing_url: '', documentation_allowed: false, whistle_blowing_allowed: false, accounts_mail_password: '', accounts_mail: '', accounts_smtp_server: '', accounts_smtp_port: '' };
   webhookForm: AlertWebhookSettingsForm = this.createWebhookForm();
   languageOptions: LanguageOption[] = LANGUAGE_OPTIONS;
-  onionPattern = /^(https?:\/\/)?[a-z2-7]{56}\.onion\/?$/i;
+  onionPattern = /^(?:https:\/\/|http:\/\/)?[a-z2-7]{56}\.onion\/?$/i;
   urlPattern = /^https?:\/\/.+/i;
   emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  smtpServerPattern = /^(?=.{1,253}$)(localhost|[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}|(\d{1,3}\.){3}\d{1,3})$/;
+  smtpServerPattern = /^(?:localhost|[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]|(?=.{1,253}$)(?!.*\.\.)(?!.*(?:^|\.)-)(?!.*-(?:\.|$))[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/;
 
   constructor(private apiService: ApiService, private route: ActivatedRoute, protected appService: AppService, private licenseService: LicenseService, private messageNotificationService: MessageNotificationService, private translationService: TranslationService) {
   }
 
   ngOnInit(): void {
     this.activeTab = this.getInitialTab();
+    this.scheduledBackup = this.appService.getConfig().appSettings.backup_schedule;
     this.loadSettings();
     this.webhookSnapshot = this.webhookState();
     this.loadAlertConnectorSettings();
@@ -78,7 +89,7 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
     if (!settings) {
       return;
     }
-    let metaInfo: Record<string, string | boolean> = {};
+    let metaInfo: Record<string, string | boolean>;
     try {
       metaInfo = settings.meta_info ? JSON.parse(settings.meta_info) : {};
     }
@@ -91,15 +102,15 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
     this.form.ai_endpoint_enabled = settings.ai_endpoint_enabled;
     this.form.admin_root_allowed = settings.admin_root_allowed;
     this.form.s_onion = settings.s_onion;
-    this.form.data_sources_url = typeof metaInfo['S_HOME_HEADER_DATA_SOURCES'] === 'string' ? metaInfo['S_HOME_HEADER_DATA_SOURCES'] : '';
-    this.form.adversaries_url = typeof metaInfo['S_HOME_HEADER_ADVERSARIES'] === 'string' ? metaInfo['S_HOME_HEADER_ADVERSARIES'] : '';
-    this.form.pricing_url = typeof metaInfo['S_HOME_HEADER_PRICING'] === 'string' ? metaInfo['S_HOME_HEADER_PRICING'] : '';
-    this.form.documentation_allowed = metaInfo['S_HOME_HEADER_PRICING_ALLOWED'] === true;
-    this.form.whistle_blowing_allowed = metaInfo['S_HOME_HEADER_WHISTLE_BLOWING_ALLOWED'] === true;
-    this.form.accounts_mail_password = typeof metaInfo['ACCOUNTS_MAIL_PASSWORD'] === 'string' ? metaInfo['ACCOUNTS_MAIL_PASSWORD'] : '';
-    this.form.accounts_mail = typeof metaInfo['ACCOUNTS_MAIL'] === 'string' ? metaInfo['ACCOUNTS_MAIL'] : '';
-    this.form.accounts_smtp_server = typeof metaInfo['ACCOUNTS_SMTP_SERVER'] === 'string' ? metaInfo['ACCOUNTS_SMTP_SERVER'] : '';
-    this.form.accounts_smtp_port = typeof metaInfo['ACCOUNTS_SMTP_PORT'] === 'string' ? metaInfo['ACCOUNTS_SMTP_PORT'] : '';
+    this.form.data_sources_url = typeof metaInfo.S_HOME_HEADER_DATA_SOURCES === 'string' ? metaInfo.S_HOME_HEADER_DATA_SOURCES : '';
+    this.form.adversaries_url = typeof metaInfo.S_HOME_HEADER_ADVERSARIES === 'string' ? metaInfo.S_HOME_HEADER_ADVERSARIES : '';
+    this.form.pricing_url = typeof metaInfo.S_HOME_HEADER_PRICING === 'string' ? metaInfo.S_HOME_HEADER_PRICING : '';
+    this.form.documentation_allowed = metaInfo.S_HOME_HEADER_PRICING_ALLOWED === true;
+    this.form.whistle_blowing_allowed = metaInfo.S_HOME_HEADER_WHISTLE_BLOWING_ALLOWED === true;
+    this.form.accounts_mail_password = typeof metaInfo.ACCOUNTS_MAIL_PASSWORD === 'string' ? metaInfo.ACCOUNTS_MAIL_PASSWORD : '';
+    this.form.accounts_mail = typeof metaInfo.ACCOUNTS_MAIL === 'string' ? metaInfo.ACCOUNTS_MAIL : '';
+    this.form.accounts_smtp_server = typeof metaInfo.ACCOUNTS_SMTP_SERVER === 'string' ? metaInfo.ACCOUNTS_SMTP_SERVER : '';
+    this.form.accounts_smtp_port = typeof metaInfo.ACCOUNTS_SMTP_PORT === 'string' ? metaInfo.ACCOUNTS_SMTP_PORT : '';
     this.configurationError = '';
     this.mailErrorState = false;
     this.webhookErrorState = false;
@@ -109,7 +120,9 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
 
   loadAlertConnectorSettings() {
     this.apiService.get<AlertConnectorSettingsResponse>('alert-connectors/settings').subscribe({
-      next: (response) => this.applyAlertConnectorSettings(response),
+      next: (response) => {
+        this.applyAlertConnectorSettings(response);
+      },
       error: () => {
         this.webhookErrorState = true;
       }
@@ -128,46 +141,47 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
     return this.webhookState() !== this.webhookSnapshot;
   }
 
-  updateUserResource(file: File,key: 'auth_dashboard_icon' | 'logo_url' | 'logo_wide_light' | 'logo_wide_dark' = 'logo_url') {
+  updateUserResource(file: File,key: SystemImageKey = 'logo_url') {
     const formData = new FormData();
     formData.append('file', file);
     return this.apiService
-      .put<any>(`system/image?key=${key}`, formData)
+      .put<SystemImageResponse>(`system/image?key=${key}`, formData)
       .subscribe({
         next: (res) => {
+          const appSettings = this.appService.getConfig().appSettings;
           if (res?.logo_url) {
-            (this.appService.getConfig().appSettings as any).logo_url = res.logo_url;
+            appSettings.logo_url = res.logo_url;
           }
           if (res?.logo_wide_light) {
-            (this.appService.getConfig().appSettings as any).logo_wide_light = res.logo_wide_light;
+            appSettings.logo_wide_light = res.logo_wide_light;
           }
           if (res?.logo_wide_dark) {
-            (this.appService.getConfig().appSettings as any).logo_wide_dark = res.logo_wide_dark;
+            appSettings.logo_wide_dark = res.logo_wide_dark;
           }
           if(res?.auth_dashboard_icon){
-            (this.appService.getConfig().appSettings as any).auth_dashboard_icon = res.auth_dashboard_icon;
+            appSettings.auth_dashboard_icon = res.auth_dashboard_icon;
           }
-          if ((this.appService.getConfig().appSettings as any).logo_url) {
-            this.appService.updateFavicon((this.appService.getConfig().appSettings as any).logo_url);
+          if (appSettings.logo_url) {
+            this.appService.updateFavicon(appSettings.logo_url);
           }
         },
         error: (err) => {
-          const message = err?.error?.detail || this.translationService.translate('Failed to upload image');
+          const message = err?.error?.detail ?? this.translationService.translate('Failed to upload image');
           this.messageNotificationService.show(message);
         }
       });
   }
 
-  deleteUserResource(key: 'auth_dashboard_icon' | 'logo_url' | 'logo_wide_light' | 'logo_wide_dark' = 'logo_url') {
-    return this.apiService.delete<any>(`system/image?key=${key}`).subscribe(() => {
+  deleteUserResource(key: SystemImageKey = 'logo_url') {
+    return this.apiService.delete<unknown>(`system/image?key=${key}`).subscribe(() => {
       const fallbackMap: Record<string, string> = {
         logo_url: '/api/s/static/system/logo_url_default.png',
         logo_wide_light: '/api/s/static/system/logo_wide_light_default.png',
         logo_wide_dark: '/api/s/static/system/logo_wide_dark_default.png',
-        login_page_image: '/api/s/static/system/auth_dashboard_icon_default.png'
+        auth_dashboard_icon: '/api/s/static/system/auth_dashboard_icon_default.png'
       };
-      const fallback = fallbackMap[key];
-      (this.appService.getConfig().appSettings as any)[key] = fallback;
+      const fallback = getOwnProperty(fallbackMap, key);
+      setOwnProperty(this.appService.getConfig().appSettings, key, fallback);
       if (key === 'logo_url') {
         this.appService.updateFavicon(fallback);
       }
@@ -260,7 +274,7 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
       : {
         meta_info: JSON.stringify(this.buildMetaInfo(section))
       };
-    this.apiService.post<any>('public/update', { settings }).subscribe({
+    this.apiService.post<SystemSettingsResponse>('public/update', { settings }).subscribe({
       next: (response) => {
         if (response?.settings) {
           this.applySettings(response.settings);
@@ -287,17 +301,17 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
   private buildMetaInfo(section: 'configuration' | 'mail'): Record<string, string | boolean> {
     const metaInfo: Record<string, string | boolean> = {};
     if (section === 'configuration') {
-      metaInfo['S_HOME_HEADER_DATA_SOURCES'] = this.form.data_sources_url;
-      metaInfo['S_HOME_HEADER_ADVERSARIES'] = this.form.adversaries_url;
-      metaInfo['S_HOME_HEADER_PRICING'] = this.form.pricing_url;
-      metaInfo['S_HOME_HEADER_PRICING_ALLOWED'] = this.form.documentation_allowed;
-      metaInfo['S_HOME_HEADER_WHISTLE_BLOWING_ALLOWED'] = this.form.whistle_blowing_allowed;
+      metaInfo.S_HOME_HEADER_DATA_SOURCES = this.form.data_sources_url;
+      metaInfo.S_HOME_HEADER_ADVERSARIES = this.form.adversaries_url;
+      metaInfo.S_HOME_HEADER_PRICING = this.form.pricing_url;
+      metaInfo.S_HOME_HEADER_PRICING_ALLOWED = this.form.documentation_allowed;
+      metaInfo.S_HOME_HEADER_WHISTLE_BLOWING_ALLOWED = this.form.whistle_blowing_allowed;
     }
     if (section === 'mail') {
-      metaInfo['ACCOUNTS_MAIL_PASSWORD'] = this.form.accounts_mail_password;
-      metaInfo['ACCOUNTS_MAIL'] = this.form.accounts_mail;
-      metaInfo['ACCOUNTS_SMTP_SERVER'] = this.form.accounts_smtp_server;
-      metaInfo['ACCOUNTS_SMTP_PORT'] = this.form.accounts_smtp_port;
+      metaInfo.ACCOUNTS_MAIL_PASSWORD = this.form.accounts_mail_password;
+      metaInfo.ACCOUNTS_MAIL = this.form.accounts_mail;
+      metaInfo.ACCOUNTS_SMTP_SERVER = this.form.accounts_smtp_server;
+      metaInfo.ACCOUNTS_SMTP_PORT = this.form.accounts_smtp_port;
     }
     return metaInfo;
   }
@@ -323,19 +337,39 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
     this.webhookForm = {
       slack_client_id: response?.app?.slack_client_id || '',
       slack_client_secret: '',
-      slack_configured: response?.app?.slack_configured === true,
+      slack_configured: response?.app?.slack_configured,
       jira_client_id: response?.app?.jira_client_id || '',
       jira_client_secret: '',
-      jira_configured: response?.app?.jira_configured === true,
-      alert_slack_connected: response?.tenant?.slack_connected === true,
+      jira_configured: response?.app?.jira_configured,
+      alert_slack_connected: response?.tenant?.slack_connected,
       alert_slack_channel: response?.tenant?.slack_channel || '',
       alert_slack_team: response?.tenant?.slack_team || '',
-      alert_jira_connected: response?.tenant?.jira_connected === true,
+      alert_jira_connected: response?.tenant?.jira_connected,
       alert_jira_site_url: response?.tenant?.jira_site_url || '',
       alert_jira_site_name: response?.tenant?.jira_site_name || ''
     };
     this.webhookErrorState = false;
     this.webhookSnapshot = this.webhookState();
+  }
+
+  updateScheduledBackup(): void {
+    const value = this.scheduledBackup;
+    this.apiService.post<UpdateSettingsResponse>('public/update', {
+      settings: {
+        backup_schedule: value ? '1' : '0'
+      }
+    }).subscribe({
+      next: (response) => {
+        const current = this.appService.configData();
+        const appSettings = new AppSettingsModel({ ...current.appSettings, ...(response?.settings ?? response?.appSettings ?? {}), backup_schedule: value ? '1' : '0' });
+        this.appService.configData.set(new ConfigSettings(appSettings, current.localSettings));
+        this.messageNotificationService.show(this.translationService.translate('Settings updated successfully'),'success');
+      },
+      error: () => {
+        this.scheduledBackup = !value;
+        this.messageNotificationService.show(this.translationService.translate('Failed to update settings'));
+      }
+    });
   }
 
   private configurationState(): string {

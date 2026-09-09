@@ -12,7 +12,7 @@ export function buildCasePdfReport(caseData: Case, getAnalystLabel: (userId?: st
     severity: caseData.severity,
     priority: caseData.priority,
     tags: caseData.tags || [],
-    primaryEntityId: caseData.primaryEntityId || null,
+    primaryEntityId: caseData.primaryEntityId ?? null,
     entities: (caseData.entities || []).map(entity => {
       const createdAt = toPdfDate(entity.createdAt);
       const updatedAt = toPdfDate(entity.updatedAt);
@@ -97,7 +97,7 @@ export function buildCasePdfReport(caseData: Case, getAnalystLabel: (userId?: st
       closureReasonOtherValue: caseData.closure.closureReasonOtherValue,
       summary: caseData.closure.summary,
       resolution: caseData.closure.resolution,
-      ...((toPdfDate(caseData.closure.closedAt || caseData.closedAt)) ? { closedAt: toPdfDate(caseData.closure.closedAt || caseData.closedAt) } : {})
+      ...((toPdfDate(caseData.closure.closedAt ?? caseData.closedAt)) ? { closedAt: toPdfDate(caseData.closure.closedAt ?? caseData.closedAt) } : {})
     } : null
   };
 

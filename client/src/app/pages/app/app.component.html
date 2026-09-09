@@ -1,7 +1,7 @@
 <app-trail-notification [trialNotificationCheck]="true"></app-trail-notification>
 
 @if (appService.userSessionData().tenant.quotaExceeded) {
-  <div @quotaBannerAnimation class="w-full border-b border-[#f2d58f] bg-[linear-gradient(90deg,#fff9e7_0%,#fff2cb_50%,#ffe9b4_100%)] px-[16px] py-[10px] text-[#7a4b00] shadow-[0_4px_14px_rgba(146,64,14,0.10)] max-[640px]:px-[10px] max-[640px]:py-[9px]" role="alert" aria-live="polite">
+  <div class="quota-banner-enter w-full border-b border-[#f2d58f] bg-[linear-gradient(90deg,#fff9e7_0%,#fff2cb_50%,#ffe9b4_100%)] px-[16px] py-[10px] text-[#7a4b00] shadow-[0_4px_14px_rgba(146,64,14,0.10)] max-[640px]:px-[10px] max-[640px]:py-[9px]" role="alert" aria-live="polite">
     <div class="mx-auto flex max-w-[1100px] items-center justify-center gap-[10px] text-center max-[640px]:items-start max-[640px]:justify-start max-[640px]:gap-[8px] max-[640px]:text-left">
       <span class="inline-flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[#f59e0b] text-[12px] font-bold text-white max-[640px]:h-[20px] max-[640px]:w-[20px] max-[640px]:text-[11px]">!</span>
       <p class="m-0 text-[13px] leading-[1.5] text-[#6b3f00] max-[640px]:flex-1 max-[640px]:text-[12px] max-[640px]:leading-[1.45]">
@@ -16,7 +16,7 @@
 @if (isVisible) {
   <main id="main-content" class="relative">
     <app-loader></app-loader>
-    <div [@appAnimation]="shouldAnimate()">
+    <div [class.app-route-fade-a]="shouldAnimate()" [class.app-route-fade-b]="!shouldAnimate()">
       <router-outlet></router-outlet>
     </div>
   </main>

@@ -35,7 +35,7 @@
   </div>
 
   @if (isExpandable && results_defacement()?.Result; as defResults) {
-    @for (item of defResults.slice(0, showLimitDefacement); track item.m_hash || item.m_url || $index; let i = $index; let last = $last) {
+    @for (item of defResults.slice(0, showLimitDefacement); track item.m_hash || item.m_url || $index; let i = $index) {
       <div class="mt-[12px] mr-0 grid gap-[12px] [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))] max-[640px]:[grid-template-columns:1fr]">
         <div data-testid="defacement-report-card" class="ui-consolidated-sub [&&&]:![background:var(--ui-consolidated-sub-bg,#fff)] [&&&]:![border-color:var(--ui-consolidated-border,#d7e2ef)] hover:[&&&]:![background:var(--ui-consolidated-sub-hover,#fbfdff)] w-full overflow-hidden rounded-[12px] border border-[var(--ui-consolidated-border)] text-[var(--color-text1)]">
           <div class="flex items-center justify-between gap-[12px] border-b border-[var(--ui-consolidated-divider)] px-[14px] py-[10px] max-[640px]:px-[10px]">

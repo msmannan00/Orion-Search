@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { OrionSatelliteFilterOption } from '../../../../../models/geo-fencing.models';
 import { TranslatePipe } from '../../../../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-facility-legend',
@@ -23,7 +25,9 @@ export class FacilityLegendComponent implements AfterViewInit, OnChanges, OnDest
 
   ngAfterViewInit(): void {
     if (typeof ResizeObserver !== 'undefined' && this.scrollArea?.nativeElement) {
-      this.resizeObserver = new ResizeObserver(() => this.updateOverflow());
+      this.resizeObserver = new ResizeObserver(() => {
+        this.updateOverflow();
+      });
       this.resizeObserver.observe(this.scrollArea.nativeElement);
     }
     this.scheduleOverflowUpdate();
@@ -75,7 +79,7 @@ export class FacilityLegendComponent implements AfterViewInit, OnChanges, OnDest
       military: 'bg-[#d71c1c]',
       other: 'bg-[#a3a3a3]',
     };
-    return classes[type] || 'bg-[#6b7280]';
+    return getOwnProperty(classes, type) || 'bg-[#6b7280]';
   }
 
   private scheduleOverflowUpdate(): void {

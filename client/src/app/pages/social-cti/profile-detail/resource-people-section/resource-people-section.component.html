@@ -1,0 +1,99 @@
+<div data-testid="social-people-list" class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+  @for (view of views(); track view.key) {
+    <article data-testid="social-people-card" class="flex min-w-0 flex-col px-3.5 py-3 rounded-[12px] border border-[var(--color-border)] bg-[#111a2c] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] shadow-[0_6px_20px_var(--color-shadow-light)] transition-[border-color,box-shadow] [body.light-theme_&&]:!border-[#d7e2ee] [body.light-theme_&&]:!bg-[#f7fafd] [body.light-theme_&&]:!bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)] [body.light-theme_&&]:!shadow-[0_6px_18px_rgba(15,23,42,0.07)] hover:border-sky-400/25">
+      <div class="flex min-w-0 items-start gap-3">
+        @if (view.avatar) {
+          <img [src]="view.avatar" [alt]="view.name" referrerpolicy="no-referrer" (error)="onImageError($event)" class="h-11 w-11 flex-shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-blue-720)] object-cover">
+        } @else {
+          <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-blue-720)] text-sm font-bold text-[var(--color-text2)]">{{ view.initial }}</span>
+        }
+
+        <div class="min-w-0 flex-1">
+          <div class="flex min-w-0 items-center gap-1.5">
+            @if (view.url) {
+              <a [href]="view.url" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate text-[13px] font-bold leading-5 text-[var(--color-blue-640)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">{{ view.name }}</a>
+            } @else {
+              <span class="min-w-0 truncate text-[13px] font-bold leading-5 text-[var(--color-text1)]">{{ view.name }}</span>
+            }
+            @if (view.verified) {
+              <i class="bi bi-patch-check-fill flex-shrink-0 text-[12px] text-sky-400" [title]="'Verified' | translate" aria-hidden="true"></i>
+            }
+            @if (view.kind) {
+              <span class="flex-shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-blue-720)]/60 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text4)]">{{ view.kind | translate }}</span>
+            }
+            @for (flag of view.flags; track flag) {
+              <span class="flex-shrink-0 rounded-full border border-[var(--color-border)] px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text4)]">{{ flag | translate }}</span>
+            }
+          </div>
+          @if (view.handle) {
+            <div class="min-w-0 truncate font-mono text-[10px] text-[var(--color-text4)]">{{ view.handle }}</div>
+          }
+        </div>
+      </div>
+
+      @if (view.bio) {
+        <p class="mb-0 mt-2 line-clamp-2 text-[11px] leading-4 text-[var(--color-text3)]">{{ view.bio }}</p>
+      }
+
+      @if (view.followers || view.posts) {
+        <div class="mt-2.5 grid grid-cols-2 divide-x divide-[var(--color-border)] rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-720)]/40 text-center">
+          <div class="px-1 py-1.5">
+            <div class="font-mono text-[12px] font-bold tabular-nums text-[var(--color-text1)]">{{ view.followers || '—' }}</div>
+            <div class="text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text4)]">{{ 'Followers' | translate }}</div>
+          </div>
+          <div class="px-1 py-1.5">
+            <div class="font-mono text-[12px] font-bold tabular-nums text-[var(--color-text1)]">{{ view.posts || '—' }}</div>
+            <div class="text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text4)]">{{ 'Posts' | translate }}</div>
+          </div>
+        </div>
+      }
+
+      @if (view.location || view.company || view.website || view.joined.date) {
+        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text4)]">
+          @if (view.company) {
+            <span class="inline-flex min-w-0 items-center gap-1"><i class="bi bi-building text-[10px]" aria-hidden="true"></i><span class="truncate">{{ view.company }}</span></span>
+          }
+          @if (view.location) {
+            <span class="inline-flex min-w-0 items-center gap-1"><i class="bi bi-geo-alt-fill text-[10px]" aria-hidden="true"></i><span class="truncate">{{ view.location }}</span></span>
+          }
+          @if (view.website) {
+            <a [href]="view.website" target="_blank" rel="noopener noreferrer" class="inline-flex min-w-0 items-center gap-1 text-[var(--color-blue-640)] hover:underline"><i class="bi bi-link-45deg text-[10px]" aria-hidden="true"></i><span class="truncate">{{ view.website }}</span></a>
+          }
+          @if (view.joined.date) {
+            <span class="inline-flex items-center gap-1"><i class="bi bi-clock-history text-[10px]" aria-hidden="true"></i>{{ 'Joined' | translate }} {{ view.joined.date | date:'mediumDate' }}</span>
+          }
+        </div>
+      }
+
+      @if (view.tags.length) {
+        <div class="mt-2 flex flex-wrap gap-1">
+          @for (tag of view.tags; track tag) {
+            <span class="inline-flex items-center rounded-full bg-[var(--color-blue-640)]/15 px-2 py-px text-[10px] font-semibold text-[var(--color-blue-640)]">{{ tag }}</span>
+          }
+        </div>
+      }
+
+      @if (view.extra.length) {
+        <button type="button" (click)="toggle(view)" [attr.aria-expanded]="isExpanded(view)" class="mt-2 inline-flex w-fit cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text4)] outline-none hover:text-[var(--color-text2)] focus-visible:ring-1 focus-visible:ring-[var(--color-blue-640)]/55">
+          {{ view.extra.length }} {{ 'more' | translate }}
+          <i class="bi text-[9px]" [class.bi-chevron-up]="isExpanded(view)" [class.bi-chevron-down]="!isExpanded(view)" aria-hidden="true"></i>
+        </button>
+      }
+
+      @if (isExpanded(view)) {
+        <dl class="mb-0 mt-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-blue-720)]/40 p-2.5">
+          @for (entry of view.extra; track entry.key) {
+            <div class="min-w-0">
+              <dt class="min-w-0 truncate text-[9px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text4)]" [title]="formatKeyLabel(entry.key)">{{ formatKeyLabel(entry.key) }}</dt>
+              <dd class="mb-0 mt-0.5 min-w-0 break-words text-[10px] font-medium leading-4 text-[var(--color-text2)]">{{ entry.value }}</dd>
+            </div>
+          }
+        </dl>
+      }
+
+      @if (!view.handle && !view.bio && !view.followers && !view.posts && !view.location && !view.company && !view.website && !view.joined.date && !view.tags.length && !view.extra.length) {
+        <div class="mt-2 text-[11px] leading-4 text-[var(--color-text4)]">-</div>
+      }
+    </article>
+  }
+</div>

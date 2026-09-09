@@ -4,25 +4,28 @@ import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-rend
 import { stableHash } from '../../map-utils/renderer-utils';
 import { OrionFacilityMarkerIconComponent } from './components/orion-facility-marker-icon/orion-facility-marker-icon.component';
 import { OrionFacilityPopupComponent } from './components/orion-facility-popup/orion-facility-popup.component';
+import type * as Leaflet from 'leaflet';
+import { OrionFacilitiesMapRendererConfig } from '../../model/satellite-intel.model';
+import type { Augmented, Nullable, Nullish } from '../../../../../shared/utils/type-guards.util';
+import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
 
-type OrionFacilitiesMapRendererConfig = {
-  L: any;
-  map: any;
-  componentRenderer: LeafletComponentRenderer;
-  getData: () => OrionSatelliteFeature[];
-  getFocusedFeature: () => OrionSatelliteFeature | null;
-  onFeatureSelected: (feature: OrionSatelliteFeature) => void;
-};
+
+type OrionFacilityMarker = Augmented<Leaflet.Marker, {
+  __orionFacilityIconRef: Nullable<ComponentRef<OrionFacilityMarkerIconComponent>>;
+  __orionFacilityPopupRef: Nullable<ComponentRef<OrionFacilityPopupComponent>>;
+  orionFeature: OrionSatelliteFeature;
+}>;
+
 
 export class OrionFacilitiesMapRenderer {
-  private layer: any = null;
+  private layer: Nullable<Leaflet.LayerGroup> = null;
   private renderKey = '';
   private renderTimer: ReturnType<typeof setTimeout> | null = null;
   private renderVersion = 0;
-  private markers = new Map<string, any>();
+  private markers = new Map<string, OrionFacilityMarker>();
   private markerSignatures = new Map<string, string>();
-  private readonly L: any;
-  private readonly map: any;
+  private readonly L: typeof Leaflet;
+  private readonly map: Leaflet.Map;
   private readonly componentRenderer: LeafletComponentRenderer;
   private readonly getData: () => OrionSatelliteFeature[];
   private readonly getFocusedFeature: () => OrionSatelliteFeature | null;
@@ -48,6 +51,7 @@ export class OrionFacilitiesMapRenderer {
     if (!this.layer || !this.L) {
       return;
     }
+    const layer = this.layer;
 
     if (resetRenderKey) {
       this.resetRenderKey();
@@ -61,7 +65,7 @@ export class OrionFacilitiesMapRenderer {
 
     const features = this.getRenderableFeatures();
     const visibleIds = new Set<string>();
-    const markersToAdd: any[] = [];
+    const markersToAdd: OrionFacilityMarker[] = [];
 
     features.forEach((feature) => {
       const featureId = String(feature?.id || '').trim();
@@ -83,7 +87,7 @@ export class OrionFacilitiesMapRenderer {
       }
 
       if (previousSignature !== nextSignature) {
-        this.layer.removeLayer(existing);
+        layer.removeLayer(existing);
         this.destroyMarkerComponents(existing);
         const marker = this.createMarker(feature);
         this.markers.set(featureId, marker);
@@ -96,18 +100,14 @@ export class OrionFacilitiesMapRenderer {
       if (visibleIds.has(featureId)) {
         return;
       }
-      this.layer.removeLayer(marker);
+      layer.removeLayer(marker);
       this.destroyMarkerComponents(marker);
       this.markers.delete(featureId);
       this.markerSignatures.delete(featureId);
     });
 
     if (markersToAdd.length > 0) {
-      if (typeof this.layer.addLayers === 'function') {
-        this.layer.addLayers(markersToAdd);
-        return;
-      }
-      markersToAdd.forEach(marker => this.layer.addLayer(marker));
+      markersToAdd.forEach(marker => layer.addLayer(marker));
     }
   }
 
@@ -131,7 +131,9 @@ export class OrionFacilitiesMapRenderer {
       clearTimeout(this.renderTimer);
       this.renderTimer = null;
     }
-    Array.from(this.markers.values()).forEach((marker) => this.destroyMarkerComponents(marker));
+    Array.from(this.markers.values()).forEach((marker) => {
+      this.destroyMarkerComponents(marker);
+    });
     this.markers.clear();
     this.markerSignatures.clear();
     if (this.layer) {
@@ -140,28 +142,29 @@ export class OrionFacilitiesMapRenderer {
     }
   }
 
-  private createMarker(feature: OrionSatelliteFeature): any {
+  private createMarker(feature: OrionSatelliteFeature): OrionFacilityMarker {
     const [lon, lat] = feature.coordinates;
     const markerIcon = this.createIcon(feature);
     const popup = this.componentRenderer.create(OrionFacilityPopupComponent, {
       feature,
     });
-    const marker = this.L.marker([lat, lon], {
+    const marker = Object.assign(this.L.marker([lat, lon], {
       icon: markerIcon.icon,
+    }), {
+      __orionFacilityIconRef: markerIcon.componentRef,
+      __orionFacilityPopupRef: popup.componentRef,
+      orionFeature: feature,
     });
-    marker.__orionFacilityIconRef = markerIcon.componentRef;
-    marker.__orionFacilityPopupRef = popup.componentRef;
     marker.bindPopup(popup.element, {
       className: 'orion-popup [&_.leaflet-popup-content-wrapper]:!border-0 [&_.leaflet-popup-content-wrapper]:!bg-transparent [&_.leaflet-popup-content-wrapper]:!p-0 [&_.leaflet-popup-content-wrapper]:!shadow-none [&_.leaflet-popup-content]:!m-0 [&_.leaflet-popup-tip]:!bg-transparent [&_.leaflet-popup-tip]:!shadow-none',
     });
-    marker.orionFeature = feature;
     marker.on('click', () => {
       this.onFeatureSelected(feature);
     });
     return marker;
   }
 
-  private createIcon(feature: OrionSatelliteFeature): { icon: any; componentRef: ComponentRef<OrionFacilityMarkerIconComponent> } {
+  private createIcon(feature: OrionSatelliteFeature): { icon: Leaflet.DivIcon; componentRef: ComponentRef<OrionFacilityMarkerIconComponent> } {
     const size = this.getMarkerSize();
     const rendered = this.componentRenderer.create(OrionFacilityMarkerIconComponent, {
       type: feature.type,
@@ -170,7 +173,7 @@ export class OrionFacilitiesMapRenderer {
 
     return {
       icon: this.L.divIcon({
-        html: rendered.element,
+        html: this.componentRenderer.elementAsHtml(rendered.element),
         className: 'bg-transparent border-0',
         iconSize: [size, size],
         iconAnchor: [Math.round(size / 2), size],
@@ -184,7 +187,7 @@ export class OrionFacilitiesMapRenderer {
     return 24 + Math.max(0, Math.min(8, Math.round((zoom - 4) * 1.2)));
   }
 
-  private destroyMarkerComponents(marker: any): void {
+  private destroyMarkerComponents(marker: OrionFacilityMarker): void {
     this.componentRenderer.destroy(marker.__orionFacilityIconRef);
     this.componentRenderer.destroy(marker.__orionFacilityPopupRef);
     marker.__orionFacilityIconRef = null;
@@ -212,14 +215,14 @@ export class OrionFacilitiesMapRenderer {
     }
 
     const [lon, lat] = feature.coordinates;
-    return feature.properties?.['hasValidCoordinates'] !== false &&
+    return feature.properties?.hasValidCoordinates !== false &&
       Number.isFinite(lon) &&
       Number.isFinite(lat) &&
       lon !== 0 &&
       lat !== 0;
   }
 
-  private limitFeaturesForZoom(features: OrionSatelliteFeature[], zoom: number, bounds: any): OrionSatelliteFeature[] {
+  private limitFeaturesForZoom(features: OrionSatelliteFeature[], zoom: number, bounds: Nullish<Leaflet.LatLngBounds>): OrionSatelliteFeature[] {
     const limit = this.getVisibleLimit(zoom);
     if (!Number.isFinite(limit) || features.length <= limit) {
       return features;
@@ -231,7 +234,7 @@ export class OrionFacilitiesMapRenderer {
       : null;
     const remainingLimit = Math.max(0, limit - (focusedFeature ? 1 : 0));
     const grid = this.getGridSize(zoom);
-    const buckets = new Map<string, Array<{ feature: OrionSatelliteFeature; score: number }>>();
+    const buckets = new Map<string, { feature: OrionSatelliteFeature; score: number }[]>();
 
     features.forEach((feature) => {
       if (focusedFeature && String(feature?.id || '') === focusedId) {
@@ -239,7 +242,7 @@ export class OrionFacilitiesMapRenderer {
       }
 
       const bucketKey = this.getGridKey(feature, bounds, grid.cols, grid.rows);
-      const bucket = buckets.get(bucketKey) || [];
+      const bucket = buckets.get(bucketKey) ?? [];
       bucket.push({
         feature,
         score: Math.abs(stableHash(String(feature?.id || `${feature?.coordinates?.[1]}:${feature?.coordinates?.[0]}`))),
@@ -256,7 +259,7 @@ export class OrionFacilitiesMapRenderer {
     while (limitedFeatures.length < remainingLimit) {
       let addedThisRound = false;
       for (const bucket of sortedBuckets) {
-        const entry = bucket[round];
+        const entry = getOwnProperty(bucket, round);
         if (!entry) {
           continue;
         }
@@ -319,7 +322,7 @@ export class OrionFacilitiesMapRenderer {
     return { cols: 16, rows: 10 };
   }
 
-  private getGridKey(feature: OrionSatelliteFeature, bounds: any, cols: number, rows: number): string {
+  private getGridKey(feature: OrionSatelliteFeature, bounds: Nullish<Leaflet.LatLngBounds>, cols: number, rows: number): string {
     const [lon, lat] = feature.coordinates;
     const west = bounds?.getWest?.() ?? -180;
     const east = bounds?.getEast?.() ?? 180;
@@ -337,7 +340,7 @@ export class OrionFacilitiesMapRenderer {
     const zoom = this.map?.getZoom?.() ?? 3;
     const bounds = this.map?.getBounds?.();
     const data = this.getData();
-    const focusedId = this.getFocusedFeature()?.id || '';
+    const focusedId = this.getFocusedFeature()?.id ?? '';
     if (!bounds) {
       return `z:${Math.round(zoom * 2)}|count:${data.length}|v:${this.renderVersion}|focus:${focusedId}`;
     }

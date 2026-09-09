@@ -43,17 +43,17 @@ The wider Orion ecosystem also references adjacent projects such as crawlers, co
 
 The current application is not only a search UI. Developers should treat the repository as a multi-surface product with several route families:
 
-| Surface | Frontend route family | Main backend/API areas | Notes |
-| --- | --- | --- | --- |
-| Access lifecycle | `/signup`, `/login`, `/reset`, `/welcome`, `/welcome/:token`, `/onboarding`, `/notification`, `/paymentGateway` | auth, verification, onboarding, notification, subscription, and tenant update routes | These routes are part of the product even though they are outside the authenticated dashboard shell. |
-| Shared public views | `/case-share/:shareId`, `/chat-share/:shareId` | `/api/public/case-shares/*`, `/api/public/chat-shares/*` | Public share views are intentionally narrow and token/link scoped. |
-| Indexed search | `/dashboard/strategic`, `/dashboard/breach`, `/dashboard/social`, `/dashboard/exploit`, `/dashboard/apt-intel`, `/dashboard/stealerlogs` | `/api/search/*` | Result models, filters, reports, STIX exports, and analytics are shared across several modules. |
-| Alternate search routes | `/dashboard/discussion`, `/dashboard/social-mapper`, `/dashboard/social-graph` | social, chat, and graph routes | These routes are supported entry points into the current discussion, social, and graph feature surfaces. |
-| Consolidated investigation | `/dashboard/consolidated`, `/dashboard/profile/consolidated` | `/api/search/consolidated`, consolidated helper APIs | Used for multi-channel triage and profile-oriented investigation flows. |
-| Entity lookup and scans | `/dashboard/api/*`, `/dashboard/scanner/*`, `/dashboard/netint`, `/dashboard/scan-report/:scanId` | `/api/dynamic/*`, `/api/urlscan/*`, `/api/netintel/*`, `/api/scan-jobs/*` | Many long-running operations use tracked scan jobs and can reopen existing results. Network Intel vulnerability scans also expose per-target scan depth. |
-| Geo-fencing | `/dashboard/satellite-intel`, `/dashboard/threat-lens` | `/api/search/map-entities/*`, `/api/threat/lens`, `/api/satellite/*`, geo camera scan APIs | License-gated map, facility, imagery, aircraft, ship, and threat-lens workflows. |
-| Graphs and social intelligence | `/dashboard/ctigraph`, `/dashboard/social-intel` | `/api/graph`, `/api/social/*` | Graph modules often open in a separate workspace or tab and depend on license gates. CTI Graph includes the Advanced Graph Builder in addition to the basic graph filters. |
-| Tenant and profile operations | `/dashboard/profile/*`, `/dashboard/tenant/*` | profile, tenant, IOC, alert, SIEM, case, audit, feeder, takedown, system log, and settings APIs | Visibility depends heavily on role, tenant state, permissions, and licenses. AI Workspace, chat sharing, case analytics, artifact files, tenant-alert review, and takedown review are part of this surface. |
+| Surface                        | Frontend route family                                                                                                                    | Main backend/API areas                                                                          | Notes                                                                                                                                                                                                       |
+|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Access lifecycle               | `/signup`, `/login`, `/reset`, `/welcome`, `/welcome/:token`, `/onboarding`, `/notification`, `/paymentGateway`                          | auth, verification, onboarding, notification, subscription, and tenant update routes            | These routes are part of the product even though they are outside the authenticated dashboard shell.                                                                                                        |
+| Shared public views            | `/case-share/:shareId`, `/chat-share/:shareId`                                                                                           | `/api/public/case-shares/*`, `/api/public/chat-shares/*`                                        | Public share views are intentionally narrow and token/link scoped.                                                                                                                                          |
+| Indexed search                 | `/dashboard/strategic`, `/dashboard/breach`, `/dashboard/social`, `/dashboard/exploit`, `/dashboard/apt-intel`, `/dashboard/stealerlogs` | `/api/search/*`                                                                                 | Result models, filters, reports, STIX exports, and analytics are shared across several modules.                                                                                                             |
+| Alternate search routes        | `/dashboard/discussion`, `/dashboard/social-mapper`, `/dashboard/social-graph`                                                           | social, chat, and graph routes                                                                  | These routes are supported entry points into the current discussion, social, and graph feature surfaces.                                                                                                    |
+| Consolidated investigation     | `/dashboard/consolidated`, `/dashboard/profile/consolidated`                                                                             | `/api/search/consolidated`, consolidated helper APIs                                            | Used for multi-channel triage and profile-oriented investigation flows.                                                                                                                                     |
+| Entity lookup and scans        | `/dashboard/api/*`, `/dashboard/scanner/*`, `/dashboard/netint`, `/dashboard/scan-report/:scanId`                                        | `/api/dynamic/*`, `/api/urlscan/*`, `/api/netintel/*`, `/api/scan-jobs/*`                       | Many long-running operations use tracked scan jobs and can reopen existing results. Network Intel vulnerability scans also expose per-target scan depth.                                                    |
+| Geo-fencing                    | `/dashboard/satellite-intel`, `/dashboard/threat-lens`                                                                                   | `/api/search/map-entities/*`, `/api/threat/lens`, `/api/satellite/*`, geo camera scan APIs      | License-gated map, facility, imagery, aircraft, ship, and threat-lens workflows.                                                                                                                            |
+| Graphs and social intelligence | `/dashboard/ctigraph`, `/dashboard/social-intel`                                                                                         | `/api/graph`, `/api/social/*`                                                                   | Graph modules often open in a separate workspace or tab and depend on license gates. CTI Graph includes the Advanced Graph Builder in addition to the basic graph filters.                                  |
+| Tenant and profile operations  | `/dashboard/profile/*`, `/dashboard/tenant/*`                                                                                            | profile, tenant, IOC, alert, SIEM, case, audit, feeder, takedown, system log, and settings APIs | Visibility depends heavily on role, tenant state, permissions, and licenses. AI Workspace, chat sharing, case analytics, artifact files, tenant-alert review, and takedown review are part of this surface. |
 
 When a feature changes one of these surfaces, check both route wiring and written docs. For example, adding a new scan API usually touches backend route metadata, the Angular route or component, scan-job behavior, API docs, and user-facing module documentation.
 
@@ -63,12 +63,12 @@ When a feature changes one of these surfaces, check both route wiring and writte
 
 The application is easiest to understand as four cooperating layers:
 
-| Layer | Main responsibility | Typical technologies |
-| --- | --- | --- |
-| Presentation | analyst UI, reports, settings, tenant flows | Angular, Cypress |
-| Application | APIs, orchestration, auth, search logic, scans | FastAPI, Python backend services |
-| Data and Search | indexing, persistence, caching, task state | Elasticsearch, MongoDB, Redis, ArangoDB |
-| Delivery and Ops | containers, reverse proxy, static delivery, health checks | Docker Compose, NGINX |
+| Layer            | Main responsibility                                       | Typical technologies                    |
+|------------------|-----------------------------------------------------------|-----------------------------------------|
+| Presentation     | analyst UI, reports, settings, tenant flows               | Angular, Cypress                        |
+| Application      | APIs, orchestration, auth, search logic, scans            | FastAPI, Python backend services        |
+| Data and Search  | indexing, persistence, caching, task state                | Elasticsearch, MongoDB, Redis, ArangoDB |
+| Delivery and Ops | containers, reverse proxy, static delivery, health checks | Docker Compose, NGINX                   |
 
 ### Frontend
 
@@ -111,18 +111,18 @@ In some environments, additional operational surfaces may exist for API docs, lo
 
 The most important top-level paths are:
 
-| Path | Purpose |
-| --- | --- |
-| `client/` | frontend application, Cypress tests, client build config |
-| `backend/` | API, business logic, docs routes, static test fixtures |
-| `docs/` | application docs, API docs, screenshots, docs generation scripts |
-| `docs/app_docs/` | published product, user, developer, module, and Swagger-style reference pages |
-| `docs/api_docs/` | maintained per-endpoint API documentation fragments and API bundles |
-| `backend/routes/docs/docs.py` | route-description source consumed by backend OpenAPI metadata |
-| `docs/api_docs/source_docs.py` | source input for regenerated Markdown API docs |
-| `nginx/` | NGINX configuration variants |
-| `run.sh` | local orchestration entry point |
-| `docker-compose*.yml` | environment-specific stack definitions |
+| Path                           | Purpose                                                                       |
+|--------------------------------|-------------------------------------------------------------------------------|
+| `client/`                      | frontend application, Cypress tests, client build config                      |
+| `backend/`                     | API, business logic, docs routes, static test fixtures                        |
+| `docs/`                        | application docs, API docs, screenshots, docs generation scripts              |
+| `docs/app_docs/`               | published product, user, developer, module, and Swagger-style reference pages |
+| `docs/api_docs/`               | maintained per-endpoint API documentation fragments and API bundles           |
+| `backend/routes/docs/docs.py`  | route-description source consumed by backend OpenAPI metadata                 |
+| `docs/api_docs/source_docs.py` | source input for regenerated Markdown API docs                                |
+| `nginx/`                       | NGINX configuration variants                                                  |
+| `run.sh`                       | local orchestration entry point                                               |
+| `docker-compose*.yml`          | environment-specific stack definitions                                        |
 
 ## Runtime and Environment
 
@@ -146,14 +146,14 @@ Do not place real credentials in documentation, examples, screenshots, or commit
 
 ### `run.sh` Command Reference
 
-| Command | Purpose | What it does |
-| --- | --- | --- |
-| `./run.sh` | start default local stack | uses `docker-compose.yml` and starts the application without rebuilding images |
-| `./run.sh stop` | stop local stack | runs compose shutdown, removes orphans, and removes the standalone nginx container if present |
-| `./run.sh production` | start production-oriented runtime | uses `docker-compose-production.yml` and starts the stack without rebuilding |
-| `./run.sh -doc` | generate documentation screenshots | aliases the docs workflow by first running `./run.sh build -t`, then clearing old screenshots and running the Cypress screenshot job |
-| `./run.sh -docs` | generate documentation screenshots | aliases the docs workflow by first running `./run.sh build -t`, then running the Cypress screenshot job without clearing existing screenshots first |
-| `./run.sh build <flag>` | rebuild application containers for a specific mode | runs dependency install and linting, applies the selected frontend/backend mode, then executes `docker compose build` before starting services |
+| Command                 | Purpose                                            | What it does                                                                                                                                        |
+|-------------------------|----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `./run.sh`              | start default local stack                          | uses `docker-compose.yml` and starts the application without rebuilding images                                                                      |
+| `./run.sh stop`         | stop local stack                                   | runs compose shutdown, removes orphans, and removes the standalone nginx container if present                                                       |
+| `./run.sh production`   | start production-oriented runtime                  | uses `docker-compose-production.yml` and starts the stack without rebuilding                                                                        |
+| `./run.sh -doc`         | generate documentation screenshots                 | aliases the docs workflow by first running `./run.sh build -t`, then clearing old screenshots and running the Cypress screenshot job                |
+| `./run.sh -docs`        | generate documentation screenshots                 | aliases the docs workflow by first running `./run.sh build -t`, then running the Cypress screenshot job without clearing existing screenshots first |
+| `./run.sh build <flag>` | rebuild application containers for a specific mode | runs dependency install and linting, applies the selected frontend/backend mode, then executes `docker compose build` before starting services      |
 
 The optional `-ip` prefix updates `SWARM_URL` to the current local IP before the selected command runs. Use it only when other services need to reach this workstation by LAN address rather than loopback.
 
@@ -163,14 +163,14 @@ Production rebuilds can also accept `-full` as the third argument: `./run.sh bui
 
 All supported `build` flags are listed below.
 
-| Flag | Primary use | Key behavior |
-| --- | --- | --- |
-| `-t` | frontend and Cypress test workflow | sets `TESTING_ENABLED="1"`, builds the Angular client with the `instrumented` configuration, uses `docker-compose-testing.yml`, starts the stack, and waits for `https://127.0.0.1:8443/api/public` before tests |
-| `-tb` | protected backend test workflow | same stack setup as `-t`, then runs containerized backend pytest through `run_backend_tests_protected` |
-| `-c` | rebuild client only for default local mode | builds the production client bundle, ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images |
-| `-b` | rebuild backend and containers without rebuilding the client bundle | ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images |
-| `-d` | general default-mode rebuild | builds the production client bundle, ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images |
-| `-p` | production-oriented rebuild | builds the production client bundle, copies `nginx/nginx-prod.conf`, uses `docker-compose-production.yml`, prepares `/srv/elasticsearch/data`, keeps Elasticsearch private to the Docker network with password authentication, rebuilds images, and waits for `https://try.orionintelligence.org` |
+| Flag  | Primary use                                                         | Key behavior                                                                                                                                                                                                                                                                                      |
+|-------|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-t`  | frontend and Cypress test workflow                                  | sets `TESTING_ENABLED="1"`, builds the Angular client with the `instrumented` configuration, uses `docker-compose-testing.yml`, starts the stack, and waits for `https://127.0.0.1:8443/api/public` before tests                                                                                  |
+| `-tb` | protected backend test workflow                                     | same stack setup as `-t`, then runs containerized backend pytest through `run_backend_tests_protected`                                                                                                                                                                                            |
+| `-c`  | rebuild client only for default local mode                          | builds the production client bundle, ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images                                                                                                                                                 |
+| `-b`  | rebuild backend and containers without rebuilding the client bundle | ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images                                                                                                                                                                                      |
+| `-d`  | general default-mode rebuild                                        | builds the production client bundle, ensures local SSL certs exist, copies `nginx/nginx-dev.conf`, uses `docker-compose.yml`, and rebuilds images                                                                                                                                                 |
+| `-p`  | production-oriented rebuild                                         | builds the production client bundle, copies `nginx/nginx-prod.conf`, uses `docker-compose-production.yml`, prepares `/srv/elasticsearch/data`, keeps Elasticsearch private to the Docker network with password authentication, rebuilds images, and waits for `https://try.orionintelligence.org` |
 
 Testing mode is the path most developers will use day to day. It enables the application testing flag, creates the instrumented frontend bundle, starts the testing compose stack, and blocks until the test service is reachable before Cypress is launched.
 
@@ -253,7 +253,7 @@ When changing APIs or data behavior, common touchpoints include:
 - route handlers and managers in `backend/`
 - generated docs helpers in `backend/routes/docs/`
 - test coverage under `backend/tests/`
-- mock search data under `backend/static/test/mocks/`
+- mock search data under `backend/tests/mock/`
 
 Backend changes should be validated against both API behavior and the frontend workflows that consume those responses.
 
@@ -323,11 +323,11 @@ Docs in this area should be written for scannability:
 
 API documentation has three related layers. Treating them as interchangeable is what causes drift.
 
-| Layer | Location | Purpose | Maintenance rule |
-| --- | --- | --- | --- |
-| Live schema | FastAPI `/openapi.json` from backend route metadata | Machine-readable contract for routes included in schema | Update route summaries, descriptions, response descriptions, tags, dependencies, and unique `operation_id` values in backend route files. |
-| Maintained API docs | `docs/api_docs/` and `docs/api_docs/source_docs.py` | Human-written per-endpoint explanations, examples, and bundle output | Update when request shape, response shape, endpoint availability, examples, or semantics change. |
-| Published Swagger-style page | `docs/app_docs/swagger_api_reference.md` | Single published reference page for integrators reading the app docs | Keep as a generated or synchronized artifact; do not let it become the only source of truth. |
+| Layer                        | Location                                            | Purpose                                                              | Maintenance rule                                                                                                                          |
+|------------------------------|-----------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| Live schema                  | FastAPI `/openapi.json` from backend route metadata | Machine-readable contract for routes included in schema              | Update route summaries, descriptions, response descriptions, tags, dependencies, and unique `operation_id` values in backend route files. |
+| Maintained API docs          | `docs/api_docs/` and `docs/api_docs/source_docs.py` | Human-written per-endpoint explanations, examples, and bundle output | Update when request shape, response shape, endpoint availability, examples, or semantics change.                                          |
+| Published Swagger-style page | `docs/app_docs/swagger_api_reference.md`            | Single published reference page for integrators reading the app docs | Keep as a generated or synchronized artifact; do not let it become the only source of truth.                                              |
 
 The `api_docs` directory is the better source-of-truth layer for endpoint prose because it is structured by endpoint family and can be reviewed incrementally. `swagger_api_reference.md` is useful as a consolidated published page, but it is redundant as an editing source if it is not regenerated or synchronized from the schema and maintained API docs.
 
@@ -369,19 +369,19 @@ If a screenshot filename is removed or renamed, update every figure reference in
 
 Before calling documentation complete for a release, confirm that the following route-backed features are either documented as user-visible features or explicitly described as private application infrastructure:
 
-| Feature family | Must be covered in docs |
-| --- | --- |
-| Auth and access | signup, login, password reset, welcome page, email verification token, onboarding, trial/subscription notification routes |
-| Public shares | case share links and chat share links |
-| Dashboard shell | homepage, sidebar states, mobile/gated subscription behavior, search tools, filters, pagination, reports |
-| Indexed modules | General Intelligence, Data Breach, Compromise Monitoring, Social, Discussion route, Exploit, Actors & Malware, News Feed, Stealer Logs |
-| Entity and scan modules | Entity Lookup, Text Analysis, File Scanner, APK Scan, Web Scans, Network Intel, Network Intel vulnerability scan depth, scan reports, scan-job notifications |
-| Geo-fencing | Satellite Intel, Threat Lens, map entities, facilities, tracking, imagery comparison, anomaly review, geo camera scans |
-| Graphs and social intelligence | CTI Graph, CTI Advanced Graph Builder, Social Intel, social mapper aliases, profile storage, metadata and relationship pivots |
-| Profile operations | Account, public user activity, AI Workspace conversation controls, AI chat sharing, Monitoring, Event Management, Log Manager, Feeder, IOC management, Statistics |
-| Tenant and alerts | Tenant Homepage, category alerts, custom alerts, alert scanner settings, alert exports, scan-all/flush-all, Tenant Settings, Takedown Requests |
-| Administration | Users, Tenants, Audit Logs, System Settings, tenant alert administration, profile visibility, quotas, licenses |
-| Case management | case list filters, analytics, case details, case assistant, tracking board, analyst assignment, artifacts/files, linked report artifacts, artifact integrity verification, comments, linked cases, closure, shares, PDF export, admin tenant alerts |
+| Feature family                 | Must be covered in docs                                                                                                                                                                                                                             |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Auth and access                | signup, login, password reset, welcome page, email verification token, onboarding, trial/subscription notification routes                                                                                                                           |
+| Public shares                  | case share links and chat share links                                                                                                                                                                                                               |
+| Dashboard shell                | homepage, sidebar states, mobile/gated subscription behavior, search tools, filters, pagination, reports                                                                                                                                            |
+| Indexed modules                | General Intelligence, Data Breach, Compromise Monitoring, Social, Discussion route, Exploit, Actors & Malware, News Feed, Stealer Logs                                                                                                              |
+| Entity and scan modules        | Entity Lookup, Text Analysis, File Scanner, APK Scan, Web Scans, Network Intel, Network Intel vulnerability scan depth, scan reports, scan-job notifications                                                                                        |
+| Geo-fencing                    | Satellite Intel, Threat Lens, map entities, facilities, tracking, imagery comparison, anomaly review, geo camera scans                                                                                                                              |
+| Graphs and social intelligence | CTI Graph, CTI Advanced Graph Builder, Social Intel, social mapper aliases, profile storage, metadata and relationship pivots                                                                                                                       |
+| Profile operations             | Account, public user activity, AI Workspace conversation controls, AI chat sharing, Monitoring, Event Management, Log Manager, Feeder, IOC management, Statistics                                                                                   |
+| Tenant and alerts              | Tenant Homepage, category alerts, custom alerts, alert scanner settings, alert exports, scan-all/flush-all, Tenant Settings, Takedown Requests                                                                                                      |
+| Administration                 | Users, Tenants, Audit Logs, System Settings, tenant alert administration, profile visibility, quotas, licenses                                                                                                                                      |
+| Case management                | case list filters, analytics, case details, case assistant, tracking board, analyst assignment, artifacts/files, linked report artifacts, artifact integrity verification, comments, linked cases, closure, shares, PDF export, admin tenant alerts |
 
 Keep screenshots and docs aligned with the active route tree. If a feature remains available through more than one route, document the current label and the internal route name so terminology stays consistent.
 

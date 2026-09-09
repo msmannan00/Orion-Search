@@ -4,7 +4,7 @@ import { AppSettingsModel, ConfigSettings, LocalSettingsModel } from '../../../s
 import { AppStorageService } from './app-storage.service';
 import { ApiService } from '../../../shared/services/api.service';
 import { HttpClient } from '@angular/common/http';
-import { catchError, finalize, mapTo, shareReplay, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { license_rules, search_filter_labels } from '../../../shared/constants/shared-enums';
 import { userSessionData } from '../../../shared/model/company-profile/node.model';
 import { TenantModel } from '../../../shared/model/tenant/tenant.model';
@@ -14,13 +14,14 @@ import entitiesData from '../../../../assets/data/entities_data/entities.json';
 import licenseRulesData from '../../../../assets/data/licenses/license_rules.json';
 import { firstValueFrom } from 'rxjs';
 import { DemoTourConfig } from '../../../shared/model/demo-tour/demo.tour.model';
+import { LicenseRule } from '../../../shared/model/licenses/license.rules';
+import type { EntityOption } from './model/app.model';
+import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
 
-export interface EntityOption {
-  title: string;
-  key: string;
-  fields?: string[];
-  alert?: boolean;
-}
+export type { EntityOption } from './model/app.model';
+
+
+
 
 @Injectable({
   providedIn: 'root'
@@ -33,7 +34,8 @@ export class AppService {
   public configData = signal<ConfigSettings>(new ConfigSettings());
   public page = signal<number>(1);
   public entities = signal<EntityOption[]>([]);
-  public worldJson = signal<any>(null);
+  public worldJson = signal<unknown>(null);
+  public backendWarmingUp = signal<boolean>(false);
   public demoTourConfig = signal<DemoTourConfig>({});
   public userSessionData = signal<userSessionData>(this.createEmptyUserSessionData());
   public tenantData = signal<TenantModel>({
@@ -103,9 +105,9 @@ export class AppService {
     this.loadEntities();
     this.loadLicenseRules();
     this.loadWorldJson();
-    this.loadDemoTourConfig();
+    void this.loadDemoTourConfig();
     this.activatedRoute.queryParams.subscribe(params => {
-      const pageParam = +params['page'];
+      const pageParam = +params.page;
       if (!isNaN(pageParam)) {
         this.updatePage(pageParam);
       }
@@ -131,7 +133,7 @@ export class AppService {
     }), catchError(() => {
       this.userSessionData.set(this.createEmptyUserSessionData());
       return of(null);
-    }), mapTo(void 0), finalize(() => {
+    }), map(() => void 0), finalize(() => {
       this.sessionLoad$ = null;
     }), shareReplay(1));
 
@@ -143,7 +145,7 @@ export class AppService {
       return this.configLoad$;
     }
 
-    this.configLoad$ = this.apiService.get<any>('public').pipe(tap((response) => {
+    this.configLoad$ = this.apiService.get<{ settings?: Partial<AppSettingsModel> }>('public').pipe(tap((response) => {
       if (response?.settings) {
         const current = this.configData();
         this.configData.set(new ConfigSettings(response.settings, current.localSettings));
@@ -151,7 +153,7 @@ export class AppService {
         this.preloadImage(this.configData().appSettings.logo_wide_dark);
         this.title.setTitle(this.configData().appSettings.app_name || 'Orion Intelligence');
       }
-    }), catchError(() => of(null)), mapTo(void 0), finalize(() => {
+    }), catchError(() => of(null)), map(() => void 0), finalize(() => {
       this.configLoad$ = null;
     }), shareReplay(1));
 
@@ -178,7 +180,7 @@ export class AppService {
     });
   }
 
-  public updateFavicon(url: string = '/api/s/static/system/logo.png'): void {
+  public updateFavicon(url = '/api/s/static/system/logo.png'): void {
     (document.querySelector<HTMLLinkElement>('link[rel="icon"]') ??
             document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'icon' }))).href = url;
   }
@@ -210,8 +212,8 @@ export class AppService {
     const visibleEntities = bundledEntities.filter(e => e.alert !== false);
     this.entities.set(visibleEntities);
     for (const e of visibleEntities) {
-      const key = `${e.key.replace(/[A-Z]/g, (c: string) => `_${c.toLowerCase()}`)}`;
-      search_filter_labels[key] = e.title;
+      const key = e.key.replace(/[A-Z]/g, (c: string) => `_${c.toLowerCase()}`);
+      setOwnProperty(search_filter_labels, key, e.title);
     }
   }
 
@@ -221,9 +223,9 @@ export class AppService {
   }
 
   private initializeLicenseRules(): void {
-    const bundledRules = licenseRulesData as Record<string, any>;
+    const bundledRules = licenseRulesData as Record<string, LicenseRule>;
     for (const key in bundledRules) {
-      license_rules[key] = bundledRules[key];
+      setOwnProperty(license_rules, key, getOwnProperty(bundledRules, key));
     }
   }
 
@@ -234,7 +236,7 @@ export class AppService {
 
   loadWorldJson(): void {
     this.http
-      .get<any>('assets/data/map/world.json')
+      .get<unknown>('assets/data/map/world.json')
       .pipe(tap(data => {
         this.worldJson.set(data);
       }))

@@ -6,6 +6,8 @@ import { AppService } from '../../../services/core/app/app.service';
 import { search_filter_labels } from '../../../shared/constants/shared-enums';
 import { TenantModel } from '../../../shared/model/tenant/tenant.model';
 import { TenantIocSelectorComponent } from '../../../shared/partials/tenant-ioc-selector/tenant-ioc-selector.component';
+import { getOwnProperty } from '../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-sidebar-user-ioc',
@@ -41,7 +43,7 @@ export class SidebarUserIocComponent implements OnInit {
           const backendIoc = backendData.iocs.find(i => i.ioc_id === key);
           return {
             ioc_id: key,
-            name: search_filter_labels[key] || key,
+            name: getOwnProperty(search_filter_labels, key) || key,
             values: backendIoc ? backendIoc.values : []
           };
         })
@@ -55,7 +57,7 @@ export class SidebarUserIocComponent implements OnInit {
     const tenantPrivileged = this.appService.tenantData().privileged_ioc;
     return tenantPrivileged === undefined
       ? this.appService.userSessionData().tenant.privilegedIoc !== true
-      : tenantPrivileged !== true;
+      : !tenantPrivileged;
   }
 
   update(): void {
@@ -70,7 +72,7 @@ export class SidebarUserIocComponent implements OnInit {
     this.appService.tenantData.set({ ...this.appService.tenantData(), ...filteredOnboardingData });
     this.apiService.post('update/tenants', filteredOnboardingData).subscribe({
       next: () => void 0,
-      error: (_err) => void 0,
+      error: () => void 0,
     });
   }
 

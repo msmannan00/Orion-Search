@@ -18,7 +18,7 @@ export class ChatResultItem {
   m_weblink!: string[];
   m_network?: string;
   m_ref_html?: string;
-  m_content_type?: string[];
+  m_content_type?: string | string[];
   m_hash?: string;
   m_post_likes?: string;
   m_post_shares?: string;
@@ -30,6 +30,8 @@ export class ChatResultItem {
   m_likes?: string;
   m_retweets?: string;
   m_commenters!: string[];
+
+  [key: string]: unknown;
 
   constructor(init?: Partial<ChatResultItem>) {
     Object.assign(this, init);

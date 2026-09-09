@@ -6,7 +6,7 @@
       </div>
       <input data-testid="scan-primary-input" [(ngModel)]="searchQuery" autocapitalize="none" autocomplete="off" class="h-full min-w-0 flex-1 bg-white pr-3 text-[15px] text-[#172235] outline-none placeholder:text-[14px] placeholder:text-[var(--color-text4)]" maxlength="150" name="username" [placeholder]="(scanType === 'repo' ? 'Repository' : 'Domain') | translate" type="url" required pattern="^(?:https?:\/\/)?([a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?(\/[^\s]*)?$">
       <input type="hidden" value="1">
-      <button data-testid="scan-search-button" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] text-white disabled:cursor-not-allowed disabled:opacity-40" [disabled]="isLoading || !searchForm.valid">{{ 'Search' | translate }}</button>
+      <button data-testid="scan-search-button" class="inline-flex items-center justify-center border text-sm font-semibold leading-none [height:var(--ui-btn-height,36px)] [padding:var(--ui-btn-py,0)_var(--ui-btn-px,16px)] [border-radius:var(--ui-btn-radius,10px)] [transition-property:var(--ui-btn-transition-properties,background-color,border-color,color)] [transition-duration:var(--ui-btn-transition-duration,160ms)] [transition-timing-function:ease] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgb(87_165_235/30%)] bg-[linear-gradient(92.32deg,#4ea2f1_2.58%,#2c7ac5)] text-white hover:bg-[linear-gradient(92.32deg,#3f96e8_2.58%,#236eb7)] [--ui-btn-height:100%] min-w-[112px] shrink-0 [--ui-btn-radius:0_8px_8px_0] border-l border-sky-300/20 [--ui-btn-px:1.25rem] disabled:cursor-not-allowed disabled:opacity-40" [disabled]="isLoading || !searchForm.valid">{{ 'Search' | translate }}</button>
     </div>
   </form>
 
@@ -18,7 +18,7 @@
     @if (!hasError && isLoading) {
       <div class="mt-[12px] ml-0 max-w-[720px]">
         <div class="mb-[6px] text-[12px] font-medium text-[var(--color-text1)]">{{ loadingStepLabel | translate }}</div>
-        <div class="relative overflow-hidden h-[10px] w-full overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
+        <div class="relative overflow-hidden h-[10px] w-full rounded-full border border-[var(--color-border)] bg-[var(--color-progress)]">
           <div class="absolute inset-0 overflow-hidden after:absolute after:bottom-0 after:top-0 after:w-[40%] after:rounded-full after:bg-[linear-gradient(90deg,#4ea2f1_0%,#2c7ac5_50%,#7cc2ff_100%)] after:shadow-[0_0_3px_rgb(78_162_241/18%)] after:content-[''] after:[animation:ui-progress-sweep-primary_1.3s_linear_infinite]"></div>
         </div>
       </div>
@@ -29,13 +29,13 @@
           <button data-testid="scan-download-report" (click)="openExportChoice()" [appTooltip]="'Export Report' | translate" [attr.aria-label]="'Export Report' | translate" class="security-scan-action-btn flex h-[40px] w-[40px] items-center justify-center border-0 bg-[var(--color-blue-750)] p-[5px] transition-colors duration-300 hover:bg-[var(--color-blue-810)] [.light-theme_&]:!border-transparent [.light-theme_&]:!bg-transparent [.light-theme_&]:![transition:background-color_.16s_ease,box-shadow_.16s_ease,transform_.16s_ease] [.light-theme_&]:hover:!border-transparent [.light-theme_&]:hover:!bg-[#cfe0f4] [.light-theme_&]:hover:!shadow-[inset_0_0_0_1px_#9bb7d8] [.light-theme_&]:hover:-translate-y-px [.light-theme_&]:focus-visible:!bg-[#bfd4ee] [.light-theme_&]:focus-visible:!shadow-[inset_0_0_0_1px_#8eadd2] [.light-theme_&]:focus-visible:!outline-none [.light-theme_&]:active:!bg-[#bfd4ee] [.light-theme_&]:active:!shadow-[inset_0_0_0_1px_#8eadd2]">
             <img alt="" aria-hidden="true" height="25" ngSrc="../../../../../assets/images/shared/theme/print.svg" width="25" class="ui-action-icon [.light-theme_&]:[filter:brightness(0)_saturate(100%)_invert(21%)_sepia(16%)_saturate(1250%)_hue-rotate(176deg)_brightness(94%)_contrast(89%)] [.light-theme_&]:!opacity-[92%]" />
           </button>
-          <button #printReportButton type="button" ngxPrint printSectionId="scanReport" [useExistingCss]="true" class="hidden"></button>
+          <button type="button" ngxPrint printSectionId="scanReport" [useExistingCss]="true" class="hidden"></button>
         </div>
       </div>
     }
     <div class="mt-[12px] rounded-[10px] bg-[var(--color-blue-720)] p-0 text-[var(--color-text1)]">
       @if (hasError && !isLoading) {
-        <div class="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px]" @fadeInDashboardItem>
+        <div class="ui-fade-in-dashboard-item rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px]">
           <div class="text-[18px] font-semibold text-[var(--color-text7)]">{{ 'Scan Failed' | translate }}</div>
           <div class="mt-[6px] text-[14px] text-[var(--color-text7)]">{{ errorMessage | translate }}</div>
           <ul class="mt-[10px] list-disc pl-[18px] text-[13px] text-[var(--color-text7)]">
@@ -84,7 +84,7 @@
             }
             <div class="my-[16px] h-px w-full" [ngClass]="{ 'bg-[var(--color-border-red)]': grade === 'D' || grade === 'F', 'bg-[var(--color-border-orange)]': grade === 'C', 'bg-[var(--color-divider)]': !(grade === 'D' || grade === 'F' || grade === 'C') }"></div>
             @if (!isLoading && meta) {
-              <div class="grid grid-cols-1 gap-[12px] sm:grid-cols-2 xl:grid-cols-12" @fadeInDashboardItem>
+              <div class="ui-fade-in-dashboard-item grid grid-cols-1 gap-[12px] sm:grid-cols-2 xl:grid-cols-12">
                 <div class="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-890)]/85 p-[14px] sm:col-span-2 xl:col-span-8">
                   <p class="mb-[7px] text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text3)]">{{ 'Target URL' | translate }}</p>
                   <a class="block break-all text-[14px] font-medium text-[var(--color-text1)] underline decoration-[var(--color-border)] underline-offset-4 hover:text-[var(--color-text1)]" [href]="meta.URL" target="_blank" rel="noopener noreferrer">{{ meta.URL }}</a>
@@ -149,7 +149,7 @@
       @if (!isLoading && !hasError) {
         @if (categories.length) {
           @for (cat of categories; track trackByCategory($index, cat)) {
-            <div class="security-scan-findings-section mt-[16px] rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-720)] p-[18px] shadow-[0_8px_22px_var(--color-shadow-light)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-[#f8fbff] [.light-theme_&]:!shadow-[0_1px_2px_rgba(15,23,42,0.04)]" @fadeInDashboardItem>
+            <div class="ui-fade-in-dashboard-item security-scan-findings-section mt-[16px] rounded-[12px] border border-[var(--color-border)] bg-[var(--color-blue-720)] p-[18px] shadow-[0_8px_22px_var(--color-shadow-light)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-[#f8fbff] [.light-theme_&]:!shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div class="flex flex-wrap items-center justify-between gap-[12px]">
                 <h3 data-testid="scan-findings-title" class="text-[17px] font-semibold tracking-[0.01em] text-[var(--color-text1)]">{{ cat.name }} {{ 'Findings' | translate }}</h3>
                 <span class="rounded-full border border-[var(--color-border)] bg-[var(--color-blue-790)] px-[10px] py-[3px] text-[12px] font-semibold text-[var(--color-text3)]">{{ cat.total }} {{ 'findings' | translate }}</span>
@@ -157,7 +157,7 @@
               <div class="my-[14px] h-px bg-[var(--color-divider)] [.light-theme_&]:!bg-[#d2deeb]"></div>
               <div class="flex flex-col gap-[15px]">
                 @for (item of cat.items; track trackByItem($index)) {
-                  <div class="security-scan-finding-card rounded-[10px] border border-l-[3px] border-[var(--color-border)] bg-[var(--color-blue-730)] p-[14px] shadow-[0_4px_14px_var(--color-shadow-light)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-white" [ngClass]="{ 'border-l-[var(--color-scan-red)]': item.risk.toLowerCase() === 'high', 'border-l-[var(--color-scan-orange)]': item.risk.toLowerCase() === 'medium', 'border-l-[var(--color-scan-green)]': item.risk.toLowerCase() === 'low', 'border-l-[var(--color-blue-640)]': item.risk.toLowerCase() === 'informational' }" @fadeInDashboardItem>
+                  <div class="ui-fade-in-dashboard-item security-scan-finding-card rounded-[10px] border border-l-[3px] border-[var(--color-border)] bg-[var(--color-blue-730)] p-[14px] shadow-[0_4px_14px_var(--color-shadow-light)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-white" [ngClass]="{ 'border-l-[var(--color-scan-red)]': item.risk.toLowerCase() === 'high', 'border-l-[var(--color-scan-orange)]': item.risk.toLowerCase() === 'medium', 'border-l-[var(--color-scan-green)]': item.risk.toLowerCase() === 'low', 'border-l-[var(--color-blue-640)]': item.risk.toLowerCase() === 'informational' }">
                     <div class="flex flex-wrap items-center justify-between gap-[10px]">
                       <div class="flex min-w-0 flex-1 items-center gap-[8px]">
                         <span class="h-[9px] w-[9px] shrink-0 rounded-full" [ngClass]="{ 'bg-[var(--color-scan-red)]': item.risk.toLowerCase() === 'high', 'bg-[var(--color-scan-orange)]': item.risk.toLowerCase() === 'medium', 'bg-[var(--color-scan-green)]': item.risk.toLowerCase() === 'low', 'bg-[var(--color-blue-640)]': item.risk.toLowerCase() === 'informational' }"></span>
@@ -178,7 +178,7 @@
           }
         }
         @if (!categories.length && meta) {
-          <div class="mt-[16px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px]" @fadeInDashboardItem>
+          <div class="ui-fade-in-dashboard-item mt-[16px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px]">
             <div class="text-[16px] font-semibold text-[var(--color-text1)]">{{ 'No Findings' | translate }}</div>
             <div class="mt-[6px] text-[14px] text-[var(--color-text4)]">{{ 'No issues were detected for this target.' | translate }}</div>
             <button class="mt-[12px] rounded-[8px] border border-[var(--color-border)] bg-transparent px-[12px] py-[6px] text-[14px] text-[var(--color-text4)] hover:bg-[var(--color-blue-810)] hover:text-[var(--color-text1)]" (click)="retry()">{{ 'Rescan' | translate }}</button>
@@ -186,12 +186,12 @@
         }
       } @else {
         @if (isLoading) {
-          @for (i of skeletonCards; track i; let idx = $index) {
-            <div class="security-scan-findings-section security-scan-findings-skeleton mt-[16px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px] [body.light-theme_&]:[&_.ui-shimmer]:!bg-[linear-gradient(90deg,#d9e6f2_10%,#eef4fb_45%,#d9e6f2_90%)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-[#f8fbff] [.light-theme_&]:!shadow-[0_1px_2px_rgba(15,23,42,0.04)]" @fadeInDashboardItem>
+          @for (i of skeletonCards; track i) {
+            <div class="ui-fade-in-dashboard-item security-scan-findings-section security-scan-findings-skeleton mt-[16px] rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-730)] p-[20px] [body.light-theme_&]:[&_.ui-shimmer]:!bg-[linear-gradient(90deg,#d9e6f2_10%,#eef4fb_45%,#d9e6f2_90%)] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-[#f8fbff] [.light-theme_&]:!shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-[18px] w-[220px] rounded-[6px] bg-[var(--color-divider)] [.light-theme_&]:!bg-[#d2deeb]"></div>
               <div class="my-[15px] h-px bg-[var(--color-divider)] [.light-theme_&]:!bg-[#d2deeb]"></div>
               <div class="flex flex-col gap-[12px]">
-                @for (j of skeletonCards; track j; let jdx = $index) {
+                @for (j of skeletonCards; track j) {
                   <div class="security-scan-finding-card security-scan-finding-skeleton rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] p-[14px] [.light-theme_&]:!border-[#d3deeb] [.light-theme_&]:!bg-white">
                     <div class="flex items-center gap-[8px]">
                       <div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-[10px] w-[10px] rounded-full bg-[var(--color-divider)] [.light-theme_&]:!bg-[#d2deeb]"></div>

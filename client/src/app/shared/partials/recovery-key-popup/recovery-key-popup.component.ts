@@ -30,7 +30,7 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 })
 export class RecoveryKeyPopupComponent {
   readonly recoveryKey = input.required<string>();
-  readonly closed = output<void>();
+  readonly closed = output();
   copied = false;
 
   @HostListener('document:keydown.escape')

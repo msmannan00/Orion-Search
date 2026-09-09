@@ -31,8 +31,12 @@ export class UserImagePickerComponent {
     });
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
+  onFileSelected(event: Event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    const file = input.files?.[0];
     if (!file) {
       return;
     }
@@ -58,7 +62,7 @@ export class UserImagePickerComponent {
   }
 
   hasCustomImage(): boolean {
-    const image = this.selectedImage || this.imageUrl || '';
+    const image = this.selectedImage ?? this.imageUrl ?? '';
     if (!image) {
       return false;
     }

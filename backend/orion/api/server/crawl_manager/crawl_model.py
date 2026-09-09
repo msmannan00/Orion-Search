@@ -24,7 +24,7 @@ from orion.api.server.crawl_manager.class_model.exploit_model import ExploitData
 from orion.api.server.crawl_manager.class_model.file_model import ScreenshotPayload
 from orion.api.server.crawl_manager.class_model.general_model import GeneralDataModel
 from orion.api.server.crawl_manager.class_model.leak_model import LeakDataModel
-from orion.api.server.crawl_manager.class_model.log_model import LogBatchModel, LogModel
+from orion.api.server.crawl_manager.class_model.log_model import LogBatchModel
 from orion.api.server.crawl_manager.class_model.malware_model import MalwareDataModel
 from orion.api.server.crawl_manager.class_model.nlp_data_model import nlp_data_model
 from orion.api.server.crawl_manager.class_model.social_model import social_data_model
@@ -66,9 +66,10 @@ class crawl_model:
 
     @staticmethod
     def getInstance():
-        if crawl_model.__instance is None:
-            crawl_model()
-        return crawl_model.__instance
+        instance = crawl_model.__instance
+        if instance is None:
+            instance = crawl_model()
+        return instance
 
     def __init__(self):
         self._engine = mongo_controller.get_instance().get_engine()
@@ -113,9 +114,9 @@ class crawl_model:
             try:
                 result = await manager.create_or_update_entity_nodes(entity_model(**document))
                 if result.get("status") != "success":
-                    log.g().w(f"Skipping CTI graph document pass for {index}/{document.get('m_document_id')}: {result.get('message')}")
+                    log.g().w(f"Skipping CTI graph document pass for {index}/{document.get('m_document_id', '')}: {result.get('message')}")
             except Exception as ex:
-                log.g().e(f"Skipping CTI graph document pass for {index}/{document.get('m_document_id')}: {ex}")
+                log.g().e(f"Skipping CTI graph document pass for {index}/{document.get('m_document_id', '')}: {ex}")
 
     def _graph_document_from_index_entry(self, index: str, document: dict):
         graph_document = dict(document)
@@ -658,13 +659,13 @@ class crawl_model:
                 )
         return zip_buffer.getvalue()
 
-    async def index_log_record(self, log_model: LogModel):
+    async def index_log_record(self, log_model):
         timestamp = datetime.now(timezone.utc).isoformat()
 
-        for log in log_model.logs:
-            log_hash = hashlib.sha256(log.encode("utf-8")).hexdigest()
+        for log_entry in log_model.logs:
+            log_hash = hashlib.sha256(log_entry.encode("utf-8")).hexdigest()
 
-            doc = {"log": log, "log_hash": log_hash, "timestamp": timestamp}
+            doc = {"log": log_entry, "log_hash": log_hash, "timestamp": timestamp}
 
             await self._engine.save(
                 {ELASTIC_KEYS.S_DOCUMENT: ELASTIC_INDEX.S_STEALERLOGS_INDEX, ELASTIC_KEYS.S_VALUE: doc})

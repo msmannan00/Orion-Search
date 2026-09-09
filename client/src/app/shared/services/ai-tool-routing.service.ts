@@ -1,13 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { AiToolRouteConfig } from './model/ai-tool-routing.model';
 
-type AiToolRouteConfig = {
-  type: string;
-  message: string;
-};
 
 const DEFAULT_MESSAGE = 'Ask me what to check and I will use the active route.';
-const ROUTE_MAPPINGS: Array<{ pattern: RegExp } & AiToolRouteConfig> = [
+const ROUTE_MAPPINGS: ({ pattern: RegExp } & AiToolRouteConfig)[] = [
   { pattern: /\/dashboard\/profile\/consolidated\b(?=.*[?&]ioc=)/, type: '/api/search/stealer/ioc', message: 'Search stealer IoCs by IP, domain, URL, hash, email, username, malware phrase, date range, or filter details.' },
   { pattern: /\/dashboard\/strategic\b/, type: '/api/search/strategic', message: 'Search strategic intelligence by topic, organization, asset, country, network, date range, or advanced entity filters.' },
   { pattern: /\/dashboard\/breach\b/, type: '/api/search/breach', message: 'Search breach intelligence by email, username, domain, leak source, database, country, network, date range, or filters.' },
@@ -84,7 +81,7 @@ export class AiToolRoutingService {
     if (cleanRoute.startsWith('/api/')) {
       return this.getEndpointConfig(cleanRoute);
     }
-    return this.routeMappings.find(({ pattern }) => pattern.test(cleanRoute)) || { type: 'default', message: this.defaultMessage };
+    return this.routeMappings.find(({ pattern }) => pattern.test(cleanRoute)) ?? { type: 'default', message: this.defaultMessage };
   }
 
   private getApiTypeConfig(apiType = ''): AiToolRouteConfig {
@@ -97,8 +94,8 @@ export class AiToolRoutingService {
       return this.getRouteConfig();
     }
     return this.routeMappings.find(route => route.type === cleanEndpoint)
-      || Object.values(this.apiTypeMappings).find(config => config.type === cleanEndpoint)
-      || { type: cleanEndpoint, message: this.defaultMessage };
+      ?? Object.values(this.apiTypeMappings).find(config => config.type === cleanEndpoint)
+      ?? { type: cleanEndpoint, message: this.defaultMessage };
   }
 
   private normalizeApiEndpoint(endpoint: string): string {

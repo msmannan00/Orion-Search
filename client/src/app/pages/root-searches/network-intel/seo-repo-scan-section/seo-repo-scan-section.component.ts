@@ -1,23 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { UrlScanMeta } from '../../../../shared/model/security-scan/security.scan.results.model';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
-import { UrlScanMeta, UrlScanThreatItem } from '../../../../shared/model/security-scan/security.scan.results.model';
+import type { NetworkIntelSeoRepoScanCategory } from './model/seo-repo-scan-section.model';
+export type { NetworkIntelSeoRepoScanCategory } from './model/seo-repo-scan-section.model';
 
-export interface NetworkIntelSeoRepoScanCategory {
-  name: string;
-  total: number;
-  items: UrlScanThreatItem[];
-}
+
+
 
 @Component({
   selector: 'app-network-intel-seo-repo-scan-section',
   standalone: true,
   imports: [CommonModule, TranslatePipe],
   templateUrl: './seo-repo-scan-section.component.html',
+  styleUrls: ['./seo-repo-scan-section.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
 })
 export class SeoRepoScanSectionComponent {
   readonly isEmbedded = input(false);
@@ -51,7 +49,7 @@ export class SeoRepoScanSectionComponent {
   }
 
   get displayHost(): string {
-    return this.meta()?.Host || this.extractHost(this.meta()?.URL) || '-';
+    return this.meta()?.Host ?? this.extractHost(this.meta()?.URL) ?? '-';
   }
 
   get displayPort(): string {
@@ -60,7 +58,7 @@ export class SeoRepoScanSectionComponent {
   }
 
   get tlsStatus(): string {
-    const port = this.meta()?.Port || '';
+    const port = this.meta()?.Port ?? '';
     return /ssl/i.test(port) ? 'Enabled' : 'Not detected';
   }
 
@@ -84,17 +82,17 @@ export class SeoRepoScanSectionComponent {
   get detailEntries(): { label: string; value: string }[] {
     const meta = this.meta();
     return [
-      { label: 'Target URL', value: meta?.URL || '-' },
+      { label: 'Target URL', value: meta?.URL ?? '-' },
       { label: 'Host', value: this.displayHost },
       { label: 'Port', value: this.displayPort },
       { label: 'TLS', value: this.tlsStatus },
       { label: 'Scan Type', value: this.normalizedScanType },
-      { label: 'Scanned On', value: meta?.Scanned_on_date || '-' },
+      { label: 'Scanned On', value: meta?.Scanned_on_date ?? '-' },
     ].filter((entry) => entry.value !== '-');
   }
 
   riskBadgeClass(risk: string | undefined | null): string {
-    const normalized = String(risk || '').toLowerCase();
+    const normalized = String(risk ?? '').toLowerCase();
     if (normalized === 'high' || normalized === 'critical') {
       return 'border-red-400/20 bg-red-500/10 text-red-300 [body.light-theme_&]:text-red-700';
     }

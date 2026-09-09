@@ -61,65 +61,65 @@ Common error shapes:
 
 ## Endpoint Index
 
-| Method | Path | Summary | Tag |
-| --- | --- | --- | --- |
-| `POST` | `/api/index/injection` | Batch inject SIEM logs | Crawler |
-| `POST` | `/api/dynamic/user` | Dynamic user email exposure search | Entity Scans |
-| `POST` | `/api/dynamic/cracked` | Dynamic cracked credential search | Entity Scans |
-| `POST` | `/api/dynamic/software` | Dynamic software credential search | Entity Scans |
-| `POST` | `/api/urlscan/domain` | Domain, SEO, and repository scan | Entity Scans |
-| `POST` | `/api/dynamic/social` | Dynamic social identifier exposure search | Entity Scans |
-| `POST` | `/api/dynamic/wanted` | Searches wanted people around the Globe | Entity Scans |
-| `POST` | `/api/dynamic/national-identity` | Dynamic national identity search | Entity Scans |
-| `POST` | `/api/ioc/extract` | Extract IOCs from file(.pdf or .txt) or image(.png, .jpg or .jpeg) | Entity Scans |
-| `POST` | `/api/apk/scan` | Dynamic analysis scan to identify application metadata, cracking indicators, etc | Entity Scans |
-| `POST` | `/api/crypto/scan` | Scan cryptocurrency wallet address or transaction hash | Entity Scans |
-| `POST` | `/api/netintel/resolve_ip` | Resolve a domain to IP addresses | Network Intelligence |
-| `POST` | `/api/netintel/ipscanner` | Scan an IP address for network intelligence | Network Intelligence |
-| `POST` | `/api/netintel/url_vulnerability_scan` | Scan a domain URL for web vulnerabilities | Network Intelligence |
-| `POST` | `/api/netintel/iot_detect` | Scan a geographic area for exposed cameras | Network Intelligence |
-| `POST` | `/api/netintel/camera_detect_ranges` | Scan IP ranges for exposed cameras | Network Intelligence |
-| `POST` | `/api/profile/event-management/siem/search` | Search SIEM logs | Profile |
-| `GET` | `/api/search/defacement/{doc_id}` | Get defacement report | Reports |
-| `GET` | `/api/search/breach/{doc_id}` | Get breach monitoring report | Reports |
-| `GET` | `/api/search/news/{doc_id}` | Get breach-related news report | Reports |
-| `GET` | `/api/search/exploit/{doc_id}` | Get exploit intelligence report | Reports |
-| `GET` | `/api/search/apt/{doc_id}` | Get APT intelligence report | Reports |
-| `GET` | `/api/search/malware/{doc_id}` | Get malware intelligence report | Reports |
-| `GET` | `/api/search/strategic/{doc_id}` | Get darkweb strategic report | Reports |
-| `GET` | `/api/search/chat/{doc_id}` | Get chat intelligence report | Reports |
-| `GET` | `/api/search/social/{doc_id}` | Get social media intelligence report | Reports |
-| `GET` | `/api/search/breach/screenshot/{filename}` | Get breach report screenshot | Reports |
-| `POST` | `/api/search/strategic` | Search strategic reports | Search |
-| `POST` | `/api/search/breach` | Search breach reports | Search |
-| `POST` | `/api/search/social` | Search social reports | Search |
-| `POST` | `/api/search/exploit` | Search exploit reports | Search |
-| `POST` | `/api/search/apt-intel` | Search APT Intel reports | Search |
-| `POST` | `/api/search/defacement` | Search defacement reports | Search |
-| `POST` | `/api/search/stealer/ioc` | Search stealer log reports | Search |
-| `POST` | `/api/search/consolidated` | Search consolidated reports (grouped) | Search |
-| `POST` | `/api/social/recon` | Cross-platform identity search to locate a user's digital footprint | Social Search |
-| `POST` | `/api/social/profile` | Scrapes the profile of requested social account | Social Search |
-| `POST` | `/api/social/online/images` | Scrapes the images of requested social account | Social Search |
-| `POST` | `/api/social/recon/image` | Reverse image search to identify associated social profiles | Social Search |
-| `POST` | `/api/social/followers` | Scrapes the followers of requested social account | Social Search |
-| `POST` | `/api/social/following` | Scrapes the following of requested social account | Social Search |
-| `POST` | `/api/social/posts` | Scrapes the posts of requested social account | Social Search |
-| `POST` | `/api/social/metadata` | Search for specific keyword combinations linked to a username across social platforms. | Social Search |
-| `GET` | `/api/search/breach/stix/{doc_id}` | Get breach media intelligence report in stix format | Stix |
-| `GET` | `/api/search/strategic/stix/{doc_id}` | Get strategic media intelligence report in stix format | Stix |
-| `GET` | `/api/search/defacement/stix/{doc_id}` | Get defacement media intelligence report in stix format | Stix |
-| `GET` | `/api/search/exploit/stix/{doc_id}` | Get exploit media intelligence report in stix format | Stix |
-| `GET` | `/api/search/social/stix/{doc_id}` | Get social media intelligence report in stix format | Stix |
-| `GET` | `/api/search/chat/stix/{doc_id}` | Get chat intelligence report in stix format | Stix |
-| `GET` | `/api/search/news/stix/{doc_id}` | Get news media intelligence report in stix format | Stix |
-| `POST` | `/api/urlscan/subdomains` | Returns the list of associated subdomains | Support Method |
-| `POST` | `/api/urlscan/dns` | Reverse DNS and ping check | Support Method |
-| `POST` | `/api/urlscan/wayback` | Fetches archived snapshots and timestamps | Support Method |
-| `POST` | `/api/cross/search` | Run Cross Search | Support Method |
-| `GET` | `/api/directory` | Get monitored source directory | System Info |
-| `GET` | `/api/insight` | Get system insights | System Info |
-| `GET` | `/api/insight/country` | Get paginated country insights | System Info |
+| Method | Path                                        | Summary                                                                                | Tag                  |
+|--------|---------------------------------------------|----------------------------------------------------------------------------------------|----------------------|
+| `POST` | `/api/index/injection`                      | Batch inject SIEM logs                                                                 | Crawler              |
+| `POST` | `/api/dynamic/user`                         | Dynamic user email exposure search                                                     | Entity Scans         |
+| `POST` | `/api/dynamic/cracked`                      | Dynamic cracked credential search                                                      | Entity Scans         |
+| `POST` | `/api/dynamic/software`                     | Dynamic software credential search                                                     | Entity Scans         |
+| `POST` | `/api/urlscan/domain`                       | Domain, SEO, and repository scan                                                       | Entity Scans         |
+| `POST` | `/api/dynamic/social`                       | Dynamic social identifier exposure search                                              | Entity Scans         |
+| `POST` | `/api/dynamic/wanted`                       | Searches wanted people around the Globe                                                | Entity Scans         |
+| `POST` | `/api/dynamic/national-identity`            | Dynamic national identity search                                                       | Entity Scans         |
+| `POST` | `/api/ioc/extract`                          | Extract IOCs from file(.pdf or .txt) or image(.png, .jpg or .jpeg)                     | Entity Scans         |
+| `POST` | `/api/apk/scan`                             | Dynamic analysis scan to identify application metadata, cracking indicators, etc       | Entity Scans         |
+| `POST` | `/api/crypto/scan`                          | Scan cryptocurrency wallet address or transaction hash                                 | Entity Scans         |
+| `POST` | `/api/netintel/resolve_ip`                  | Resolve a domain to IP addresses                                                       | Network Intelligence |
+| `POST` | `/api/netintel/ipscanner`                   | Scan an IP address for network intelligence                                            | Network Intelligence |
+| `POST` | `/api/netintel/url_vulnerability_scan`      | Scan a domain URL for web vulnerabilities                                              | Network Intelligence |
+| `POST` | `/api/netintel/iot_detect`                  | Scan a geographic area for exposed cameras                                             | Network Intelligence |
+| `POST` | `/api/netintel/camera_detect_ranges`        | Scan IP ranges for exposed cameras                                                     | Network Intelligence |
+| `POST` | `/api/profile/event-management/siem/search` | Search SIEM logs                                                                       | Profile              |
+| `GET`  | `/api/search/defacement/{doc_id}`           | Get defacement report                                                                  | Reports              |
+| `GET`  | `/api/search/breach/{doc_id}`               | Get breach monitoring report                                                           | Reports              |
+| `GET`  | `/api/search/news/{doc_id}`                 | Get breach-related news report                                                         | Reports              |
+| `GET`  | `/api/search/exploit/{doc_id}`              | Get exploit intelligence report                                                        | Reports              |
+| `GET`  | `/api/search/apt/{doc_id}`                  | Get APT intelligence report                                                            | Reports              |
+| `GET`  | `/api/search/malware/{doc_id}`              | Get malware intelligence report                                                        | Reports              |
+| `GET`  | `/api/search/strategic/{doc_id}`            | Get darkweb strategic report                                                           | Reports              |
+| `GET`  | `/api/search/chat/{doc_id}`                 | Get chat intelligence report                                                           | Reports              |
+| `GET`  | `/api/search/social/{doc_id}`               | Get social media intelligence report                                                   | Reports              |
+| `GET`  | `/api/search/breach/screenshot/{filename}`  | Get breach report screenshot                                                           | Reports              |
+| `POST` | `/api/search/strategic`                     | Search strategic reports                                                               | Search               |
+| `POST` | `/api/search/breach`                        | Search breach reports                                                                  | Search               |
+| `POST` | `/api/search/social`                        | Search social reports                                                                  | Search               |
+| `POST` | `/api/search/exploit`                       | Search exploit reports                                                                 | Search               |
+| `POST` | `/api/search/apt-intel`                     | Search APT Intel reports                                                               | Search               |
+| `POST` | `/api/search/defacement`                    | Search defacement reports                                                              | Search               |
+| `POST` | `/api/search/stealer/ioc`                   | Search stealer log reports                                                             | Search               |
+| `POST` | `/api/search/consolidated`                  | Search consolidated reports (grouped)                                                  | Search               |
+| `POST` | `/api/social/recon`                         | Cross-platform identity search to locate a user's digital footprint                    | Social Search        |
+| `POST` | `/api/social/profile`                       | Scrapes the profile of requested social account                                        | Social Search        |
+| `POST` | `/api/social/online/images`                 | Scrapes the images of requested social account                                         | Social Search        |
+| `POST` | `/api/social/recon/image`                   | Reverse image search to identify associated social profiles                            | Social Search        |
+| `POST` | `/api/social/followers`                     | Scrapes the followers of requested social account                                      | Social Search        |
+| `POST` | `/api/social/following`                     | Scrapes the following of requested social account                                      | Social Search        |
+| `POST` | `/api/social/posts`                         | Scrapes the posts of requested social account                                          | Social Search        |
+| `POST` | `/api/social/metadata`                      | Search for specific keyword combinations linked to a username across social platforms. | Social Search        |
+| `GET`  | `/api/search/breach/stix/{doc_id}`          | Get breach media intelligence report in stix format                                    | Stix                 |
+| `GET`  | `/api/search/strategic/stix/{doc_id}`       | Get strategic media intelligence report in stix format                                 | Stix                 |
+| `GET`  | `/api/search/defacement/stix/{doc_id}`      | Get defacement media intelligence report in stix format                                | Stix                 |
+| `GET`  | `/api/search/exploit/stix/{doc_id}`         | Get exploit media intelligence report in stix format                                   | Stix                 |
+| `GET`  | `/api/search/social/stix/{doc_id}`          | Get social media intelligence report in stix format                                    | Stix                 |
+| `GET`  | `/api/search/chat/stix/{doc_id}`            | Get chat intelligence report in stix format                                            | Stix                 |
+| `GET`  | `/api/search/news/stix/{doc_id}`            | Get news media intelligence report in stix format                                      | Stix                 |
+| `POST` | `/api/urlscan/subdomains`                   | Returns the list of associated subdomains                                              | Support Method       |
+| `POST` | `/api/urlscan/dns`                          | Reverse DNS and ping check                                                             | Support Method       |
+| `POST` | `/api/urlscan/wayback`                      | Fetches archived snapshots and timestamps                                              | Support Method       |
+| `POST` | `/api/cross/search`                         | Run Cross Search                                                                       | Support Method       |
+| `GET`  | `/api/directory`                            | Get monitored source directory                                                         | System Info          |
+| `GET`  | `/api/insight`                              | Get system insights                                                                    | System Info          |
+| `GET`  | `/api/insight/country`                      | Get paginated country insights                                                         | System Info          |
 
 ## Crawler
 
@@ -187,9 +187,9 @@ Request content type: `application/json` `InjectionBatchRequestModel`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| logs | `[{"event_type": "auth_failure", "host": "edge-gateway-01", "raw": "Failed login attempt for admin from 10.10.0.15 targeting login-0015.security.example for admin@alerts.example", "severity": "high", "source": "waf", "tags": ["auth", "waf"], "timestamp": "2026-04-24T10:15:00+00:00", "user": "admin"}]` |
+| Field | Sample                                                                                                                                                                                                                                                                                                         |
+|-------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| logs  | `[{"event_type": "auth_failure", "host": "edge-gateway-01", "raw": "Failed login attempt for admin from 10.10.0.15 targeting login-0015.security.example for admin@alerts.example", "severity": "high", "source": "waf", "tags": ["auth", "waf"], "timestamp": "2026-04-24T10:15:00+00:00", "user": "admin"}]` |
 
 **Response Sample `200`**
 
@@ -250,9 +250,9 @@ Request content type: `application/json` `search_dynamic_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"email": "msmannan00@gmail.com", "username": ""}` |
+| Field | Sample                                              |
+|-------|-----------------------------------------------------|
+| text  | `{"email": "msmannan00@gmail.com", "username": ""}` |
 
 **Response Sample `200`**
 
@@ -334,9 +334,9 @@ Request content type: `application/json` `search_dynamic_crack_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
+| Field | Sample                                                                                     |
+|-------|--------------------------------------------------------------------------------------------|
+| text  | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
 
 **Response Sample `200`**
 
@@ -402,9 +402,9 @@ Request content type: `application/json` `search_dynamic_crack_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
+| Field | Sample                                                                                     |
+|-------|--------------------------------------------------------------------------------------------|
+| text  | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
 
 **Response Sample `200`**
 
@@ -470,11 +470,11 @@ Request content type: `application/json` `DomainScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| checkLive | `False` |
-| domain | `www.bbc.com` |
-| scanType | `basic` |
+| Field     | Sample        |
+|-----------|---------------|
+| checkLive | `False`       |
+| domain    | `www.bbc.com` |
+| scanType  | `basic`       |
 
 **Response Sample `200`**
 
@@ -526,9 +526,9 @@ Request content type: `application/json` `search_dynamic_social_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"username": "bitcoin"}` |
+| Field | Sample                    |
+|-------|---------------------------|
+| text  | `{"username": "bitcoin"}` |
 
 **Response Sample `200`**
 
@@ -628,9 +628,9 @@ Request content type: `application/json` `search_dynamic_social_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"username": "bitcoin"}` |
+| Field | Sample                    |
+|-------|---------------------------|
+| text  | `{"username": "bitcoin"}` |
 
 **Response Sample `200`**
 
@@ -710,9 +710,9 @@ Request content type: `application/json` `search_dynamic_crack_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
+| Field | Sample                                                                                     |
+|-------|--------------------------------------------------------------------------------------------|
+| text  | `{"name": "https://play.google.com/store/apps/details?id=com.jrzheng.supervpnfree&hl=en"}` |
 
 **Response Sample `200`**
 
@@ -757,9 +757,9 @@ Request content type: `multipart/form-data` `Body_iocExtractFromFile`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| file | `string` |
+| Field | Sample   |
+|-------|----------|
+| file  | `string` |
 
 **Response Sample `200`**
 
@@ -823,9 +823,9 @@ Request content type: `multipart/form-data` `Body_dynamicApkScan`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| file | `string` |
+| Field | Sample   |
+|-------|----------|
+| file  | `string` |
 
 **Response Sample `200`**
 
@@ -924,9 +924,9 @@ Request content type: `application/json` `search_dynamic_crypto_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"hash": "685b826d9726bcb2e287abb47a24f575aefe6fec7ccb2fa6304ebc11ea2b0842", "wallet": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"}` |
+| Field | Sample                                                                                                                                 |
+|-------|----------------------------------------------------------------------------------------------------------------------------------------|
+| text  | `{"hash": "685b826d9726bcb2e287abb47a24f575aefe6fec7ccb2fa6304ebc11ea2b0842", "wallet": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"}` |
 
 **Response Sample `200`**
 
@@ -1006,8 +1006,8 @@ Request content type: `application/json` `ResolveIPRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
+| Field  | Sample        |
+|--------|---------------|
 | domain | `example.com` |
 
 **Response Sample `200`**
@@ -1063,9 +1063,9 @@ Request content type: `application/json` `NetIntelDeepScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| ip | `8.8.8.8` |
+| Field | Sample    |
+|-------|-----------|
+| ip    | `8.8.8.8` |
 
 **Response Sample `200`**
 
@@ -1253,8 +1253,8 @@ Request content type: `application/json` `UrlVulnerabilityScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
+| Field  | Sample        |
+|--------|---------------|
 | domain | `example.com` |
 
 **Response Sample `200`**
@@ -1307,11 +1307,11 @@ Request content type: `application/json` `GeoCameraDetectRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
+| Field       | Sample            |
+|-------------|-------------------|
 | coordinates | `24.8607,67.0011` |
-| max_ips | `200` |
-| radius_km | `25` |
+| max_ips     | `200`             |
+| radius_km   | `25`              |
 
 **Response Sample `200`**
 
@@ -1365,10 +1365,10 @@ Request content type: `application/json` `GeoCameraDetectRangesRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
+| Field     | Sample               |
+|-----------|----------------------|
 | ip_ranges | `["192.168.1.0/24"]` |
-| max_ips | `200` |
+| max_ips   | `200`                |
 
 **Response Sample `200`**
 
@@ -1425,12 +1425,12 @@ Request content type: `application/json` `SiemSearchRequestModel`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| date_range | `2026-04-01,2026-04-24` |
-| from | `0` |
-| q | `admin@alerts.example login-0015.security.example 10.10.0.15 auth_failure` |
-| size | `500` |
+| Field      | Sample                                                                     |
+|------------|----------------------------------------------------------------------------|
+| date_range | `2026-04-01,2026-04-24`                                                    |
+| from       | `0`                                                                        |
+| q          | `admin@alerts.example login-0015.security.example 10.10.0.15 auth_failure` |
+| size       | `500`                                                                      |
 
 **Response Sample `200`**
 
@@ -1478,9 +1478,9 @@ Search defacement intelligence reports for hacked or phishing websites; returns 
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
+| Name   | In   | Required | Type   | Description | Sample           |
+|--------|------|----------|--------|-------------|------------------|
+| doc_id | path | yes      | string |             | `example-doc-id` |
 
 **Request Sample**
 
@@ -1544,10 +1544,10 @@ Get a specific breach monitoring report for a tracked website or asset by its re
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1615,10 +1615,10 @@ Get a specific breach-related news intelligence report generated from external n
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1681,10 +1681,10 @@ Get a specific exploit intelligence report (CVE, exploit kit, zero-day activity,
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1748,10 +1748,10 @@ Retrieve an indexed APT actor intelligence report by document id. The optional `
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1789,10 +1789,10 @@ Retrieve an indexed malware intelligence report by document id. The optional `la
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1830,10 +1830,10 @@ Get a specific strategic intelligence report aggregating crawled content from on
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1896,10 +1896,10 @@ Get a specific chat intelligence report focused on messaging platforms such as T
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -1982,10 +1982,10 @@ Response content type: `application/json`.
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -2019,9 +2019,9 @@ Retrieve the screenshot image associated with a specific breach report, stored i
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| filename | path | yes | string |  | `example` |
+| Name     | In   | Required | Type   | Description | Sample    |
+|----------|------|----------|--------|-------------|-----------|
+| filename | path | yes      | string |             | `example` |
 
 **Request Sample**
 
@@ -2118,25 +2118,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -2302,25 +2302,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -2465,25 +2465,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -2649,25 +2649,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -2893,25 +2893,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -3077,19 +3077,19 @@ Request content type: `application/json` `search_credential_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| category | `` |
-| daterange | `` |
-| entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| page | `1` |
+| Field           | Sample                                                                                                |
+|-----------------|-------------------------------------------------------------------------------------------------------|
+| category        | ``                                                                                                    |
+| daterange       | ``                                                                                                    |
+| entity_filter   | `{"m_country": ["pakistan"]}`                                                                         |
+| fullsearch      | `False`                                                                                               |
+| ioc             | ``                                                                                                    |
+| page            | `1`                                                                                                   |
 | password_schema | `{"hasAlphabets": true, "hasNumbers": true, "hasSpecialChars": true, "maxLength": 1, "minLength": 1}` |
-| q | `` |
-| type | `c` |
-| url | `` |
-| user | `` |
+| q               | ``                                                                                                    |
+| type            | `c`                                                                                                   |
+| url             | ``                                                                                                    |
+| user            | ``                                                                                                    |
 
 **Response Sample `200`**
 
@@ -3214,25 +3214,25 @@ Request content type: `application/json` `search_consolidated_param_model`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| attacker | `` |
-| category | `all` |
-| content | `all` |
-| daterange | `` |
+| Field         | Sample                        |
+|---------------|-------------------------------|
+| attacker      | ``                            |
+| category      | `all`                         |
+| content       | `all`                         |
+| daterange     | ``                            |
 | entity_filter | `{"m_country": ["pakistan"]}` |
-| fullsearch | `False` |
-| ioc | `` |
-| matchtype | `` |
-| must | `False` |
-| network | `all` |
-| page | `1` |
-| platform | `` |
-| q | `` |
-| safe | `False` |
-| team | `` |
-| url | `` |
-| user | `` |
+| fullsearch    | `False`                       |
+| ioc           | ``                            |
+| matchtype     | ``                            |
+| must          | `False`                       |
+| network       | `all`                         |
+| page          | `1`                           |
+| platform      | ``                            |
+| q             | ``                            |
+| safe          | `False`                       |
+| team          | ``                            |
+| url           | ``                            |
+| user          | ``                            |
 
 **Response Sample `200`**
 
@@ -3345,8 +3345,8 @@ Request content type: `application/json` `SocialReconRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
+| Field | Sample          |
+|-------|-----------------|
 | query | `example query` |
 
 **Response Sample `200`**
@@ -3412,9 +3412,9 @@ Request content type: `application/json` `SocialProfileRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| platform | `tiktok` |
+| Field    | Sample        |
+|----------|---------------|
+| platform | `tiktok`      |
 | username | `@msmannan00` |
 
 **Response Sample `200`**
@@ -3479,11 +3479,11 @@ Request content type: `application/json` `SocialOnlineImages`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| platform | `all` |
-| username | `string` |
-| max_followers | `50` |
+| Field         | Sample   |
+|---------------|----------|
+| platform      | `all`    |
+| username      | `string` |
+| max_followers | `50`     |
 
 **Response Sample `200`**
 
@@ -3542,9 +3542,9 @@ Request content type: `application/json`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| key | `value` |
+| Field | Sample  |
+|-------|---------|
+| key   | `value` |
 
 **Response Sample `200`**
 
@@ -3609,11 +3609,11 @@ Request content type: `application/json` `SocialFollowersRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| platform | `all` |
-| username | `string` |
-| max_followers | `50` |
+| Field         | Sample   |
+|---------------|----------|
+| platform      | `all`    |
+| username      | `string` |
+| max_followers | `50`     |
 
 **Response Sample `200`**
 
@@ -3661,11 +3661,11 @@ Request content type: `application/json` `SocialFollowingRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| platform | `all` |
-| username | `string` |
-| max_following | `50` |
+| Field         | Sample   |
+|---------------|----------|
+| platform      | `all`    |
+| username      | `string` |
+| max_following | `50`     |
 
 **Response Sample `200`**
 
@@ -3715,9 +3715,9 @@ Request content type: `application/json` `SocialProfileRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| platform | `tiktok` |
+| Field    | Sample        |
+|----------|---------------|
+| platform | `tiktok`      |
 | username | `@msmannan00` |
 
 **Response Sample `200`**
@@ -3794,11 +3794,11 @@ Request content type: `application/json` `SocialMetadataRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| tokens | `["string"]` |
-| username | `string` |
-| platform | `all` |
+| Field    | Sample       |
+|----------|--------------|
+| tokens   | `["string"]` |
+| username | `string`     |
+| platform | `all`        |
 
 **Response Sample `200`**
 
@@ -3837,10 +3837,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -4001,10 +4001,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -4165,9 +4165,9 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
+| Name   | In   | Required | Type   | Description | Sample           |
+|--------|------|----------|--------|-------------|------------------|
+| doc_id | path | yes      | string |             | `example-doc-id` |
 
 **Request Sample**
 
@@ -4328,10 +4328,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -4492,10 +4492,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -4656,10 +4656,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -4820,10 +4820,10 @@ Return a **STIX 2.1 bundle** for a single document. This endpoint converts an Or
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| doc_id | path | yes | string |  | `example-doc-id` |
-| lang | query | no | string | Optional language code for localized report content. | `en` |
+| Name   | In    | Required | Type   | Description                                          | Sample           |
+|--------|-------|----------|--------|------------------------------------------------------|------------------|
+| doc_id | path  | yes      | string |                                                      | `example-doc-id` |
+| lang   | query | no       | string | Optional language code for localized report content. | `en`             |
 
 **Request Sample**
 
@@ -5014,11 +5014,11 @@ Request content type: `application/json` `DomainScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| checkLive | `False` |
-| domain | `www.bbc.com` |
-| scanType | `basic` |
+| Field     | Sample        |
+|-----------|---------------|
+| checkLive | `False`       |
+| domain    | `www.bbc.com` |
+| scanType  | `basic`       |
 
 **Response Sample `200`**
 
@@ -5070,11 +5070,11 @@ Request content type: `application/json` `DomainScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| checkLive | `False` |
-| domain | `www.bbc.com` |
-| scanType | `basic` |
+| Field     | Sample        |
+|-----------|---------------|
+| checkLive | `False`       |
+| domain    | `www.bbc.com` |
+| scanType  | `basic`       |
 
 **Response Sample `200`**
 
@@ -5126,11 +5126,11 @@ Request content type: `application/json` `DomainScanRequest`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| checkLive | `False` |
-| domain | `www.bbc.com` |
-| scanType | `basic` |
+| Field     | Sample        |
+|-----------|---------------|
+| checkLive | `False`       |
+| domain    | `www.bbc.com` |
+| scanType  | `basic`       |
 
 **Response Sample `200`**
 
@@ -5182,9 +5182,9 @@ Request content type: `application/json` `search_dynamic_onion_search`.
 
 **Request Fields**
 
-| Field | Sample |
-| --- | --- |
-| text | `{"query": "hacking"}` |
+| Field | Sample                 |
+|-------|------------------------|
+| text  | `{"query": "hacking"}` |
 
 **Response Sample `200`**
 
@@ -5229,13 +5229,13 @@ Retrieve the complete list of monitored and crawled sources across Clearnet, Oni
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| page | query | no | integer |  | `1` |
-| content_type | query | no | string |  | `all` |
-| index | query | no | string |  | `all` |
-| network | query | no | string |  | `all` |
-| daterange | query | no | string |  | `` |
+| Name         | In    | Required | Type    | Description | Sample |
+|--------------|-------|----------|---------|-------------|--------|
+| page         | query | no       | integer |             | `1`    |
+| content_type | query | no       | string  |             | `all`  |
+| index        | query | no       | string  |             | `all`  |
+| network      | query | no       | string  |             | `all`  |
+| daterange    | query | no       | string  |             | ``     |
 
 **Request Sample**
 
@@ -5615,12 +5615,12 @@ Response content type: `application/json`.
 
 **Parameters**
 
-| Name | In | Required | Type | Description | Sample |
-| --- | --- | --- | --- | --- | --- |
-| category | query | yes | string |  | `all` |
-| country | query | yes | string |  | `pakistan` |
-| page | query | no | integer |  | `1` |
-| limit | query | no | integer |  | `20` |
+| Name     | In    | Required | Type    | Description | Sample     |
+|----------|-------|----------|---------|-------------|------------|
+| category | query | yes      | string  |             | `all`      |
+| country  | query | yes      | string  |             | `pakistan` |
+| page     | query | no       | integer |             | `1`        |
+| limit    | query | no       | integer |             | `20`       |
 
 **Request Sample**
 

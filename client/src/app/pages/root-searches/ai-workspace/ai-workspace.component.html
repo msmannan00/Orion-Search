@@ -81,11 +81,7 @@
                           </div>
                           <h3 class="mt-5 text-[32px] font-semibold tracking-[-0.03em] text-[var(--color-text1)] max-[640px]:text-[26px]">
                             {{ 'How can Nexus help?' | translate }}</h3>
-                          <p class="mx-auto mt-3 max-w-[580px] text-[14px] leading-7 text-[var(--color-text4)]">{{ 'Use
-                            this
-                            compact analyst assistant for summaries, triage notes, and quick next-step guidance without
-                            leaving
-                            the dashboard.' | translate }}</p>
+                          <p class="mx-auto mt-3 max-w-[580px] text-[14px] leading-7 text-[var(--color-text4)]">{{ 'Use this compact analyst assistant for summaries, triage notes, and quick next-step guidance without leaving the dashboard.' | translate }}</p>
                           <div class="mt-7 flex flex-wrap justify-center gap-3 max-[640px]:grid max-[640px]:grid-cols-1">
                             @for (prompt of quickPrompts; track prompt) {
                             <button type="button" (click)="usePrompt(prompt)" class="rounded-full border border-[rgba(87,165,235,0.16)] bg-[linear-gradient(180deg,rgba(87,165,235,0.12)_0%,rgba(87,165,235,0.07)_100%)] px-4 py-2 text-[12px] font-medium text-[var(--color-text3)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] outline-none transition hover:border-[rgba(87,165,235,0.28)] hover:bg-[linear-gradient(180deg,rgba(87,165,235,0.18)_0%,rgba(87,165,235,0.11)_100%)] hover:text-[var(--color-text1)] focus-visible:ring-2 focus-visible:ring-[var(--color-blue-640)]/35 [body.light-theme_&]:border-[#c8d9e9] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-[0_3px_10px_rgba(15,23,42,0.06)] [body.light-theme_&]:hover:border-[#9fbad5] [body.light-theme_&]:hover:bg-[#eef5fc] max-[640px]:w-full max-[640px]:justify-center">

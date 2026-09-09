@@ -25,7 +25,7 @@ uvicorn = "0.42.0"
 httpx = "0.28.1"
 gunicorn = "25.1.0"
 odmantic = "1.1.0"
-starlette-admin = "0.16.0"
+starlette-admin = "0.16.1"
 email-validator = "2.3.0"
 pymongo = "4.16.0"
 passlib = "1.7.4"
@@ -41,6 +41,7 @@ markers = [
     "journey: end-to-end user journey tests; monkeypatch fixture is forbidden",
 ]
 filterwarnings = [
+    'ignore:Field name "schema" in "social_wanted" shadows an attribute in parent "BaseModel".*:UserWarning',
     "ignore:`FieldValidationInfo` is deprecated, use `ValidationInfo` instead.:DeprecationWarning:pydantic_core.*",
     "ignore:Pydantic V1 style `@root_validator` validators are deprecated.*",
     "ignore:Support for class-based `config` is deprecated, use ConfigDict instead.*:DeprecationWarning:pydantic.*",

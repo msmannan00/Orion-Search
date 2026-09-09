@@ -4,7 +4,7 @@ import { Directive, ElementRef, HostListener, OnDestroy, AfterViewInit, Renderer
 })
 export class TooltipDirective implements AfterViewInit, OnDestroy {
   private tooltip: HTMLElement | null = null;
-  private showTimeout: any = null;
+  private showTimeout: ReturnType<typeof setTimeout> | null = null;
   private removeContainerScroll?: () => void;
   private rafHideScheduled = false;
   private tooltipLeft = 0;
@@ -19,7 +19,7 @@ export class TooltipDirective implements AfterViewInit, OnDestroy {
     if (container) {
       this.zone.runOutsideAngular(() => {
         this.removeContainerScroll = this.renderer.listen(container, 'scroll', () => {
-          this.scheduleHide(); 
+          this.scheduleHide();
         });
       });
     }

@@ -27,7 +27,7 @@ function expandIocRows(tableTestId: string, rowTestId: string, toggleTestId: str
   cy.get(tableSelector).find(rowSelector).should('have.length.greaterThan', 0).then(($rows) => {
     const count = Math.min(maxRows, $rows.length);
     for (let i = 0; i < count; i += 1) {
-      cy.get(tableSelector)
+      void cy.get(tableSelector)
         .find(rowSelector)
         .eq(i)
         .scrollIntoView()
@@ -42,13 +42,13 @@ function assertNoThreatRows() {
   cy.get('body').then(($body) => {
     if ($body.find('[data-testid="ioc-tab-threats"]:visible').length > 0) {
       selectIocResultTab('threats');
-      cy.get('[data-testid="ioc-threat-table"]')
+      void cy.get('[data-testid="ioc-threat-table"]')
         .find('[data-testid="ioc-threat-row"]')
         .should('have.length', 0);
       return;
     }
 
-    cy.get('[data-testid="ioc-threat-table"]').should('not.exist');
+    void cy.get('[data-testid="ioc-threat-table"]').should('not.exist');
   });
 }
 
@@ -231,7 +231,7 @@ describe('Consolidated - IOC Basic Flow', () => {
     cy.get('[data-testid="side-filter-open"]').scrollIntoView().click();
     cy.get('[data-testid="side-filter-select-network"]').scrollIntoView().then(($trigger) => {
       const menuId = $trigger.attr('aria-controls');
-      expect(menuId, 'side-filter network menu id').to.exist;
+      expect(menuId, 'side-filter network menu id').to.not.equal(undefined);
       cy.wrap($trigger).click({ force: true });
       cy.wrap($trigger).should('have.attr', 'aria-expanded', 'true');
       cy.contains(`#${menuId} [role="option"]`, /^Clearnet$/i, { timeout: 15000 }).click({ force: true });
@@ -241,7 +241,7 @@ describe('Consolidated - IOC Basic Flow', () => {
 
     cy.get('[data-testid="result-card"]').then(($cards) => {
       const cardWithNetwork = [...$cards].find((el) => (el.textContent || '').includes('Network:'));
-      expect(cardWithNetwork, 'result card with Network field').to.exist;
+      expect(cardWithNetwork, 'result card with Network field').to.not.equal(undefined);
       cy.wrap(cardWithNetwork as HTMLElement)
         .should('contain.text', 'Network:')
         .and('contain.text', 'clearnet');

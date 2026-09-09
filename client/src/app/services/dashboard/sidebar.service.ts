@@ -44,7 +44,7 @@ export class SidebarHomepageService {
   }
 
   private formatRisk(value?: string): string {
-    const normalized = (value || '').trim().toLowerCase();
+    const normalized = (value ?? '').trim().toLowerCase();
     if (!normalized) {
       return '';
     }

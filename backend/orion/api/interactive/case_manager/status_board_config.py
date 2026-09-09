@@ -42,18 +42,14 @@ class StatusBoardConfigManager:
         except ValueError:
             return StatusBoardConfigManager.default_status_board_config()
 
-        built_ins = {getattr(status, "value", str(status)) for status in CASE_STATUS_FLOW}
-
         normalized = []
-        for index, item in enumerate(config.statuses):
+        for item in config.statuses:
             normalized.append(
                 CaseStatusBoardItem(
                     value=item.value,
                     label=item.label or item.value.replace("_", " ").replace("-", " ").title(),
                     enabled=item.enabled,
                     skippable=item.skippable,
-                    custom=item.value not in built_ins,
-                    order=index,
                 )
             )
 
@@ -63,13 +59,14 @@ class StatusBoardConfigManager:
 
     @staticmethod
     def _user_uses_tenant_config(current_user) -> bool:
-        tenant_uuid = getattr(current_user, "tenant_uuid", None)
+        tenant_uuid = getattr(current_user, "tenant_uuid", "")
         return bool(tenant_uuid and str(tenant_uuid) not in {"", "-1", "None"})
 
     @classmethod
-    async def get_effective_config(self, current_user) -> CaseStatusBoardConfig:
-        if self._user_uses_tenant_config(current_user):
-            tenant = await mongo_controller.get_instance().get_engine().find_one(db_tenant_model,db_tenant_model.id == ObjectId(str(current_user.tenant_uuid)))       
+    async def get_effective_config(cls, current_user) -> CaseStatusBoardConfig:
+        tenant = None
+        if cls._user_uses_tenant_config(current_user):
+            tenant = await mongo_controller.get_instance().get_engine().find_one(db_tenant_model,db_tenant_model.id == ObjectId(str(current_user.tenant_uuid)))
         return StatusBoardConfigManager.normalize_status_board_config(getattr(tenant, "case_status_tracking_board", None))
 
     @staticmethod

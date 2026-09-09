@@ -22,7 +22,9 @@ COOKIE_CIPHER = auth_cookie_config.COOKIE_CIPHER
 
 
 def uses_cookie_auth(request: Request, cookie_only: bool) -> bool:
-    return cookie_only or bool(request.cookies.get(ACCESS_COOKIE))
+    if cookie_only:
+        return True
+    return (request.cookies.get(ACCESS_COOKIE) or "") != ""
 
 
 def cookie_only_result(result: dict, cookie_auth: bool) -> dict:
@@ -74,10 +76,10 @@ async def verify_2fa(request: Request, code: str = Body(..., embed=True), ptoken
 
 @auth_router.post("/api/token/refresh")
 async def refresh_token(request: Request, response: Response = None, cookie_only: bool = False):
-    token = token_from_request(request)
-    if not token:
+    session_token = token_from_request(request)
+    if not session_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
-    result = await session_manager.get_instance().refresh_token(token,tenant_id=getattr(request.state, "tenant", None))
+    result = await session_manager.get_instance().refresh_token(session_token,tenant_id=getattr(request.state, "tenant", None))
     access_token = result.get("access_token")
     cookie_auth = uses_cookie_auth(request, cookie_only)
     if access_token and cookie_auth:
@@ -87,16 +89,16 @@ async def refresh_token(request: Request, response: Response = None, cookie_only
 
 @auth_router.post("/api/logout")
 async def logout(request: Request):
-    token = token_from_request(request)
+    session_token = token_from_request(request)
     tenant_id = getattr(request.state, "tenant", None)
     session_mgr = session_manager.get_instance()
     try:
-        current_user = await session_mgr.get_current_user(token, tenant_id=tenant_id)
+        current_user = await session_mgr.get_current_user(session_token, tenant_id=tenant_id)
     except HTTPException:
         current_user = None
-    if current_user:
+    if current_user is not None:
         await extension_socket_manager.get_instance().disconnect(str(current_user.id))
-    await session_mgr.invalidate_user_session(ptoken=token, tenant_id=tenant_id)
+    await session_mgr.invalidate_user_session(ptoken=session_token, tenant_id=tenant_id)
     resp = JSONResponse(content={"detail": "Logged out"})
     resp.delete_cookie(ACCESS_COOKIE, path="/")
     resp.delete_cookie(ACCESS_COOKIE, path="/admin")
@@ -115,9 +117,9 @@ async def signup(data: SignupRequest):
     return await SignupManager.resend_verification_email(data)
 
 
-@auth_router.post("/api/verify/{token}")
-async def verifyUser(token: str):
-    return await auth_manager.verify_user(token)
+@auth_router.post("/api/verify/{verification_token}")
+async def verifyUser(verification_token: str):
+    return await auth_manager.verify_user(verification_token)
 
 
 @auth_router.post("/api/forgot")

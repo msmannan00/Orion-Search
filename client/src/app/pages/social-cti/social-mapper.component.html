@@ -4,7 +4,7 @@
         <div class="flex h-full min-h-0 w-full flex-col overflow-hidden [.light-theme_&]:!bg-[#e7eff9]">
           <div class="relative flex min-h-0 flex-grow flex-row">
             <app-home-menu
-              class="flex flex-shrink-0 flex-col overflow-hidden border-r border-[#ffffff12] bg-[#172235] [body.light-theme_&]:border-[#d7e2ef] [body.light-theme_&]:bg-[#f9fbff]"
+              class="flex flex-shrink-0 flex-col overflow-hidden border-r border-[#ffffff12] bg-[#172235]"
               [isCollapsed]="isHomeMenuCollapsed()"
               [jobs]="jobs()"
               [resultUsernames]="resultUsernames()"
@@ -40,14 +40,11 @@
                           <button data-testid="social-image-upload-trigger" type="button" [title]="'Scan by image' | translate" [attr.aria-label]="'Scan by image' | translate" (click)="$event.stopPropagation(); triggerImageUpload()" class="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text2)] transition-colors hover:bg-[var(--color-blue-710)]">
                             <i class="bi bi-image"></i>
                           </button>
-                          <button data-testid="social-scan-submit" type="button" (click)="triggerScan()" [disabled]="homeMenuSearchTerm().trim().length === 0" [ngClass]="homeMenuSearchTerm().trim() ? '[.dark-theme_&&]:!bg-[var(--color-blue-640)] [.dark-theme_&&]:hover:!bg-[var(--color-blue-640)] [.dark-theme_&&]:active:!bg-[var(--color-blue-640)] [.light-theme_&&]:!bg-[var(--color-blue-640)] [.light-theme_&&]:hover:!bg-[var(--color-blue-630)] [.light-theme_&&]:active:!bg-[var(--color-blue-630)]' : ''" class="ui-graph-toolbar-search-btn ml-1 flex h-8 items-center rounded-full bg-[var(--color-blue-640)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-blue-630)] disabled:cursor-not-allowed disabled:bg-[var(--color-blue-710)] disabled:text-[var(--color-text4)] [.dark-theme_&]:!bg-slate-600 [.dark-theme_&]:hover:!bg-slate-700 [.dark-theme_&]:disabled:hover:!text-white [.light-theme_&]:!bg-[var(--color-blue-640)] [.light-theme_&]:hover:!bg-[var(--color-blue-630)] [.light-theme_&]:disabled:hover:!text-[var(--color-text4)]">
+                          <button data-testid="social-scan-submit" type="button" (click)="triggerScan()" [disabled]="homeMenuSearchTerm().trim().length === 0" [ngClass]="homeMenuSearchTerm().trim() ? '[.dark-theme_&&]:!bg-[var(--color-blue-640)] [.dark-theme_&&]:hover:!bg-[var(--color-blue-640)] [.dark-theme_&&]:active:!bg-[var(--color-blue-640)] [.light-theme_&&]:!bg-[var(--color-blue-640)] [.light-theme_&&]:hover:!bg-[var(--color-blue-630)] [.light-theme_&&]:active:!bg-[var(--color-blue-630)]' : ''" class="ui-graph-toolbar-search-btn ml-1 flex h-8 items-center rounded-full bg-[var(--color-blue-640)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-blue-630)] disabled:cursor-not-allowed disabled:bg-[var(--color-blue-710)] disabled:text-[var(--color-text4)] [.dark-theme_&]:!bg-slate-600 [.dark-theme_&]:hover:!bg-slate-700 [.dark-theme_&]:disabled:hover:!text-white [.light-theme_&]:!bg-[var(--color-blue-640)] [.light-theme_&]:hover:!bg-[var(--color-blue-630)] [.light-theme_&]:disabled:!bg-[#d9e3ef] [.light-theme_&]:disabled:hover:!bg-[#d9e3ef] [.light-theme_&]:disabled:!text-[#7d90a6] [.light-theme_&]:disabled:hover:!text-[#7d90a6]">
                             {{ 'Search' | translate }}
                           </button>
                         </div>
                       </div>
-                      <button data-testid="social-manage-profiles-open" type="button" (click)="openNewProfilePage()" [title]="'Manage Profiles' | translate" [attr.aria-label]="'Manage Profiles' | translate" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-[var(--color-blue-800)]/90 text-[var(--color-text2)] shadow-lg ring-1 ring-inset ring-[var(--color-border)] backdrop-blur-sm transition-colors hover:text-[var(--color-blue-640)] [.dark-theme_&]:!bg-[rgba(51,65,85,0.6)] [.light-theme_&]:!bg-[rgba(255,255,255,0.94)]">
-                        <i class="bi bi-gear text-base" aria-hidden="true"></i>
-                      </button>
                       @if (hasResultSourceTabs()) {
                         <div data-testid="social-result-source-tabs" class="relative inline-flex h-10 shrink-0 items-center overflow-hidden rounded-full border-2 border-white/[0.09] bg-[var(--color-blue-820-light)] px-[3px] shadow-[0_8px_18px_var(--color-shadow-light)] [body.light-theme_&]:border-[#c8d9ea]">
                           <span aria-hidden="true" class="pointer-events-none absolute left-[3px] top-1/2 h-8 w-[calc((100%-6px)/2)] -translate-y-1/2 rounded-full bg-[var(--color-blue-640)] opacity-95 transition-[transform,opacity] duration-[120ms] ease-out" [class.translate-x-full]="activeResultSource() === 'darkweb'"></span>
@@ -59,18 +56,30 @@
                           </button>
                         </div>
                       }
+                      <button data-testid="social-manage-profiles-open" type="button" (click)="openNewProfilePage()" [title]="'Manage Profiles' | translate" [attr.aria-label]="'Manage Profiles' | translate" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-[var(--color-blue-800)]/90 text-[var(--color-text2)] shadow-lg ring-1 ring-inset ring-[var(--color-border)] backdrop-blur-sm transition-colors hover:text-[var(--color-blue-640)] [.dark-theme_&]:!bg-[rgba(51,65,85,0.6)] [.light-theme_&]:!bg-[rgba(255,255,255,0.94)]">
+                        <i class="bi bi-gear text-base" aria-hidden="true"></i>
+                      </button>
+                      <button data-testid="social-result-source-graph" type="button" (click)="toggleGraphView()" [attr.aria-pressed]="graphView()" [title]="(graphView() ? 'Back to profiles' : 'Relationship graph') | translate" [attr.aria-label]="'Relationship graph' | translate" [ngClass]="graphView() ? '!bg-[var(--color-blue-640)] !text-white' : ''" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-[var(--color-blue-800)]/90 text-[var(--color-text2)] shadow-lg ring-1 ring-inset ring-[var(--color-border)] backdrop-blur-sm transition-colors hover:text-[var(--color-blue-640)] [.dark-theme_&]:!bg-[rgba(51,65,85,0.6)] [.light-theme_&]:!bg-[rgba(255,255,255,0.94)]">
+                        <i class="bi bi-diagram-3 text-base" aria-hidden="true"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
-                <app-social-profile-listing
-                  class="block min-h-0 flex-1"
-                  [activeResultSources]="activeResultSources()"
-                  [isInitialLoading]="isInitialLoading()"
-                  [highlightedNodeId]="highlightedNodeId()"
-                  (sidebarPlatformClicked)="onSidebarPlatformClicked($event)"
-                  (manageProfilesRequested)="openManageProfiles($event)"
-                  (profileOverviewLabelChanged)="onProfileOverviewLabelChanged($event)">
-                </app-social-profile-listing>
+                @if (graphView()) {
+                  <app-social-user-graph class="flex min-h-0 flex-1 flex-col" [usernames]="graphUsernames()" [loading]="isInitialLoading()" (usernamesChange)="onGraphUsernamesChange($event)"></app-social-user-graph>
+                }
+                @else {
+                  <app-social-profile-listing
+                    class="block min-h-0 flex-1"
+                    [activeResultSources]="activeResultSources()"
+                    [isInitialLoading]="isInitialLoading()"
+                    [highlightedNodeId]="highlightedNodeId()"
+                    (sidebarPlatformClicked)="onSidebarPlatformClicked($event)"
+                    (manageProfilesRequested)="openManageProfiles($event)"
+                    (profileOverviewLabelChanged)="onProfileOverviewLabelChanged($event)"
+                    (scanInProgress)="showScanInProgressNotification()">
+                  </app-social-profile-listing>
+                }
               </div>
             </main>
           </div>

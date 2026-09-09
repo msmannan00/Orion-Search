@@ -267,7 +267,7 @@ async def get_audit_logs(param: audit_log_param_model = Body(...), current_user=
     status_code=200,
     include_in_schema=False,
     dependencies=[Depends(role_required([user_role.ADMIN]))], )
-async def delete_audit_log(log_id: str, current_user=Depends(get_current_user)):
+async def delete_audit_log(log_id: str, _current_user=Depends(get_current_user)):
     return {"success": await AuditLogManager.get_instance().delete(log_id)}
 
 
@@ -346,8 +346,8 @@ async def set_alerts_seen(data: list[AlertModel], current_user=Depends(get_curre
     status_code=200,
     include_in_schema=False,
     dependencies=[Depends(role_required([user_role.MEMBER])), Depends(status_required([UserStatus.ACTIVE])), ], )
-async def delete_alert(id: str = Body(..., description="Unique id identifier of the alert to delete."), current_user=Depends(get_current_user)):
-    return await AlertManager.getInstance().delete_alert(id, current_user)
+async def delete_alert(alert_id: str = Body(..., description="Unique id identifier of the alert to delete."), current_user=Depends(get_current_user)):
+    return await AlertManager.getInstance().delete_alert(alert_id, current_user)
 
 
 @tenant_routes.post(

@@ -5,6 +5,20 @@ type SlowTypeOptions = {
     settleMs?: number;
 };
 
+type CypressAutomation = typeof Cypress & {
+    automation(eventName: string, options: Record<string, unknown>): Promise<unknown>;
+};
+
+type MailSummary = {
+    ID?: string;
+};
+
+type MailDetail = {
+    Text?: string;
+    HTML?: string;
+    Snippet?: string;
+};
+
 declare global {
     namespace Cypress {
         interface Chainable {
@@ -41,9 +55,9 @@ const loginRequestAlias = (alias = "loginRequest"): `@${string}` => (
 ) as `@${string}`;
 
 const visitLoginWithCleanAuthState = () => {
-    cy.clearCookies({ log: false });
-    cy.clearLocalStorage();
-    cy.visit("/login", {
+    void cy.clearCookies({ log: false });
+    void cy.clearLocalStorage();
+    void cy.visit("/login", {
         onBeforeLoad(win) {
             win.localStorage.clear();
             win.sessionStorage.clear();
@@ -54,9 +68,9 @@ const visitLoginWithCleanAuthState = () => {
 const waitForLoginForm = (reloaded = false, attempts = 0): Cypress.Chainable<void> => {
     return cy.document({ log: false }).then((doc) => {
         if (doc.querySelector('[data-testid="login-user"]')) {
-            cy.get('[data-testid="login-page"]', { timeout: 60000 }).should('be.visible');
-            cy.get('[data-testid="login-user"]', { timeout: 60000 }).should('be.visible');
-            cy.get('[data-testid="login-pass"]', { timeout: 60000 }).should('be.visible');
+            void cy.get('[data-testid="login-page"]', { timeout: 60000 }).should('be.visible');
+            void cy.get('[data-testid="login-user"]', { timeout: 60000 }).should('be.visible');
+            void cy.get('[data-testid="login-pass"]', { timeout: 60000 }).should('be.visible');
             return cy.wrap<void>(undefined, { log: false });
         }
 
@@ -65,7 +79,7 @@ const waitForLoginForm = (reloaded = false, attempts = 0): Cypress.Chainable<voi
         }
 
         if (!reloaded) {
-            cy.reload();
+            void cy.reload();
             return waitForLoginForm(true);
         }
 
@@ -93,84 +107,66 @@ Cypress.Commands.add("docsScreenshot", (name: string, options: Partial<Cypress.S
 
         const safeName = String(name || "screenshot").replace(/\\/g, "/").replace(/^\/+/, "") || "screenshot";
         const taskScreenshotName = safeName.startsWith("user-manual/") ? safeName.slice("user-manual/".length) : safeName;
-        void options;
-        let restoreCaptureState: (() => void) | undefined;
         let screenshotClip: { x: number; y: number; width: number; height: number; scale: number } | undefined;
-        const hiddenScrollbarCss = `
-            html, body { scrollbar-width: none !important; }
-            html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
-                width: 0 !important;
-                height: 0 !important;
-                display: none !important;
-            }
-        `;
+        void options;
 
         return cy.window({ log: false }).then((win) => {
-            const restoreFns: Array<() => void> = [];
-            const appStyle = win.document.createElement("style");
-            appStyle.textContent = hiddenScrollbarCss;
-            (win.document.head || win.document.documentElement).appendChild(appStyle);
-            restoreFns.push(() => appStyle.remove());
-
-            try {
-                const topWindow = win.top || win;
-                const topDocument = topWindow.document;
-                const iframe = Array.from(topDocument.querySelectorAll("iframe"))
-                    .find(frame => frame.contentWindow === win)
-                    || topDocument.querySelector<HTMLIFrameElement>("iframe.aut-iframe, iframe[data-cy='aut-iframe'], iframe");
-
-                const topStyle = topDocument.createElement("style");
-                topStyle.textContent = hiddenScrollbarCss;
-                (topDocument.head || topDocument.documentElement).appendChild(topStyle);
-                restoreFns.push(() => topStyle.remove());
-
-                if (iframe) {
-                    const rect = iframe.getBoundingClientRect();
-                    const viewportWidth = Number(Cypress.config("viewportWidth")) || Math.round(win.innerWidth);
-                    const viewportHeight = Number(Cypress.config("viewportHeight")) || Math.round(win.innerHeight);
-                    const scale = Math.max(
-                        viewportWidth / Math.max(1, rect.width),
-                        viewportHeight / Math.max(1, rect.height),
-                    );
-                    screenshotClip = {
-                        x: Math.max(0, rect.left),
-                        y: Math.max(0, rect.top),
-                        width: Math.max(1, rect.width),
-                        height: Math.max(1, rect.height),
-                        scale,
-                    };
-                }
-            }
-            catch {
-                screenshotClip = undefined;
+            const topWindow = win.top;
+            if (!topWindow) {
+                throw new Error(`Unable to resolve the Cypress runner window for docs screenshot: ${name}`);
             }
 
-            restoreCaptureState = () => {
-                restoreFns.reverse().forEach(restore => restore());
-                restoreCaptureState = undefined;
+            const iframe = Array.from(topWindow.document.querySelectorAll("iframe"))
+                .find((frame) => frame.contentWindow === win);
+            if (!iframe) {
+                throw new Error(`Unable to resolve the application frame for docs screenshot: ${name}`);
+            }
+
+            const rect = iframe.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                throw new Error(`Application frame has invalid dimensions for docs screenshot: ${name}`);
+            }
+
+            const viewportWidth = Number(Cypress.config("viewportWidth")) || Math.round(win.innerWidth);
+            const viewportHeight = Number(Cypress.config("viewportHeight")) || Math.round(win.innerHeight);
+            screenshotClip = {
+                x: Math.max(0, rect.left),
+                y: Math.max(0, rect.top),
+                width: rect.width,
+                height: rect.height,
+                scale: Math.min(
+                    viewportWidth / rect.width,
+                    viewportHeight / rect.height,
+                ),
             };
-        }).then(() => cy.wait(50, { log: false })).then(() => (
-            (Cypress as any).automation("remote:debugger:protocol", {
+        }).then(() => cy.wait(50, { log: false })).then(() => {
+            if (!screenshotClip) {
+                throw new Error(`Missing capture bounds for docs screenshot: ${name}`);
+            }
+
+            return (Cypress as unknown as CypressAutomation).automation("remote:debugger:protocol", {
                 command: "Page.captureScreenshot",
                 params: {
                     captureBeyondViewport: false,
-                    ...(screenshotClip ? { clip: screenshotClip } : {}),
+                    clip: screenshotClip,
                     format: "png",
                     fromSurface: true,
                 },
-            })
-        )).then((result: any) => {
-            const data = typeof result === "string" ? result : result?.data;
-            expect(data, `docs screenshot ${name}`).to.be.a("string").and.not.be.empty;
+            });
+        }).then((result) => {
+            const data = typeof result === "string"
+                ? result
+                : (result as { data?: unknown } | null)?.data;
+            if (typeof data !== "string" || data.length === 0) {
+                throw new Error(`Browser returned no data for docs screenshot: ${name}`);
+            }
+
             return cy.task("writeDocScreenshot", {
                 data,
                 name: taskScreenshotName,
                 specName: Cypress.spec.name,
             }, { log: false });
-        }).then(() => {
-            restoreCaptureState?.();
-            return cy.wrap<void>(undefined, { log: false });
-        });
+        }).then(() => cy.wrap<void>(undefined, { log: false }));
     });
 });
 
@@ -182,10 +178,10 @@ Cypress.Commands.add("typeSlow", (selector: string, value: string, options: Slow
     const submit = options.submit ?? false;
 
     const typeValue = (typeDelay = delay) => {
-        getSlowTypeInput(selector).click({ force: true });
-        getSlowTypeInput(selector).type('{selectall}{backspace}', { force: true });
-        cy.wait(settleMs);
-        getSlowTypeInput(selector).type(value, { force: true, delay: typeDelay });
+        void getSlowTypeInput(selector).click({ force: true });
+        void getSlowTypeInput(selector).type('{selectall}{backspace}', { force: true });
+        void cy.wait(settleMs);
+        void getSlowTypeInput(selector).type(value, { force: true, delay: typeDelay });
     };
 
     typeValue();
@@ -194,11 +190,11 @@ Cypress.Commands.add("typeSlow", (selector: string, value: string, options: Slow
             typeValue(0);
         }
     });
-    getSlowTypeInput(selector).should('have.value', value);
+    void getSlowTypeInput(selector).should('have.value', value);
 
     if (submit) {
-        cy.wait(settleMs);
-        getSlowTypeInput(selector).type('{enter}', { force: true });
+        void cy.wait(settleMs);
+        void getSlowTypeInput(selector).type('{enter}', { force: true });
     }
 
     return cy.wrap<void>(undefined, { log: false });
@@ -206,14 +202,14 @@ Cypress.Commands.add("typeSlow", (selector: string, value: string, options: Slow
 
 Cypress.Commands.add("loginAsAdmin", () => {
     cy.env(["ADMIN_USERNAME", "ADMIN_PASSWORD"]).then(({ ADMIN_USERNAME, ADMIN_PASSWORD }) => {
-        cy.intercept({ method: "POST", pathname: "**/api/token" }).as("loginRequest");
-        cy.visitLoginWithCleanAuthState();
-        waitForLoginForm();
-        cy.get('[data-testid="login-user"]').clear().type(ADMIN_USERNAME);
-        cy.get('[data-testid="login-pass"]').clear().type(ADMIN_PASSWORD, { log: false });
-        cy.get('[data-testid="login-button"]').first().click();
-        cy.waitForLoginRequest();
-        cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
+        void cy.intercept({ method: "POST", pathname: "**/api/token" }).as("loginRequest");
+        void cy.visitLoginWithCleanAuthState();
+        void waitForLoginForm();
+        void cy.get('[data-testid="login-user"]').clear().type(ADMIN_USERNAME);
+        void cy.get('[data-testid="login-pass"]').clear().type(ADMIN_PASSWORD, { log: false });
+        void cy.get('[data-testid="login-button"]').first().click();
+        void cy.waitForLoginRequest();
+        void cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
             .filter(':visible')
             .should('have.length.greaterThan', 0);
     });
@@ -226,14 +222,14 @@ Cypress.Commands.add("loginAsTest1", () => {
         if (!user?.username || !user?.password) {
             throw new Error(`Missing test user credentials for key: ${key}`);
         }
-        cy.intercept({ method: "POST", pathname: "**/api/token" }).as("loginRequest");
-        cy.visitLoginWithCleanAuthState();
-        waitForLoginForm();
-        cy.get('[data-testid="login-user"]').clear().type(user.username);
-        cy.get('[data-testid="login-pass"]').clear().type(user.password, { log: false });
-        cy.get('[data-testid="login-button"]').first().click();
-        cy.waitForLoginRequest();
-        cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
+        void cy.intercept({ method: "POST", pathname: "**/api/token" }).as("loginRequest");
+        void cy.visitLoginWithCleanAuthState();
+        void waitForLoginForm();
+        void cy.get('[data-testid="login-user"]').clear().type(user.username);
+        void cy.get('[data-testid="login-pass"]').clear().type(user.password, { log: false });
+        void cy.get('[data-testid="login-button"]').first().click();
+        void cy.waitForLoginRequest();
+        void cy.get('[data-testid="profile-menu"], [data-testid="dashboard-main"], [data-testid="dashboard-container"]')
             .filter(':visible')
             .should('have.length.greaterThan', 0);
     });
@@ -250,19 +246,19 @@ Cypress.Commands.add("logout", () => {
             if (!profileMenu.length) {
                 return;
             }
-            cy.intercept("GET", "**/api/insight", {
+            void cy.intercept("GET", "**/api/insight", {
                 statusCode: 200,
                 body: {
                     insights: { general: {}, leak: {}, defacement: {} },
                     latestDocument: { generic_model: [], leak_model: [], defacement_model: [], chat_model: [], exploit_model: [] },
                 },
             });
-            cy.scrollTo("top", { ensureScrollable: false });
-            cy.wrap(profileMenu).scrollIntoView().click({ force: true });
-            cy.get('[data-testid="signout-btn"]').first().scrollIntoView().click({ force: true });
-            cy.get('[data-testid="login-user"]').should('exist');
-            cy.clearCookies({ log: false });
-            cy.clearLocalStorage();
+            void cy.scrollTo("top", { ensureScrollable: false });
+            void cy.wrap(profileMenu).scrollIntoView().click({ force: true });
+            void cy.get('[data-testid="signout-btn"]').first().scrollIntoView().click({ force: true });
+            void cy.get('[data-testid="login-user"]').should('exist');
+            void cy.clearCookies({ log: false });
+            void cy.clearLocalStorage();
             cy.window({ log: false }).then((win) => {
                 win.localStorage.clear();
                 win.sessionStorage.clear();
@@ -295,9 +291,9 @@ Cypress.Commands.add("scrollDashboardToBottom", () => {
 });
 
 Cypress.Commands.add("openSideFilter", () => {
-    cy.scrollDashboardToTop();
-    cy.get('[data-testid="side-filter-open"]').filter(':visible').first().should('be.visible').click();
-    cy.get('[data-testid="side-filter-apply"]').filter(':visible').first().should('be.visible');
+    void cy.scrollDashboardToTop();
+    void cy.get('[data-testid="side-filter-open"]').filter(':visible').first().should('be.visible').click();
+    void cy.get('[data-testid="side-filter-apply"]').filter(':visible').first().should('be.visible');
 });
 Cypress.Commands.add("closeSideFilter", () => {
     cy.window().then((win) => {
@@ -310,28 +306,26 @@ Cypress.Commands.add("closeSideFilter", () => {
             return;
         }
 
-        cy.wrap(target).click('center', { force: true });
+        void cy.wrap(target).click('center', { force: true });
     });
 });
 Cypress.Commands.add("applySideFilter", () => {
-    cy.get('[data-testid="side-filter-apply"]')
+    void cy.get('[data-testid="side-filter-apply"]')
         .filter(':visible')
         .first()
         .should('be.visible')
         .click({ force: true, waitForAnimations: false, animationDistanceThreshold: 0 });
 });
 Cypress.Commands.add("clearAllEmails", () => {
-    cy.request("DELETE", "http://localhost:8025/api/v1/messages");
+    void cy.request("DELETE", "http://localhost:8025/api/v1/messages");
 });
 Cypress.Commands.add("openLastMailAndGetUrl", () => {
     const timeoutMs = 20000;
     const intervalMs = 500;
     const startedAt = Date.now();
     const waitForUrl = (): Cypress.Chainable<string> => {
-        return cy
-            .request("GET", "http://localhost:8025/api/v1/messages")
-            .then((r) => {
-            const messages = (r.body?.messages || []) as any[];
+        return cy.request("GET", "http://localhost:8025/api/v1/messages").then((r) => {
+            const messages = (r.body?.messages || []) as MailSummary[];
             const total = messages.length;
             if (total !== 1) {
                 if (Date.now() - startedAt > timeoutMs) {
@@ -339,29 +333,31 @@ Cypress.Commands.add("openLastMailAndGetUrl", () => {
                 }
                 return cy.wait(intervalMs).then(() => waitForUrl());
             }
-            const id = messages[0]?.ID as string;
-            return cy.request("GET", `http://localhost:8025/api/v1/message/${id}`);
-        })
-            .then((r: any) => {
-            const body = r.body || {};
-            const text = (body.Text as string) ||
-                (body.HTML as string) ||
-                (body.Snippet as string) ||
-                "";
-            const match = text.match(/https?:\/\/[^\s*]+/);
-            if (!match) {
-                if (Date.now() - startedAt > timeoutMs) {
-                    throw new Error("Reset URL not found");
-                }
-                return cy.wait(intervalMs).then(() => waitForUrl());
+            const id = messages[0]?.ID;
+            if (!id) {
+                throw new Error("Email ID is missing");
             }
-            const emailUrl = new URL(match[0]);
-            const base = new URL(Cypress.config("baseUrl") as string);
-            emailUrl.protocol = base.protocol;
-            emailUrl.hostname = base.hostname;
-            emailUrl.port = base.port;
-            return cy.wrap(emailUrl.toString());
-        });
+            return cy.request<MailDetail>("GET", `http://localhost:8025/api/v1/message/${id}`).then((messageResponse) => {
+                const body = messageResponse.body || {};
+                const text = body.Text ||
+                    body.HTML ||
+                    body.Snippet ||
+                    "";
+                const match = text.match(/https?:\/\/[^\s*]+/);
+                if (!match) {
+                    if (Date.now() - startedAt > timeoutMs) {
+                        throw new Error("Reset URL not found");
+                    }
+                    return cy.wait(intervalMs).then(() => waitForUrl());
+                }
+                const emailUrl = new URL(match[0]);
+                const base = new URL(Cypress.config("baseUrl") as string);
+                emailUrl.protocol = base.protocol;
+                emailUrl.hostname = base.hostname;
+                emailUrl.port = base.port;
+                return emailUrl.toString();
+            });
+        }) as unknown as Cypress.Chainable<string>;
     };
     return waitForUrl().then((url) => cy.request("GET", "http://localhost:8025/api/v1/messages").then((r) => {
         const total = (r.body?.messages || []).length;

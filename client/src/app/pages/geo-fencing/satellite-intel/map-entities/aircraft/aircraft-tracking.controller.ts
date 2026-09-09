@@ -1,5 +1,5 @@
-import { Subscription } from 'rxjs';
-import { SatelliteLiveAircraft } from '../../model/satellite-intel-api.models';
+import { Observable, Subscription } from 'rxjs';
+import { SatelliteLiveAircraft, SatelliteLiveAircraftBBoxResponse } from '../../model/satellite-intel-api.models';
 import { MapEntityLoadingBridge, SatelliteTrackingViewport } from '../../../models/geo-fencing.models';
 import { SatelliteAircraftTrackingService } from './aircraft-tracking.service';
 
@@ -68,69 +68,55 @@ export class SatelliteAircraftTrackingController {
   }
 
   private refreshInBounds(viewport: SatelliteTrackingViewport, showLoading = false, scheduleNext = false): void {
-    clearTimeout(this.timer);
-    const showSpinner = showLoading || this.data.length === 0;
-    this.isLoading = showSpinner;
-    const loadingId = showLoading ? this.loading.begin('Loading Satellite Intel', 'Loading aircraft tracking data...') : null;
-
-    this.trackSub?.unsubscribe();
-    clearTimeout(this.timer);
-    this.trackSub = this.service.pollInBounds(viewport.lat, viewport.lon, viewport.delta).subscribe({
-      next: (res) => {
-        if (!this.enabled) {
-          return;
-        }
-        const payload = (res?.result ?? res) as any;
-        const aircraft = this.service.extractItems(payload);
-        if (aircraft !== null) {
-          this.applyResult(aircraft, payload, 'Aircraft tracking');
-        }
-        const feedIssue = this.service.getFeedIssue(payload);
-        if (aircraft === null && feedIssue) {
-          this.error = `Aircraft tracking: ${feedIssue}`;
-        }
+    this.startTracking(this.service.pollInBounds(viewport.lat, viewport.lon, viewport.delta), {
+      spinner: showLoading || this.data.length === 0,
+      showLoading,
+      scheduleNext,
+      loadingMessage: 'Loading aircraft tracking data...',
+      label: 'Aircraft tracking',
+      reschedule: () => {
+        this.refresh(viewport, false, true);
       },
-      error: (err) => {
-        this.error = err?.error?.detail || err?.message || 'Aircraft tracking failed';
-      },
-    });
-    this.trackSub.add(() => {
-      this.isLoading = false;
-      if (loadingId !== null) {
-        this.loading.end(loadingId);
-      }
-      if (scheduleNext && this.enabled) {
-        this.timer = setTimeout(() => {
-          this.refresh(viewport, false, true);
-        }, this.refreshIntervalMs);
-      }
     });
   }
 
   private refreshGlobal(showLoading = false, scheduleNext = false): void {
+    this.startTracking(this.service.pollGlobal(), {
+      spinner: true,
+      showLoading,
+      scheduleNext,
+      loadingMessage: 'Loading global aircraft tracking data...',
+      label: 'Global aircraft tracking',
+      reschedule: () => {
+        this.refreshGlobal(false, true);
+      },
+    });
+  }
+
+  private startTracking(request: Observable<SatelliteLiveAircraftBBoxResponse>, options: { spinner: boolean; showLoading: boolean; scheduleNext: boolean; loadingMessage: string; label: string; reschedule: () => void }): void {
     clearTimeout(this.timer);
-    this.isLoading = true;
-    const loadingId = showLoading ? this.loading.begin('Loading Satellite Intel', 'Loading global aircraft tracking data...') : null;
+    this.isLoading = options.spinner;
+    const loadingId = options.showLoading ? this.loading.begin('Loading Satellite Intel', options.loadingMessage) : null;
 
     this.trackSub?.unsubscribe();
     clearTimeout(this.timer);
-    this.trackSub = this.service.pollGlobal().subscribe({
+    this.trackSub = request.subscribe({
       next: (res) => {
         if (!this.enabled) {
           return;
         }
-        const payload = (res?.result ?? res) as any;
+        const payload = (res?.result ?? res) as unknown;
         const aircraft = this.service.extractItems(payload);
         if (aircraft !== null) {
-          this.applyResult(aircraft, payload, 'Global aircraft tracking');
+          this.applyResult(aircraft, payload, options.label);
         }
         const feedIssue = this.service.getFeedIssue(payload);
         if (aircraft === null && feedIssue) {
-          this.error = `Global aircraft tracking: ${feedIssue}`;
+          this.error = `${options.label}: ${feedIssue}`;
         }
       },
       error: (err) => {
-        this.error = err?.error?.detail || err?.message || 'Global aircraft tracking failed';
+        this.error = err?.error?.detail ?? err?.message ?? `${options.label} failed`;
       },
     });
     this.trackSub.add(() => {
@@ -138,15 +124,13 @@ export class SatelliteAircraftTrackingController {
       if (loadingId !== null) {
         this.loading.end(loadingId);
       }
-      if (scheduleNext && this.enabled) {
-        this.timer = setTimeout(() => {
-          this.refreshGlobal(false, true);
-        }, this.refreshIntervalMs);
+      if (options.scheduleNext && this.enabled) {
+        this.timer = setTimeout(options.reschedule, this.refreshIntervalMs);
       }
     });
   }
 
-  private applyResult(aircraft: SatelliteLiveAircraft[], payload: any, label: string): void {
+  private applyResult(aircraft: SatelliteLiveAircraft[], payload: unknown, label: string): void {
     this.data = aircraft;
     const feedIssue = this.service.getFeedIssue(payload);
     this.error = feedIssue ? `${label}: ${feedIssue}` : null;

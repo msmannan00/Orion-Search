@@ -5,6 +5,7 @@ import { IpDetail } from '../../../../../shared/model/network-intel/network-inte
 import { NetworkIntelScanService } from '../../../../../shared/services/network-intel/network-intel-scan.service';
 import { IpDetailComponent } from '../../../../root-searches/network-intel/ip-detail/ip-detail.component';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
+import { asUnknownRecord, getOwnProperty } from '../../../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-threat-lens-ip-detail-popup',
@@ -33,7 +34,7 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
   constructor(private networkIntelService: NetworkIntelScanService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['ip'] && this.ip.trim()) {
+    if (changes.ip && this.ip.trim()) {
       this.loadDetail(this.ip.trim());
     }
   }
@@ -65,14 +66,16 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
       if (requestId !== this.requestId) {
         return;
       }
-      this.progress = this.networkIntelService.getProgressValue(response?.result?.['progress'] ?? response?.['progress']);
-      this.currentStep = this.networkIntelService.getLoadingStepLabel(response?.result?.['step'] || response?.['step'] || response?.result?.status || response?.status);
+      const progress = response.result?.progress ?? response.progress;
+      const step = response.result?.step ?? response.step ?? response.result?.status ?? response.status;
+      this.progress = this.networkIntelService.getProgressValue(typeof progress === 'number' ? progress : undefined);
+      this.currentStep = this.networkIntelService.getLoadingStepLabel(typeof step === 'string' ? step : undefined);
     }).subscribe({
       next: (detail) => {
         if (requestId !== this.requestId) {
           return;
         }
-        const payload: Record<string, any> = detail && typeof detail === 'object' ? detail : {};
+        const payload: Record<string, unknown> = detail && typeof detail === 'object' ? detail : {};
         this.updateLoadingState(payload);
 
         if (!this.isFinalIpDetail(payload)) {
@@ -83,7 +86,7 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
         }
 
         const finalPayload = this.removeIntermediateFields(payload);
-        this.detail = { ...finalPayload, ip: finalPayload['ip'] || ip };
+        this.detail = { ...finalPayload, ip: String(finalPayload.ip ?? ip) };
         this.isLoading = false;
         this.currentStep = '';
       },
@@ -91,7 +94,7 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
         if (requestId !== this.requestId) {
           return;
         }
-        this.errorMessage = error?.message || 'Failed to load IP details.';
+        this.errorMessage = error?.message ?? 'Failed to load IP details.';
         this.isLoading = false;
       },
     });
@@ -120,13 +123,16 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private updateLoadingState(payload: Record<string, any>): void {
-    this.progress = this.networkIntelService.getProgressValue(payload['progress'] ?? payload['result']?.['progress'] ?? this.progress);
-    this.currentStep = this.networkIntelService.getLoadingStepLabel(payload['step'] || payload['result']?.['step'] || payload['status'] || payload['result']?.['status']);
+  private updateLoadingState(payload: Record<string, unknown>): void {
+    const result = asUnknownRecord(payload.result);
+    const progress = payload.progress ?? result.progress;
+    const step = payload.step ?? result.step ?? payload.status ?? result.status;
+    this.progress = this.networkIntelService.getProgressValue(typeof progress === 'number' ? progress : this.progress);
+    this.currentStep = this.networkIntelService.getLoadingStepLabel(typeof step === 'string' ? step : undefined);
   }
 
-  private isFinalIpDetail(payload: Record<string, any>): boolean {
-    const hasIp = this.networkIntelService.hasRenderableValue(payload['ip']);
+  private isFinalIpDetail(payload: Record<string, unknown>): boolean {
+    const hasIp = this.networkIntelService.hasRenderableValue(payload.ip);
     const hasDetailFields = this.hasDetailFields(payload);
 
     if (this.isIntermediateResponse(payload)) {
@@ -136,20 +142,21 @@ export class IpDetailPopupComponent implements OnChanges, OnDestroy {
     return hasIp || hasDetailFields;
   }
 
-  private hasDetailFields(payload: Record<string, any>): boolean {
-    return this.finalDetailKeys.some((key) => this.networkIntelService.hasRenderableValue(payload[key]));
+  private hasDetailFields(payload: Record<string, unknown>): boolean {
+    return this.finalDetailKeys.some((key) => this.networkIntelService.hasRenderableValue(getOwnProperty(payload, key)));
   }
 
-  private isIntermediateResponse(payload: Record<string, any>): boolean {
-    const status = String(payload['status'] || payload['result']?.['status'] || '').toLowerCase();
-    const hasJobId = payload['job_id'] !== undefined || payload['jobId'] !== undefined || payload['task_id'] !== undefined || payload['taskId'] !== undefined;
-    const hasProgress = payload['progress'] !== undefined || payload['result']?.['progress'] !== undefined;
+  private isIntermediateResponse(payload: Record<string, unknown>): boolean {
+    const result = asUnknownRecord(payload.result);
+    const status = String(payload.status ?? result.status ?? '').toLowerCase();
+    const hasJobId = payload.job_id !== undefined || payload.jobId !== undefined || payload.task_id !== undefined || payload.taskId !== undefined;
+    const hasProgress = payload.progress !== undefined || result.progress !== undefined;
     const isRunningStatus = ['pending', 'busy', 'queued', 'queue', 'processing', 'running', 'in_progress', 'started', 'scanning'].includes(status);
 
     return hasJobId || hasProgress || isRunningStatus;
   }
 
-  private removeIntermediateFields(payload: Record<string, any>): Record<string, any> {
+  private removeIntermediateFields(payload: Record<string, unknown>): Record<string, unknown> {
     const hiddenKeys = new Set(['job_id', 'jobId', 'task_id', 'taskId', 'status', 'progress', 'step']);
     return Object.fromEntries(Object.entries(payload).filter(([key]) => !hiddenKeys.has(key)));
   }

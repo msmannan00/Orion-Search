@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { setOwnProperty } from '../../utils/type-guards.util';
+
 
 @Injectable({ providedIn: 'root' })
 export class ExportSharedService {
@@ -14,7 +16,7 @@ export class ExportSharedService {
       if (v === null || v === undefined) {
         return;
       }
-      out[k] = Array.isArray(v) ? v.join(', ') : String(v);
+      setOwnProperty(out, k, Array.isArray(v) ? v.join(', ') : String(v));
     });
     return out;
   }

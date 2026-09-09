@@ -1,7 +1,11 @@
+import { CredentialResultItem } from '../credentials/credential.callback.model';
+
+export type RankedResultItem = CredentialResultItem;
+
 export class RankedCallbackModel {
-  result: any[] = [];
-  pageCount: number = 0;
-  totalHits: number = 0;
+  result: RankedResultItem[] = [];
+  pageCount = 0;
+  totalHits = 0;
 
   constructor(init?: Partial<RankedCallbackModel>) {
     if (init) {

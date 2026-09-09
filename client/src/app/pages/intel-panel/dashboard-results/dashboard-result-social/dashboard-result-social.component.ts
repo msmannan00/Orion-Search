@@ -1,28 +1,25 @@
 import { AfterViewInit, Component, ElementRef, OnInit, inject, input, ChangeDetectionStrategy } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DatePipe, SlicePipe, CommonModule } from '@angular/common';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { SlicePipe, CommonModule } from '@angular/common';
 import { ScrollService } from '../../../../shared/services/scroll.service';
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
 import { SocialResultItem } from '../../../../shared/model/results/social/social.callback.model';
-import { fadeInDashboardItem } from "../../../../shared/animations/dashboard.item.animation";
 import { RemoveEmojisPipe } from '../../../../shared/pipes/remove-emojis-pipe.pipe';
-import { LicenseService } from '../../../../services/licenses/licenses.service';
 import { AuthService } from '../../../../services/authetication/auth.service';
 import { ProxyController } from '../../../../shared/services/proxy-controller';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import type { SocialThreadComment } from './model/dashboard-result-social.model';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
 
-interface SocialThreadComment {
-  sender?: string;
-  date?: string;
-  likes?: string;
-  text: string;
-}
+export type { SocialThreadComment } from './model/dashboard-result-social.model';
+
+
+
 
 @Component({
   selector: 'app-dashboard-result-social',
   standalone: true,
   imports: [
-    DatePipe,
     SlicePipe,
     RouterLink,
     TooltipDirective,
@@ -30,32 +27,39 @@ interface SocialThreadComment {
     RemoveEmojisPipe, TranslatePipe],
   templateUrl: './dashboard-result-social.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem]
+  styleUrls: ['./dashboard-result-social.component.css'],
 })
 export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly proxied_resource = inject(ProxyController);
 
   currentUrl = '';
-  queryParams: any = {};
+  queryParams: Params = {};
   isCollapsed = true;
   isConsolidatedView = false;
   readonly searchResults = input<SocialResultItem[]>([]);
   readonly isExpandAble = input<boolean>(false);
 
-  constructor(protected authService: AuthService, private router: Router, private route: ActivatedRoute, protected scrollService: ScrollService, protected licenseService: LicenseService) {
+  constructor(protected authService: AuthService, private router: Router, private route: ActivatedRoute, protected scrollService: ScrollService) {
   }
 
   ngAfterViewInit() {
     this.scrollService.scrollToSavedPosition();
   }
 
-  getContentLines(item: any): string[] {
+  getContentLines(item: SocialResultItem): string[] {
     return item?.m_content
       ? item.m_content
         .split('\n')
-        .filter((line: string) => line.trim() && (line.match(/ /g) || []).length > 5)
+        .filter((line: string) => line.trim() && (line.match(/ /g) ?? []).length > 5)
       : [];
+  }
+
+  getContentTypes(item: SocialResultItem): string[] {
+    if (Array.isArray(item.m_content_type)) {
+      return item.m_content_type;
+    }
+    return item.m_content_type ? [item.m_content_type] : [];
   }
 
   getDisplaySections(item: SocialResultItem): string[] {
@@ -64,7 +68,7 @@ export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
     return [...contentLines, ...commentLines];
   }
 
-  hasCodeType(item: any): boolean {
+  hasCodeType(item: SocialResultItem): boolean {
     return Array.isArray(item.m_content_type)
       ? item.m_content_type.some((t: string) => t.includes('code'))
       : (typeof item.m_content_type === 'string' && item.m_content_type.includes('code'));
@@ -83,31 +87,31 @@ export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
   }
 
   getThreadComments(item: SocialResultItem): SocialThreadComment[] {
-    const rawItem = item as any;
+    const rawItem: Record<string, unknown> = item;
     const sources = [
-      rawItem?.m_comments,
-      rawItem?.m_post_comments,
-      rawItem?.m_post_comments_list,
-      rawItem?.m_post_comment_list,
-      rawItem?.m_comment,
-      rawItem?.m_comment_list,
-      rawItem?.m_comments_list,
-      rawItem?.comments,
-      rawItem?.comment_items,
-      rawItem?.comment_details,
-      rawItem?.comments_list,
-      rawItem?.post_comments_list,
-      rawItem?.m_replies,
-      rawItem?.replies,
-      rawItem?.m_thread_comments,
-      rawItem?.thread_comments
+      rawItem.m_comments,
+      rawItem.m_post_comments,
+      rawItem.m_post_comments_list,
+      rawItem.m_post_comment_list,
+      rawItem.m_comment,
+      rawItem.m_comment_list,
+      rawItem.m_comments_list,
+      rawItem.comments,
+      rawItem.comment_items,
+      rawItem.comment_details,
+      rawItem.comments_list,
+      rawItem.post_comments_list,
+      rawItem.m_replies,
+      rawItem.replies,
+      rawItem.m_thread_comments,
+      rawItem.thread_comments
     ];
     return sources.flatMap(source => this.normalizeComments(source)).slice(0, 3);
   }
 
   getCommentCount(item: SocialResultItem): string {
-    const rawItem = item as any;
-    return String(item.m_comment_count || item.m_post_comments_count || item.m_comments_count || rawItem?.comment_count || rawItem?.comments_count || '');
+    const rawItem: Record<string, unknown> = item;
+    return String(item.m_comment_count ?? item.m_post_comments_count ?? item.m_comments_count ?? rawItem.comment_count ?? rawItem.comments_count ?? '');
   }
 
   getResultDisplayLimit(): number {
@@ -154,11 +158,11 @@ export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
       return trimmed.split('\n').map(text => text.trim()).filter(Boolean).map(text => ({ text }));
     }
     if (typeof value === 'object') {
-      const comment = value as any;
-      const text = comment.text || comment.comment || comment.comment_text || comment.m_comment_text || comment.m_comment || comment.m_text || comment.content || comment.comment_content || comment.m_content || comment.message || comment.body || comment.m_body || comment.comment_body || comment.reply || comment.reply_content || comment.description;
+      const comment = value as Record<string, unknown>;
+      const text = comment.text ?? comment.comment ?? comment.comment_text ?? comment.m_comment_text ?? comment.m_comment ?? comment.m_text ?? comment.content ?? comment.comment_content ?? comment.m_content ?? comment.message ?? comment.body ?? comment.m_body ?? comment.comment_body ?? comment.reply ?? comment.reply_content ?? comment.description;
       if (!text) {
         const nestedKeys = ['m_comments', 'm_post_comments', 'm_post_comments_list', 'm_post_comment_list', 'm_comments_list', 'comments', 'comment_items', 'comment_details', 'comments_list', 'post_comments_list', 'm_replies', 'replies', 'm_thread_comments', 'thread_comments'];
-        const nestedComments = nestedKeys.flatMap(key => this.normalizeComments(comment[key]));
+        const nestedComments = nestedKeys.flatMap(key => this.normalizeComments(getOwnProperty(comment, key)));
         if (nestedComments.length) {
           return nestedComments;
         }
@@ -169,9 +173,9 @@ export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
         return [];
       }
       return [{
-        sender: comment.sender_name || comment.m_sender_name || comment.author || comment.m_author || comment.comment_author || comment.username || comment.user || comment.name || comment.from,
-        date: comment.m_date || comment.date || comment.datetime || comment.created_at || comment.timestamp || comment.time || comment.m_time,
-        likes: comment.likes || comment.m_likes || comment.like_count,
+        sender: String(comment.sender_name ?? comment.m_sender_name ?? comment.author ?? comment.m_author ?? comment.comment_author ?? comment.username ?? comment.user ?? comment.name ?? comment.from ?? ''),
+        date: String(comment.m_date ?? comment.date ?? comment.datetime ?? comment.created_at ?? comment.timestamp ?? comment.time ?? comment.m_time ?? ''),
+        likes: String(comment.likes ?? comment.m_likes ?? comment.like_count ?? ''),
         text: String(text)
       }];
     }

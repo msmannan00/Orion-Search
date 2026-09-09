@@ -1,0 +1,35 @@
+@keyframes app-route-fade-a {
+  from { opacity: 0%; }
+
+  to { opacity: 100%; }
+}
+
+@keyframes app-route-fade-b {
+  from { opacity: 0%; }
+
+  to { opacity: 100%; }
+}
+
+.app-route-fade-a {
+  animation: app-route-fade-a 500ms ease-out;
+}
+
+.app-route-fade-b {
+  animation: app-route-fade-b 500ms ease-out;
+}
+
+@keyframes quota-banner-enter {
+  from {
+    opacity: 0%;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.quota-banner-enter {
+  animation: quota-banner-enter 220ms ease-out;
+}

@@ -1,4 +1,4 @@
-<div class="relative block h-full w-full overflow-hidden [&_.leaflet-tooltip-pane]:z-[9999] [&.geo-map-control-inset_.leaflet-top.leaflet-left]:top-16" [class.geo-map-control-inset]="topControlsInset">
+<div class="satellite-map-shell relative block h-full w-full overflow-hidden [&_.leaflet-tooltip-pane]:z-[9999] [&.geo-map-control-inset_.leaflet-top.leaflet-left]:top-16" [class.geo-map-control-inset]="topControlsInset">
   <div #mapContainer class="h-full w-full bg-[#0a0e1a] [background-image:none!important] [body.light-theme_&]:bg-[#edf4fb]"></div>
   <div class="pointer-events-none absolute inset-x-0 top-0 z-[850] h-16 bg-gradient-to-b from-[rgba(8,14,26,0.78)] via-[rgba(8,14,26,0.42)] to-transparent [body.light-theme_&]:hidden"></div>
   <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[850] h-16 bg-gradient-to-t from-[rgba(8,14,26,0.78)] via-[rgba(8,14,26,0.42)] to-transparent [body.light-theme_&]:hidden"></div>
@@ -6,4 +6,17 @@
   <div #zoomLabelElement class="pointer-events-none absolute bottom-[68px] left-3 z-[900] max-w-[calc(100%-24px)] truncate rounded border border-white/10 bg-[rgba(13,21,37,.88)] px-[10px] py-1 font-mono text-[10px] text-white/35 [body.light-theme_&]:border-[#d2deec] [body.light-theme_&]:bg-[#f7fbff]/90 [body.light-theme_&]:text-[#5f738f] max-[640px]:bottom-[54px] max-[640px]:left-2 max-[640px]:max-w-[calc(100%-16px)] max-[640px]:text-[9px]">
     {{ 'zoom 2.5' | translate }}
   </div>
+
+  @if (selectedLayer === 'osm') {
+    <div class="absolute bottom-1 left-1 z-[900] rounded bg-white/80 px-1.5 py-0.5 text-[9px] leading-none text-[#334155] shadow-sm backdrop-blur-sm">
+      <a class="hover:underline" href="https://openfreemap.org/" rel="noopener noreferrer" target="_blank">OpenFreeMap</a>
+      · © <a class="hover:underline" href="https://www.openmaptiles.org/" rel="noopener noreferrer" target="_blank">OpenMapTiles</a>
+      · © <a class="hover:underline" href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>
+    </div>
+  } @else {
+    <div class="absolute bottom-1 left-1 z-[900] rounded bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75 shadow-sm backdrop-blur-sm">
+      Tiles © <a class="hover:underline" href="https://www.esri.com/" rel="noopener noreferrer" target="_blank">Esri</a>
+      · Esri, Maxar, Earthstar Geographics, and contributors
+    </div>
+  }
 </div>

@@ -36,8 +36,8 @@ export class CaseShareComponent implements OnInit {
     this.appService.loadConfig().subscribe(() => {
       this.brandingResolved = true;
     });
-    const shareId = this.route.snapshot.paramMap.get('shareId') || '';
-    const token = this.route.snapshot.queryParamMap.get('token') || '';
+    const shareId = this.route.snapshot.paramMap.get('shareId') ?? '';
+    const token = this.route.snapshot.queryParamMap.get('token') ?? '';
     if (!shareId || !token) {
       this.errorMessage = this.translationService.translate('Invalid share link.');
       this.isLoading = false;
@@ -47,17 +47,17 @@ export class CaseShareComponent implements OnInit {
       params: new HttpParams().set('token', token)
     }).subscribe({
       next: report => {
-        report.entities = report.entities || [];
-        report.artifacts = report.artifacts || [];
-        report.comments = report.comments || [];
-        report.tasks = report.tasks || [];
-        report.linkedCases = report.linkedCases || [];
+        report.entities = report.entities ?? [];
+        report.artifacts = report.artifacts ?? [];
+        report.comments = report.comments ?? [];
+        report.tasks = report.tasks ?? [];
+        report.linkedCases = report.linkedCases ?? [];
 
         this.report = report;
         this.isLoading = false;
       },
       error: err => {
-        this.errorMessage = err?.error?.detail || this.translationService.translate('This share link is unavailable.');
+        this.errorMessage = err?.error?.detail ?? this.translationService.translate('This share link is unavailable.');
         this.isLoading = false;
       }
     });
@@ -123,8 +123,8 @@ export class CaseShareComponent implements OnInit {
         case_id: this.report.caseId || '-',
         title: this.report.title || '-',
         status: this.report.status || '-',
-        entities: this.report.entities?.length || 0,
-        comments: this.report.comments?.length || 0
+        entities: this.report.entities?.length ?? 0,
+        comments: this.report.comments?.length ?? 0
       },
       tables: [
         {
@@ -133,7 +133,7 @@ export class CaseShareComponent implements OnInit {
             case_id: this.report.caseId || '-',
             title: this.report.title || '-',
             status: this.report.status || '-',
-            description: this.report.description || '-'
+            description: this.report.description ?? '-'
           }
         }
       ]
@@ -142,14 +142,14 @@ export class CaseShareComponent implements OnInit {
   }
 
   getPrimaryEntity(): SharedCaseEntity | null {
-    const entities = this.report?.entities || [];
+    const entities = this.report?.entities ?? [];
     return entities.find(entity => entity.entityId === this.report?.primaryEntityId)
-      || entities.find(entity => entity.role === 'primary')
-      || null;
+      ?? entities.find(entity => entity.role === 'primary')
+      ?? null;
   }
 
   getRelatedEntities(): SharedCaseEntity[] {
-    const entities = this.report?.entities || [];
+    const entities = this.report?.entities ?? [];
     const primaryEntity = this.getPrimaryEntity();
 
     return entities.filter(entity =>
@@ -158,7 +158,7 @@ export class CaseShareComponent implements OnInit {
   }
 
   getComments(): SharedCaseComment[] {
-    return this.report?.comments || [];
+    return this.report?.comments ?? [];
   }
 
   toggleRelatedEntity(entityId: string): void {
@@ -175,7 +175,7 @@ export class CaseShareComponent implements OnInit {
   }
 
   formatConfidence(value?: string | null): string {
-    return this.formatLabel(value || 'high');
+    return this.formatLabel(value ?? 'high');
   }
 
   formatLabel(value?: string | null, otherValue?: string | null): string {

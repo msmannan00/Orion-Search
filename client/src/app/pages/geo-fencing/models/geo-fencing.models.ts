@@ -28,8 +28,8 @@ export interface TrackingSidebarBridge {
   getActiveEntity: () => TrackingEntityState | null;
   getLoadingEntity: () => TrackingEntityState | null;
   isCurrentRequestToken: (token: number) => boolean;
-  openLoading: (type: TrackingEntityType, id: string, seedData: any) => number;
-  openData: (type: TrackingEntityType, data: any) => void;
+  openLoading: (type: TrackingEntityType, id: string, seedData: unknown) => number;
+  openData: (type: TrackingEntityType, data: unknown) => void;
   openError: (type: TrackingEntityType, id: string, message: string) => void;
 }
 
@@ -125,6 +125,44 @@ export interface ThreatLensFeedItem {
   countryKeys: string[];
 }
 
+export interface ThreatLensDocument {
+  [key: string]: unknown;
+  m_hash?: unknown;
+  doc_id?: unknown;
+  id?: unknown;
+  m_url?: unknown;
+  m_title?: unknown;
+  m_creation_date?: unknown;
+  m_date?: unknown;
+  m_update_date?: unknown;
+  m_name?: unknown;
+  m_caption?: unknown;
+  m_media_caption?: unknown;
+  m_sender_name?: unknown;
+  m_channel_name?: unknown;
+  m_team?: unknown;
+  q?: unknown;
+  m_important_content?: unknown;
+  m_summary?: unknown;
+  m_content?: unknown;
+  m_highlighted?: unknown;
+  m_message_sharable_link?: unknown;
+  m_channel_url?: unknown;
+  m_base_url?: unknown;
+  m_source_url?: unknown;
+  m_weblink?: unknown;
+  m_platform?: unknown;
+  m_remote_type?: unknown;
+  m_risk?: unknown;
+  m_sender_username?: unknown;
+  m_attacker?: unknown;
+  ioc?: unknown;
+  m_cve?: unknown;
+  m_content_type?: unknown;
+  m_country_name?: unknown;
+  m_location?: unknown;
+}
+
 export interface ThreatLensMapData {
   countryCounts: ThreatCountryCount[];
   totalResults: number;
@@ -169,8 +207,8 @@ export interface ThreatLensFeedRangeOption {
   label: string;
 }
 
-export interface ArcDrawState {
+export interface ArcDrawState<TGraphic = unknown> {
   arc: AnimatedArcDescriptor;
-  graphic: any;
+  graphic: TGraphic;
   completed: boolean;
 }

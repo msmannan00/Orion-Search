@@ -19,5 +19,5 @@ export class SectionStateComponent {
   actionIcon = input('bi-arrow-clockwise');
   testId = input('');
   actionTestId = input('');
-  action = output<void>();
+  action = output();
 }

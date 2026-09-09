@@ -17,7 +17,7 @@ class TenantAdminView(ModelView):
         self._engine = engine
 
     async def before_create(self, request: Request, data: dict, obj: Any):
-        if data.get("is_default") is True:
+        if data.get("is_default"):
             existing = await self._engine.find_one(
                 db_tenant_model, db_tenant_model.is_default == True)
             if existing:
@@ -31,7 +31,7 @@ class TenantAdminView(ModelView):
         if "is_default" in data and current.is_default:
             raise FormValidationError({"is_default": "Default tenant cannot be changed"})
 
-        if data.get("is_default") is True:
+        if data.get("is_default"):
             existing = await self._engine.find_one(
                 db_tenant_model, (db_tenant_model.is_default == True) & (db_tenant_model.id != obj.id), )
             if existing:

@@ -61,7 +61,7 @@ export class CaseSummarySectionComponent {
   }
 
   isTagSelected(tag: CaseTag): boolean {
-    return this.store.editedCase?.tags?.includes(tag) || false;
+    return this.store.editedCase?.tags?.includes(tag) ?? false;
   }
 
   toggleAssignedAnalyst(userId: string): void {
@@ -78,7 +78,7 @@ export class CaseSummarySectionComponent {
   }
 
   isAnalystAssignedToCase(userId: string): boolean {
-    return this.store.editedCase?.assignedAnalystIds?.includes(userId) || false;
+    return this.store.editedCase?.assignedAnalystIds?.includes(userId) ?? false;
   }
 
   getDisplayLabel(value?: string | null, otherValue?: string | null): string {

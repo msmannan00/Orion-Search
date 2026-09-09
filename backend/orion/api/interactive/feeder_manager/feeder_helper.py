@@ -232,7 +232,6 @@ class FeederHelper:
         rule = constant.url_rules.get(rule_key) or {}
         rule_type = str(rule.get("rule_type") or "")
         record_name = self.value_record_name(rule_key)
-        record = None
         if rule_type == "shared":
             record = await self._engine.find_one(
                 self.model,
@@ -297,8 +296,11 @@ class FeederHelper:
         encrypted_content = self.encrypt_script_content(content)
 
         existing_feeder = existing.feeder if existing and existing.feeder else None
-        existing_author_id = existing_feeder.author_id if existing_feeder else None
-        existing_author_name = existing_feeder.author_name if existing_feeder else None
+        existing_author_id = None
+        existing_author_name = None
+        if existing_feeder:
+            existing_author_id = existing_feeder.author_id
+            existing_author_name = existing_feeder.author_name
         if existing_author_id and existing_author_id != str(current_user.id) and current_user.role != user_role.ADMIN:
             raise HTTPException(status_code=409, detail="Script owner already exists")
 

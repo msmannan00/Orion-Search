@@ -1,4 +1,4 @@
-<div class="w-full px-[32px] pb-[100px] pt-3 max-[1200px]:px-[15px] max-[943px]:px-[10px] md:pt-4" @fadeInDashboardItem>
+<div class="ui-fade-in-dashboard-item w-full px-[32px] pb-[100px] pt-3 max-[1200px]:px-[15px] max-[943px]:px-[10px] md:pt-4">
   @if (isFlushAllConfirmationOpen) {
     <app-confirmation-popup [message]="'Delete all log files?' | translate" (confirmed)="confirmFlushLogs($event)"></app-confirmation-popup>
   }
@@ -42,7 +42,7 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto border-[var(--ui-table-shell-border)] bg-[var(--color-blue-830)] [border-width:var(--ui-table-shell-border-width,1.5px)] [margin-top:var(--ui-table-shell-mt,16px)] [border-radius:var(--ui-table-shell-radius,10px)] [-webkit-overflow-scrolling:touch] [--ui-table-shell-mt:0px] [--ui-table-shell-radius:0px] [--ui-table-shell-border-width:0px]" @fadeInDashboardItem>
+        <div class="ui-fade-in-dashboard-item overflow-x-auto border-[var(--ui-table-shell-border)] bg-[var(--color-blue-830)] [border-width:var(--ui-table-shell-border-width,1.5px)] [margin-top:var(--ui-table-shell-mt,16px)] [border-radius:var(--ui-table-shell-radius,10px)] [-webkit-overflow-scrolling:touch] [--ui-table-shell-mt:0px] [--ui-table-shell-radius:0px] [--ui-table-shell-border-width:0px]">
           <table class="w-full border-collapse text-left text-sm text-[var(--color-text1)] [min-width:var(--ui-table-min-width,920px)] max-md:[min-width:var(--ui-table-mobile-min-width,680px)] max-md:text-[13px] [&_thead]:border-b-2 [&_thead]:border-b-[rgb(87_165_235/37.6%)] [&_thead]:bg-[var(--color-blue-820-light)] [&_thead]:text-[13px] [&_thead]:uppercase [&_thead]:tracking-[.04em] [&_thead]:text-[var(--color-text6)] max-md:[&_thead]:text-xs [&_th]:p-3 [&_td]:p-3 max-md:[&_th]:p-2.5 max-md:[&_td]:p-2.5 [&_tbody_tr]:border-t [&_tbody_tr]:border-t-[var(--ui-table-row-border)] [&_tbody_tr]:text-[var(--color-text3)] [&_tbody_tr]:transition-[background-color,border-color] [&_tbody_tr]:duration-[160ms] [&_tbody_tr]:ease-[ease] [&_tbody_tr:nth-child(odd)]:bg-[var(--ui-table-row-odd)] [&_tbody_tr:nth-child(even)]:bg-[var(--ui-table-row-even)] [&_tbody_tr:hover]:border-t-[var(--ui-table-row-border-hover)] [&_tbody_tr:hover]:bg-[var(--ui-table-row-hover)] [&_tbody_tr:focus-visible]:border-t-[var(--ui-table-row-border-hover)] [&_tbody_tr:focus-visible]:bg-[var(--ui-table-row-hover)] [&_tbody_tr:focus-visible]:outline-none [&_tbody_tr:focus-within]:border-t-[var(--ui-table-row-border-hover)] [&_tbody_tr:focus-within]:bg-[var(--ui-table-row-hover)] [&_tbody_tr:focus-within]:outline-none [&_tbody_tr:active]:border-t-[var(--ui-table-row-border-hover)] [&_tbody_tr:active]:bg-[var(--ui-table-row-hover)] [&_tbody_tr:active]:outline-none [&_tbody_td]:whitespace-nowrap">
             <thead>
               <tr>
@@ -75,7 +75,7 @@
                     <td [attr.data-label]="'Time' | translate" class="text-[12.5px] font-medium text-[var(--color-text3)]">{{ entry.timestamp }}</td>
                     <td [attr.data-label]="'File' | translate" class="max-w-[180px] truncate text-[12.5px] font-medium text-[var(--color-text3)]" [title]="entry.date + '/' + entry.file + ':' + entry.line">{{ entry.date }}/{{ entry.file }}:{{ entry.line }}</td>
                     <td [attr.data-label]="'Source' | translate" class="max-w-[280px] truncate text-[12px] font-medium text-[var(--color-text3)]" [title]="entry.caller">{{ entry.caller || '-' }}</td>
-                    <td [attr.data-label]="'Message' | translate" class="min-w-[320px] !whitespace-normal break-words text-[13px] font-medium leading-[1.45] text-[var(--color-text2)]">{{ entry.message }}</td>
+                    <td [attr.data-label]="'Message' | translate" class="min-w-[320px] !whitespace-pre-wrap break-words text-[13px] font-medium leading-[1.45] text-[var(--color-text2)]">{{ entry.message }}</td>
                   </tr>
                 }
               }

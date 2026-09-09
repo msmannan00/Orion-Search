@@ -24,13 +24,13 @@ export class UserProfileActivityComponent {
   response: PublicUserActivityResponse | null = null;
 
   get profileImageUrl(): string {
-    const userId = this.route.snapshot.paramMap.get('user_id') || '';
+    const userId = this.route.snapshot.paramMap.get('user_id') ?? '';
     return userId ? `/api/s/static/user/${userId}` : '/api/s/static/user/default';
   }
 
   constructor() {
     this.route.paramMap.subscribe(params => {
-      const userId = params.get('user_id') || '';
+      const userId = params.get('user_id') ?? '';
       if (!userId) {
         this.response = null;
         this.errorMessage = 'User not found.';

@@ -4,7 +4,6 @@ import { ErrorStoreService } from './services/error-store.service';
 import { filter, map, Observable } from 'rxjs';
 
 import { AppService } from '../../services/core/app/app.service';
-import { appAnimation, quotaBannerAnimation } from '../../shared/animations/app.animations';
 import { MessageNotificationComponent } from '../../shared/partials/message-notification/message-notification.component';
 import { LoaderComponent } from '../../shared/partials/loader/loader.component';
 import { TrailNotificationComponent } from '../../shared/partials/trail-notification/trail-notification.component';
@@ -16,8 +15,8 @@ import { LoadingService } from '../../shared/services/loading.service';
   standalone: true,
   imports: [RouterOutlet, MessageNotificationComponent, LoaderComponent, TrailNotificationComponent, TranslatePipe],
   templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [appAnimation, quotaBannerAnimation],
 })
 export class AppComponent {
   private activeRouteConfigLoads = 0;
@@ -29,13 +28,14 @@ export class AppComponent {
   isVisible = true;
 
   constructor(private router: Router, private errorStore: ErrorStoreService, protected appService: AppService, private loadingService: LoadingService) {
+    window.postMessage({ source: 'orion-app', type: 'register' }, window.location.origin);
     effect(() => {
       const theme = this.appService.userSessionData()?.user?.theme ?? 'dark-theme';
       this.applyTheme(theme);
     });
     this.error$ = this.errorStore.error$;
     this.router.events.pipe(filter(event => event instanceof NavigationEnd), map(() => {
-      const path = this.router.parseUrl(this.router.url).root.children['primary']?.segments.map(s => s.path).join('/') || '';
+      const path = this.router.parseUrl(this.router.url).root.children.primary?.segments.map(s => s.path).join('/') || '';
       return `/${path}`;
     })).subscribe((path) => {
       this.currentRoute.set(path);

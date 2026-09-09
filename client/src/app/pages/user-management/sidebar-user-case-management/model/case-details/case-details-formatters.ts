@@ -1,4 +1,6 @@
 import { Case, CaseAnalyst, CaseEntity } from '../case.model';
+import { setOwnProperty } from '../../../../../shared/utils/type-guards.util';
+
 
 export type CaseDateField = 'dueAt' | 'capturedAt';
 
@@ -24,7 +26,7 @@ export function getCaseDisplayLabel(value?: string | null, otherValue?: string |
 }
 
 export function formatCaseConfidence(value?: string | null): string {
-  return formatCaseLabel(value || 'high');
+  return formatCaseLabel(value ?? 'high');
 }
 
 export function getFormattedCaseDateTime(date?: Date | string | null): string {
@@ -75,7 +77,7 @@ export function getCaseDateInputValue(date?: Date | string | null): string {
 }
 
 export function setCaseDateInputValue(target: CaseDateTarget, field: CaseDateField, value: string): void {
-  target[field] = value || null;
+  setOwnProperty(target, field, value || null);
 }
 
 export function getCaseAnalystLabel(analysts: CaseAnalyst[], userId?: string): string {
@@ -86,11 +88,11 @@ export function getCaseAnalystLabel(analysts: CaseAnalyst[], userId?: string): s
   if (!analyst) {
     return userId;
   }
-  return analyst.username || analyst.email || analyst.id;
+  return analyst.username ?? analyst.email ?? analyst.id;
 }
 
 export function getAssignedCaseAnalysts(analysts: CaseAnalyst[], caseItem: Case | null): CaseAnalyst[] {
-  const assignedIds = new Set(caseItem?.assignedAnalystIds || []);
+  const assignedIds = new Set(caseItem?.assignedAnalystIds ?? []);
   return analysts.filter(analyst => assignedIds.has(analyst.id));
 }
 
@@ -99,17 +101,17 @@ export function getPrimaryCaseEntity(caseItem: Case | null): CaseEntity | null {
     return null;
   }
   return caseItem.entities.find(entity => entity.entityId === caseItem.primaryEntityId)
-    || caseItem.entities.find(entity => entity.role === 'primary')
-    || caseItem.entities[0];
+    ?? caseItem.entities.find(entity => entity.role === 'primary')
+    ?? caseItem.entities[0];
 }
 
 export function getRelatedCaseEntities(caseItem: Case | null): CaseEntity[] {
   const primaryEntity = getPrimaryCaseEntity(caseItem);
-  return caseItem?.entities?.filter(entity => entity.entityId !== primaryEntity?.entityId) || [];
+  return caseItem?.entities?.filter(entity => entity.entityId !== primaryEntity?.entityId) ?? [];
 }
 
 export function getLinkableCaseEntities(caseItem: Case | null, currentEntityId?: string): CaseEntity[] {
-  return (caseItem?.entities || []).filter(entity => entity.entityId !== currentEntityId);
+  return (caseItem?.entities ?? []).filter(entity => entity.entityId !== currentEntityId);
 }
 
 export function getLinkedCaseEntityDisplayLabel(caseItem: Case | null, entityId?: string): string {
@@ -117,7 +119,7 @@ export function getLinkedCaseEntityDisplayLabel(caseItem: Case | null, entityId?
     return 'Not linked';
   }
 
-  const allEntities = caseItem?.entities || [];
+  const allEntities = caseItem?.entities ?? [];
   const linkedEntity = allEntities.find(entity => entity.entityId === entityId);
 
   if (!linkedEntity) {

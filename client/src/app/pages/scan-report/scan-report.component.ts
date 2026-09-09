@@ -1,9 +1,8 @@
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { fadeInDashboardItem } from '../../shared/animations/dashboard.item.animation';
 import { TooltipDirective } from '../../shared/directive/tooltip-directive.directive';
-import { DnsResult, IpDetail, IpRowState, VulnerabilityScanDepth } from '../../shared/model/network-intel/network-intel.model';
+import { DnsResult, IpDetail, IpRowState, UrlVulnerabilityScanResult, VulnerabilityScanDepth } from '../../shared/model/network-intel/network-intel.model';
 import { buildStandardExportOptions } from '../../shared/model/report/export-choice.model';
 import { GraphReportPayload } from '../../shared/model/report/report-export.model';
 import { ScanJob } from '../../shared/model/scan-jobs/scan-job.model';
@@ -16,9 +15,10 @@ import { DnsSectionComponent } from '../root-searches/network-intel/dns-section/
 import { ShodanSectionComponent } from '../root-searches/network-intel/shodan-section/shodan-section.component';
 import { VulnerabilitySectionComponent } from '../root-searches/network-intel/vulnerability-section/vulnerability-section.component';
 import { TranslationService } from '../../shared/services/translation.service';
+import { asUnknownRecord, getOwnProperty, isUnknownRecord, setOwnProperty, UnknownRecord } from '../../shared/utils/type-guards.util';
+import { ScanReportField } from './model/scan-report.model';
+import { ScanReportSection } from './model/scan-report.model';
 
-type ScanReportField = { label: string; value: any };
-type ScanReportSection = { title: string; items: ScanReportField[] };
 const SCAN_REPORT_EXPORT_OPTIONS = buildStandardExportOptions('scan-report-export', 'report', 'Generate consistent scan report PDF export.');
 
 @Component({
@@ -26,8 +26,8 @@ const SCAN_REPORT_EXPORT_OPTIONS = buildStandardExportOptions('scan-report-expor
   standalone: true,
   imports: [CommonModule, NgClass, TooltipDirective, ExportChoiceModalComponent, TranslatePipe, DnsSectionComponent, ShodanSectionComponent, VulnerabilitySectionComponent],
   templateUrl: './scan-report.component.html',
+  styleUrls: ['./scan-report.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
 })
 export class ScanReportComponent extends ValuePresentationBase implements OnInit {
   private readonly translationService = inject(TranslationService);
@@ -51,7 +51,7 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
   }
 
   ngOnInit(): void {
-    const scanId = this.route.snapshot.paramMap.get('scanId') || '';
+    const scanId = this.route.snapshot.paramMap.get('scanId') ?? '';
     if (!scanId) {
       this.loading = false;
       this.errorMessage = this.translationService.translate('Scan report not found.');
@@ -70,17 +70,25 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
       },
       error: err => {
         this.loading = false;
-        this.errorMessage = err?.error?.detail || this.translationService.translate('Unable to load scan report.');
+        this.errorMessage = err?.error?.detail ?? this.translationService.translate('Unable to load scan report.');
       },
     });
   }
 
-  get result(): any {
+  get result(): unknown {
     return this.unwrapResult(this.job?.response);
   }
 
+  get vulnerabilityResult(): UrlVulnerabilityScanResult | null {
+    return this.result as UrlVulnerabilityScanResult | null;
+  }
+
+  private get resultRecord(): UnknownRecord {
+    return asUnknownRecord(this.result);
+  }
+
   get apiType(): string {
-    const raw = String(this.job?.api_reference || this.job?.title || 'scan')
+    const raw = String(this.job?.api_reference ?? this.job?.title ?? 'scan')
       .replace(/^\/?api\//, '')
       .replace(/^dynamic\//, '')
       .replace(/^netintel\//, '')
@@ -103,7 +111,8 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
   }
 
   get targetText(): string {
-    return this.job?.target || this.result?.domain || this.result?.host || this.result?.url || this.result?.ip || this.result?.query || this.translationService.translate('Scan target');
+    const result = this.resultRecord;
+    return this.job?.target ?? String(result.domain ?? result.host ?? result.url ?? result.ip ?? result.query ?? this.translationService.translate('Scan target'));
   }
 
   get isHostReconReport(): boolean {
@@ -146,7 +155,7 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
       return this.shodanReportResult ? 1 : 0;
     }
     if (this.isVulnerabilityReport) {
-      const total = Number(this.result?.summary?.total);
+      const total = Number(asUnknownRecord(this.resultRecord.summary).total);
       return this.findingItems.length || (Number.isFinite(total) ? total : 0);
     }
     if (this.findingItems.length) {
@@ -169,20 +178,18 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
       return this.shodanReportResult ? Object.keys(this.shodanReportResult).length : 0;
     }
     if (this.isVulnerabilityReport) {
-      return this.findingItems.length + Object.keys(this.result?.summary || {}).length;
+      return this.findingItems.length + Object.keys(asUnknownRecord(this.resultRecord.summary)).length;
     }
     return this.resultSections.reduce((total, section) => total + section.items.length, 0);
   }
 
   get resultSections(): ScanReportSection[] {
-    if (this.cachedResultSections === undefined) {
-      this.cachedResultSections = this.buildResultSections(this.result);
-    }
+    this.cachedResultSections ??= this.buildResultSections(this.result);
     return this.cachedResultSections;
   }
 
   get completedAtLabel(): string {
-    return this.formatDate(this.job?.completed_at || this.job?.updated_at || this.job?.created_at);
+    return this.formatDate(this.job?.completed_at ?? this.job?.updated_at ?? this.job?.created_at);
   }
 
   isLastSectionRow(section: ScanReportSection, index: number): boolean {
@@ -213,32 +220,33 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
   }
 
   private prepareNetworkIntelReport(): void {
-    const result = this.result;
+    const result = this.resultRecord;
 
-    if (this.isHostReconReport && result && typeof result === 'object') {
-      const domain = String(result.domain || this.job?.payload?.['domain'] || this.job?.target || '');
+    if (this.isHostReconReport) {
+      const domain = String(result.domain ?? this.job?.payload?.domain ?? this.job?.target ?? '');
       const ips: string[] = Array.isArray(result.ips) ? result.ips.map((ip: unknown) => String(ip)).filter(Boolean) : [];
       this.dnsReportResult = { domain, ips };
       this.dnsReportRows = ips.map(ip => ({ ip, expanded: false, loading: false, detail: null, error: null }));
       return;
     }
 
-    if (this.isIpScanReport && result?.ip) {
-      this.shodanReportResult = result as IpDetail;
+    if (this.isIpScanReport && result.ip) {
+      this.shodanReportResult = result as unknown as IpDetail;
       return;
     }
 
-    if (this.isVulnerabilityReport && result && typeof result === 'object') {
-      const target = this.normalizeVulnerabilityTarget(result.host || result.extracted?.host || this.job?.payload?.['domain'] || this.job?.target || result.url);
+    if (this.isVulnerabilityReport) {
+      const extracted = asUnknownRecord(result.extracted);
+      const target = this.normalizeVulnerabilityTarget(result.host ?? extracted.host ?? this.job?.payload?.domain ?? this.job?.target ?? result.url);
       this.vulnerabilityReportTarget = target || null;
       this.vulnerabilityReportTargets = target ? [target] : [];
-      const depth = String(this.job?.payload?.['depth'] || '').toLowerCase();
+      const depth = String(this.job?.payload?.depth ?? '').toLowerCase();
       this.vulnerabilityReportDepth = ['low', 'medium', 'high', 'full'].includes(depth) ? depth as VulnerabilityScanDepth : 'low';
     }
   }
 
   private normalizeVulnerabilityTarget(value: unknown): string {
-    const raw = String(value || '').trim();
+    const raw = String(value ?? '').trim();
     if (!raw) {
       return '';
     }
@@ -306,31 +314,33 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
     };
   }
 
-  private unwrapResult(response: any): any {
-    if (!response || typeof response !== 'object') {
+  private unwrapResult(response: unknown): unknown {
+    if (!isUnknownRecord(response)) {
       return response;
     }
-    if (response?.result?.result && typeof response.result.result === 'object') {
-      return response.result.result;
+    const nestedResult = asUnknownRecord(response.result);
+    if (isUnknownRecord(nestedResult.result) || Array.isArray(nestedResult.result)) {
+      return nestedResult.result;
     }
-    if (response?.data && typeof response.data === 'object') {
+    if (isUnknownRecord(response.data) || Array.isArray(response.data)) {
       return response.data;
     }
-    if (response?.result && typeof response.result === 'object') {
+    if (isUnknownRecord(response.result) || Array.isArray(response.result)) {
       return response.result;
     }
     return response;
   }
 
-  private get findingItems(): any[] {
-    return Array.isArray(this.result?.findings)
-      ? this.result.findings
-      : Array.isArray(this.result?.top_findings)
-        ? this.result.top_findings
+  private get findingItems(): unknown[] {
+    const result = this.resultRecord;
+    return Array.isArray(result.findings)
+      ? result.findings
+      : Array.isArray(result.top_findings)
+        ? result.top_findings
         : [];
   }
 
-  private buildResultSections(result: any): ScanReportSection[] {
+  private buildResultSections(result: unknown): ScanReportSection[] {
     if (!result) {
       return [];
     }
@@ -344,7 +354,7 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
         .filter(section => section.items.length > 0);
     }
 
-    if (!this.isObjectValue(result)) {
+    if (!isUnknownRecord(result)) {
       return this.isEmptyDisplayValue(result)
         ? []
         : [{ title: 'Result', items: [{ label: 'Value', value: result }] }];
@@ -359,7 +369,7 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
       .filter(section => section.items.length > 0);
   }
 
-  private flattenReportValue(value: any, path: string[] = []): ScanReportField[] {
+  private flattenReportValue(value: unknown, path: string[] = []): ScanReportField[] {
     if (this.isEmptyDisplayValue(value)) {
       return [];
     }
@@ -368,7 +378,7 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
       return value.flatMap((item, index) => this.flattenReportValue(item, path.length ? path : [`Item ${index + 1}`]));
     }
 
-    if (!this.isObjectValue(value)) {
+    if (!isUnknownRecord(value)) {
       return [{
         label: this.displayFieldLabel(path[path.length - 1] || 'Value'),
         value,
@@ -385,13 +395,13 @@ export class ScanReportComponent extends ValuePresentationBase implements OnInit
     const values: Record<string, string> = {};
     section.items.slice(0, 80).forEach((item, index) => {
       const label = item.label || `Field ${index + 1}`;
-      const key = values[label] === undefined ? label : `${label} ${index + 1}`;
-      values[key] = this.toReportCellValue(item.value);
+      const key = getOwnProperty(values, label) === undefined ? label : `${label} ${index + 1}`;
+      setOwnProperty(values, key, this.toReportCellValue(item.value));
     });
     return Object.keys(values).length ? values : { Details: '-' };
   }
 
-  private toReportCellValue(value: any): string {
+  private toReportCellValue(value: unknown): string {
     const text = this.stringifyNestedValue(value) || '-';
     return text.length > 1000 ? `${text.slice(0, 997)}...` : text;
   }

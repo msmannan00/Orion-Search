@@ -9,7 +9,8 @@ import { ConfigSettings } from '../../model/app/config';
 import { AlertNotificationComponent } from "../alert-notification/alert-notification.component";
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { LANGUAGE_OPTIONS, LanguageOption } from '../../constants/shared-enums';
+import { LANGUAGE_OPTIONS } from '../../constants/shared-enums';
+import { LanguageOption } from '../../constants/model/shared-enums.model';
 import { ApiService } from '../../services/api.service';
 import { TranslationService } from '../../services/translation.service';
 import { ScanNotificationService } from '../../services/scan-notification.service';
@@ -36,8 +37,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   role = signal<string>('');
   isNotificationOpen = signal<boolean>(false);
   isScanNotificationOpen = signal<boolean>(false);
-  profile_image: string = "";
-  licences: string = '';
+  profile_image = "";
+  licences = '';
   dropdownOpen = signal(false);
   languageDropdownOpen = signal(false);
   selectedLanguage = signal('');
@@ -58,8 +59,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       const data = this.appService.userSessionData();
       this.username.set(data?.user?.username ?? '');
       this.role.set(data?.user?.role ?? '');
-      this.selectedLanguage.set(this.getCurrentLanguage(data?.user?.preferences?.['language']));
-      this.selectedTheme.set(this.getCurrentTheme(data?.user?.theme ?? data?.user?.preferences?.['theme']));
+      const preferredLanguage = data?.user?.preferences?.language;
+      const preferredTheme = data?.user?.theme ?? data?.user?.preferences?.theme;
+      this.selectedLanguage.set(this.getCurrentLanguage(typeof preferredLanguage === 'string' ? preferredLanguage : ''));
+      this.selectedTheme.set(this.getCurrentTheme(typeof preferredTheme === 'string' ? preferredTheme : undefined));
     });
   }
 
@@ -79,7 +82,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   onDropdownOpen() {
     const rawLicenses = this.appService.userSessionData().user.license;
     this.licences = rawLicenses.map(l => this.licenseService.getLicenseLabel(l)).join(', ');
-    this.profile_image = this.appService.userSessionData().user.image || "";
+    this.profile_image = this.appService.userSessionData().user.image ?? "";
   }
 
   isAdmin(): boolean {
@@ -115,7 +118,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const selectedLanguage = this.translationService.getSupportedLanguage(language);
     const currentSession = this.appService.userSessionData();
     const preferences = {
-      ...(currentSession.user.preferences || {}),
+      ...(currentSession.user.preferences ?? {}),
       language: selectedLanguage
     };
     this.selectedLanguage.set(selectedLanguage);
@@ -153,7 +156,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     }
     const selectedTheme: ThemeMode = this.selectedTheme() === 'dark-theme' ? 'light-theme' : 'dark-theme';
     const preferences = {
-      ...(currentSession.user.preferences || {}),
+      ...(currentSession.user.preferences ?? {}),
       theme: selectedTheme
     };
     this.selectedTheme.set(selectedTheme);
@@ -191,6 +194,16 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.router.navigate(['/dashboard/profile/system-settings']).then();
   }
 
+  openOrionMail(): void {
+    const mailUrl = this.appService.getConfig().appSettings.orion_mail_url.trim();
+    if (!mailUrl) {
+      return;
+    }
+    window.open(mailUrl, '_blank', 'noopener,noreferrer');
+    this.dropdownOpen.set(false);
+    this.languageDropdownOpen.set(false);
+  }
+
   logout() {
     this.scanNotificationService.stopAll();
     this.dashboardService.resetParams();
@@ -203,8 +216,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   closeDropdown(event: Event) {
-    const eventTargetElement = event.target as HTMLElement;
-    if (!eventTargetElement.closest('.profile')) {
+    const eventTargetElement = event.target;
+    if (!(eventTargetElement instanceof Element) || !eventTargetElement.closest('.profile')) {
       this.dropdownOpen.set(false);
       this.languageDropdownOpen.set(false);
     }
@@ -242,7 +255,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   openSupportPopup() {
-    // TODO: The 'emit' function requires a mandatory void argument
+
     this.openPopup.emit(undefined);
   }
 

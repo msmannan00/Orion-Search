@@ -26,7 +26,7 @@ class TokenAuthProvider(AuthProvider):
             response: Response = None, ) -> Response:
         try:
             user = await auth_manager.get_instance().authenticate_user(username, password)
-            if not user:
+            if not user or request is None:
                 raise HTTPException(status_code=401, detail="Invalid username or password")
             session_manager.ensure_user_tenant_access(user, getattr(request.state, "tenant", None))
             if user.role != user_role.ADMIN:
@@ -71,9 +71,11 @@ class TokenAuthProvider(AuthProvider):
 
     def get_admin_user(self, request: Request) -> AdminUser:
         user = getattr(request.state, 'user', None)
+        if not user:
+            return AdminUser(username="anonymous", photo_url=None)
         return AdminUser(
-            username=user.username if user else "anonymous",
-            photo_url=user.profile_picture if user and hasattr(user, "profile_picture") else None)
+            username=user.username,
+            photo_url=user.profile_picture if hasattr(user, "profile_picture") else None)
 
     async def logout(self, request: Request, response: Response) -> Response:
         token = token_from_request(request)

@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { MessageNotificationService } from '../../../../../services/message_notification/message-notification.service';
 import { ConfirmationPopupComponent } from '../../../../../shared/partials/confirmation-popup/confirmation-popup.component';
 import { TenantIocSelectorComponent } from '../../../../../shared/partials/tenant-ioc-selector/tenant-ioc-selector.component';
 import { TooltipDirective } from '../../../../../shared/directive/tooltip-directive.directive';
@@ -17,12 +16,8 @@ import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
   templateUrl: './tenant-ioc-drawer-content.component.html',
 })
 export class TenantIocDrawerContentComponent extends TenantIocSelectorComponent {
-  constructor(messageNotificationService: MessageNotificationService) {
-    super(messageNotificationService);
-  }
-
   get selectedCategoryName(): string {
-    return this.iocs.find(ioc => ioc.ioc_id === this.selectedCategoryId)?.name || '';
+    return this.iocs.find(ioc => ioc.ioc_id === this.selectedCategoryId)?.name ?? '';
   }
 
   get iocsWithValues(): IocCategory[] {

@@ -81,7 +81,7 @@ Example response:
       "raw": "abc@abc.com:Blades52",
       "channel": "°-| [D3V1LZoNe] Commiunity |-°",
       "file": null,
-      "file_name": "/home/morgan-freeman/Workspace/Orion/Orion-Crawler/app/crawler/crawler_instance/genbot_service/telegram_parser/scripts/dump/result_22-01-2026_19-30-11.txt",
+      "file_name": "/home/morgan-freeman/Workspace/Orion/Orion-Crawler/app/crawler/crawler_instance/genbot_service/telegram_parser/core/dump/result_22-01-2026_19-30-11.txt",
       "date": "2026-01-24",
       "email": [
         "abc@abc.com"

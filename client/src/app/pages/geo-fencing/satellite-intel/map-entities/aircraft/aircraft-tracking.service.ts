@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../../../shared/services/api.service';
 import { SatelliteLiveAircraft, SatelliteLiveAircraftBBoxResponse } from '../../model/satellite-intel-api.models';
 import { SatelliteIntelService } from '../../satellite-intel-service';
+import { asUnknownRecord } from '../../../../../shared/utils/type-guards.util';
 
 @Injectable({ providedIn: 'root' })
 export class SatelliteAircraftTrackingService {
@@ -32,33 +33,36 @@ export class SatelliteAircraftTrackingService {
     return this.satelliteIntelService.createPolledRequest(() => this.fetchByICAO(icao), (res) => this.getPollStatus(res));
   }
 
-  fetchTrack(icao: string): Observable<any> {
-    return this.api.post<any>('satellite/livetrack/aircraft/track', { icao24: icao });
+  fetchTrack(icao: string): Observable<unknown> {
+    return this.api.post<unknown>('satellite/livetrack/aircraft/track', { icao24: icao });
   }
 
-  pollTrack(icao: string): Observable<any> {
+  pollTrack(icao: string): Observable<unknown> {
     return this.satelliteIntelService.createPolledRequest(() => this.fetchTrack(icao), (res) => this.getPollStatus(res));
   }
 
-  extractItems(payload: any): SatelliteLiveAircraft[] | null {
-    if (Array.isArray(payload?.aircraft)) {
-      return payload.aircraft as SatelliteLiveAircraft[];
+  extractItems(payload: unknown): SatelliteLiveAircraft[] | null {
+    const record = asUnknownRecord(payload);
+    if (Array.isArray(record.aircraft)) {
+      return record.aircraft as SatelliteLiveAircraft[];
     }
 
-    const status = String(payload?.status || '').toLowerCase();
+    const status = String(record.status ?? '').toLowerCase();
     if (status === 'pending' || status === 'busy') {
       return null;
     }
 
-    return payload?.count === 0 ? [] : null;
+    return record.count === 0 ? [] : null;
   }
 
-  getFeedIssue(payload: any): string | null {
-    return payload?.error || payload?.error_message || payload?.last_error || null;
+  getFeedIssue(payload: unknown): string | null {
+    const record = asUnknownRecord(payload);
+    const issue = record.error ?? record.error_message ?? record.last_error;
+    return issue ? String(issue) : null;
   }
 
-  private buildBoundsPayload(lat: number, lon: number, delta: number, openskyClientId?: string, openskyClientSecret?: string): Record<string, any> {
-    const payload: Record<string, any> = {
+  private buildBoundsPayload(lat: number, lon: number, delta: number, openskyClientId?: string, openskyClientSecret?: string): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
       lat_min: lat - delta,
       lat_max: lat + delta,
       lon_min: lon - delta,
@@ -66,17 +70,17 @@ export class SatelliteAircraftTrackingService {
     };
 
     if (openskyClientId?.trim()) {
-      payload['opensky_client_id'] = openskyClientId.trim();
+      payload.opensky_client_id = openskyClientId.trim();
     }
     if (openskyClientSecret?.trim()) {
-      payload['opensky_client_secret'] = openskyClientSecret.trim();
+      payload.opensky_client_secret = openskyClientSecret.trim();
     }
 
     return payload;
   }
 
-  private buildGlobalPayload(openskyClientId?: string, openskyClientSecret?: string): Record<string, any> {
-    const payload: Record<string, any> = {
+  private buildGlobalPayload(openskyClientId?: string, openskyClientSecret?: string): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
       lat_min: -90,
       lat_max: 90,
       lon_min: -180,
@@ -84,16 +88,19 @@ export class SatelliteAircraftTrackingService {
     };
 
     if (openskyClientId?.trim()) {
-      payload['opensky_client_id'] = openskyClientId.trim();
+      payload.opensky_client_id = openskyClientId.trim();
     }
     if (openskyClientSecret?.trim()) {
-      payload['opensky_client_secret'] = openskyClientSecret.trim();
+      payload.opensky_client_secret = openskyClientSecret.trim();
     }
 
     return payload;
   }
 
-  private getPollStatus(res: any): string | undefined {
-    return res?.result?.status || res?.status;
+  private getPollStatus(res: unknown): string | undefined {
+    const response = asUnknownRecord(res);
+    const result = asUnknownRecord(response.result);
+    const status = result.status ?? response.status;
+    return typeof status === 'string' ? status : undefined;
   }
 }

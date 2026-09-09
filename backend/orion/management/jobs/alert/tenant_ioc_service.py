@@ -1,3 +1,5 @@
+from typing import Any
+
 from bson import ObjectId
 from cryptography.fernet import Fernet
 
@@ -25,7 +27,8 @@ class TenantIocService:
                 )
             return iocs
         except Exception as ex:
-            log.g().e(f"Failed to decrypt IOCs for tenant={getattr(tenant, 'id', None)}: {ex}")
+            tenant_id: Any = getattr(tenant, "id", None)
+            log.g().e(f"Failed to decrypt IOCs for tenant={tenant_id}: {ex}")
         return []
 
     async def decrypt_tenant_for_api(self, tenant: db_tenant_model) -> db_tenant_model:
@@ -42,7 +45,7 @@ class TenantIocService:
         tenant.iocs = [
             IocCategory(
                 ioc_id=enc.decrypt(ioc.ioc_id.encode()).decode(),
-                name=enc.decrypt(ioc.name.encode()).decode(),
+                name=enc.decrypt((ioc.name or "").encode()).decode(),
                 values=[enc.decrypt(v.encode()).decode() for v in (ioc.values or [])],
             )
             for ioc in (tenant.iocs or [])

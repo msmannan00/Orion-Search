@@ -50,7 +50,7 @@ export class ThreatLensFeedPanelComponent implements AfterViewInit, OnChanges, O
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['items'] || changes['feedType']) {
+    if (changes.items || changes.feedType) {
       this.setFeedCollections();
       this.restartAutoScroll();
     }
@@ -268,6 +268,7 @@ export class ThreatLensFeedPanelComponent implements AfterViewInit, OnChanges, O
       }
     }
     catch {
+      return '';
     }
 
     return '';

@@ -223,6 +223,7 @@ class search_query_generator:
     def _build_query_block(p_query_model, pfilter, raw_query, quoted_value, exact_phrases, loose_terms, phrase_fields, must_clauses, must_not_clause, m_page_number, date_boost_fields):
         multi_fields = [f"{field}^{boost}" for field, boost in phrase_fields]
 
+        content_query: dict
         if raw_query == "*":
             content_query = {"match_all": {}}
         else:
@@ -291,7 +292,7 @@ class search_query_generator:
                 if not u:
                     continue
 
-                has_scheme = bool(re.match(r"^(?:https?://)", u, flags=re.I))
+                has_scheme = bool(re.match(r"^https?://", u, flags=re.I))
                 candidates = set()
 
                 if has_scheme:
@@ -484,7 +485,6 @@ class search_query_generator:
 
         m_date_range = p_query_model.daterange
         m_network = p_query_model.network
-        m_platform = p_query_model.platform
         m_page_number = getattr(p_query_model, "page", 1)
         m_content_type = str(getattr(p_query_model, "m_content_type", None) or p_query_model.content or "all").strip().lower()
         m_platform = (p_query_model.platform or "").strip().lower()
@@ -625,7 +625,7 @@ class search_query_generator:
         else:
             loose_terms = [] if raw_query in ("*", "") else [t for t in re.findall(r'\w+', raw_query) if t and t.strip('"')]
 
-        phrase_fields = [("m_title", 5), ("m_content", 3), ("m_url", 2), ("m_source_url", 2), ("m_sender_name", 2), ("m_author", 2), ("m_username", 2), ("m_base_url", 1),
+        phrase_fields = [("m_title", 5), ("m_content", 3), ("m_url", 2), ("m_source_url", 2), ("m_sender_name", 2), ("m_sender_username", 3), ("m_author", 2), ("m_username", 2), ("m_base_url", 1),
             ("m_team", 1), ("m_attacker", 1), ("m_users", 1), ("m_network", 1), ("m_channel_name", 4),
             ("m_name", 4), ("m_family", 3), ("m_aliases", 3), ("m_actor_names", 3), ("m_references", 1),
             ("m_sha256_hash", 5), ("m_sha1_hash", 4), ("m_md5_hash", 4), ("m_signature", 4), ("m_tags", 3), ("m_file_name", 3)]
@@ -735,7 +735,7 @@ class search_query_generator:
         }
 
         date_field = "date"
-        date_range = getattr(p_query_model, "daterange", None)
+        date_range = str(getattr(p_query_model, "daterange", None) or "")
 
         if date_range:
             parts = date_range.split(',')

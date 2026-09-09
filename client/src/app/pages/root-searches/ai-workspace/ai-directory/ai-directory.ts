@@ -6,18 +6,16 @@ import { NexusChatService } from '../nexus-chat.service';
 import { NexusWorkspaceFileNode, NexusWorkspaceImportResponse } from '../model/ai-chat-session.model';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../shared/services/translation.service';
+import { asUnknownRecord } from '../../../../shared/utils/type-guards.util';
+import type { WorkspaceLogEntry, WorkspaceStatusType } from './model/ai-directory.model';
+export type { WorkspaceLogEntry, WorkspaceStatusType } from './model/ai-directory.model';
+
 
 type AiDirectoryViewMode = 'chat' | 'directory' | 'split';
 type AiDirectoryTab = 'files' | 'logs';
-type WorkspaceStatusType = 'idle' | 'loading' | 'approved' | 'infected' | 'failed';
 
-interface WorkspaceLogEntry {
-  id: number;
-  message: string;
-  details: string;
-  timestamp: Date;
-  type: Exclude<WorkspaceStatusType, 'idle'>;
-}
+
+
 
 @Component({
   selector: 'app-ai-directory',
@@ -71,7 +69,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['importRequest'] && this.importRequest) {
+    if (changes.importRequest && this.importRequest) {
       if (this.importRequest.requestId === this.lastImportRequestId) {
         return;
       }
@@ -87,7 +85,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
       return;
     }
 
-    if (changes['sessionId']) {
+    if (changes.sessionId) {
       this.workspaceStatusRequest?.unsubscribe();
       this.resetWorkspace(false);
       this.repositoryImportMode = false;
@@ -103,7 +101,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
       return;
     }
 
-    if (changes['viewMode'] && this.viewMode !== 'chat' && this.sessionId) {
+    if (changes.viewMode && this.viewMode !== 'chat' && this.sessionId) {
       this.workspaceStatusRequest?.unsubscribe();
       this.activeWorkspaceSessionId = this.sessionId;
       this.loadExistingWorkspaceStatus();
@@ -155,7 +153,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
 
     this.nexusChatService.importGithubRepo(sessionId, this.repositoryRepoUrl).subscribe({
       next: (response) => {
-        const result = response.result || response;
+        const result = response.result ?? response;
 
         if (result.status === 'processing') {
           this.updateWorkspaceStatus('loading',
@@ -174,7 +172,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   loadWorkspaceTree(path = '', targetNode?: NexusWorkspaceFileNode): void {
-    const sessionId = this.activeWorkspaceSessionId || this.sessionId;
+    const sessionId = this.activeWorkspaceSessionId ?? this.sessionId;
 
     if (!sessionId) {
       return;
@@ -185,8 +183,8 @@ export class AiDirectory implements OnChanges, OnDestroy {
     }
 
     this.nexusChatService.getWorkspaceTree(sessionId, path).subscribe({
-      next: (response: any) => {
-        const result = response.result || response;
+      next: (response) => {
+        const result = response.result ?? response;
         const loadedNode = result.tree;
 
         if (!loadedNode) {
@@ -200,12 +198,12 @@ export class AiDirectory implements OnChanges, OnDestroy {
 
           this.workspaceTree = null;
           this.updateWorkspaceStatus('failed',
-            result.message || this.translate('Repository scanned, but file tree was not found.'),);
+            result.message ?? this.translate('Repository scanned, but file tree was not found.'),);
           return;
         }
 
         if (targetNode) {
-          targetNode.children = loadedNode.children || [];
+          targetNode.children = loadedNode.children ?? [];
           targetNode.children_loaded = true;
           targetNode.expanded = true;
           targetNode.loading = false;
@@ -217,7 +215,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
           ...loadedNode,
           expanded: true,
           children_loaded: true,
-          children: loadedNode.children || [],
+          children: loadedNode.children ?? [],
         };
         this.cdr.markForCheck();
       },
@@ -230,7 +228,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
           return;
         }
 
-        const detail = error?.error?.detail?.detail || error?.error?.detail || error?.error;
+        const detail = error?.error?.detail?.detail ?? error?.error?.detail ?? error?.error;
 
         if (detail?.status === 'not_found') {
           this.workspaceTree = null;
@@ -258,7 +256,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   openWorkspaceFile(node: NexusWorkspaceFileNode): void {
-    const sessionId = this.activeWorkspaceSessionId || this.sessionId;
+    const sessionId = this.activeWorkspaceSessionId ?? this.sessionId;
 
     if (!sessionId || node.type !== 'file') {
       return;
@@ -275,7 +273,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   loadWorkspaceFileChunk(path: string, startLine = 1, reset = false): void {
-    const sessionId = this.activeWorkspaceSessionId || this.sessionId;
+    const sessionId = this.activeWorkspaceSessionId ?? this.sessionId;
 
     if (!sessionId || this.selectedWorkspaceFileLoading) {
       return;
@@ -298,7 +296,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
 
           this.selectedWorkspaceFileLines = this.selectedWorkspaceFileContent.split('\n');
           this.selectedWorkspaceFileHasMore = response.has_more;
-          this.selectedWorkspaceFileNextStartLine = response.next_start_line || null;
+          this.selectedWorkspaceFileNextStartLine = response.next_start_line ?? null;
           this.selectedWorkspaceFileLoading = false;
           this.cdr.markForCheck();
         },
@@ -317,7 +315,10 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   onWorkspaceFileScroll(event: Event): void {
-    const element = event.target as HTMLElement;
+    const element = event.target;
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
 
     const nearBottom =
       element.scrollTop + element.clientHeight >= element.scrollHeight - 200;
@@ -341,7 +342,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
     this.workspaceStatusRequest = timer(0, 500).subscribe(() => {
       this.nexusChatService.getWorkspaceStatus(sessionId).subscribe({
         next: (response) => {
-          const result = response.result || response;
+          const result = response.result ?? response;
 
           if (result.status === 'processing') {
             this.updateWorkspaceStatus('loading',
@@ -362,9 +363,9 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   private handleWorkspaceImportResult(response: NexusWorkspaceImportResponse): void {
-    const result = response.result || response;
+    const result = response.result ?? response;
 
-    this.repositoryRepoUrl = result.repo_url || this.repositoryRepoUrl;
+    this.repositoryRepoUrl = result.repo_url ?? this.repositoryRepoUrl;
 
     if (result.status === 'approved') {
       this.updateWorkspaceStatus('approved',
@@ -377,13 +378,13 @@ export class AiDirectory implements OnChanges, OnDestroy {
     if (result.status === 'infected') {
       this.updateWorkspaceStatus('infected',
         result.message || this.translate('Repository blocked because a threat was detected.'),
-        result.scan_output || result.error,);
+        result.scan_output ?? result.error,);
       return;
     }
 
     this.updateWorkspaceStatus('failed',
-      result.message || result.error || this.translate('Repository import failed.'),
-      result.error || result.scan_output,);
+      result.message ?? result.error ?? this.translate('Repository import failed.'),
+      result.error ?? result.scan_output,);
   }
 
   private resetWorkspace(keepStatus: boolean): void {
@@ -404,14 +405,17 @@ export class AiDirectory implements OnChanges, OnDestroy {
     this.selectedWorkspaceFileLoading = false;
   }
 
-  private getApiErrorMessage(error: any): string {
-    const detail = error?.error?.detail ?? error?.error;
+  private getApiErrorMessage(error: unknown): string {
+    const errorRecord = asUnknownRecord(error);
+    const nestedError = asUnknownRecord(errorRecord.error);
+    const detail = nestedError.detail ?? errorRecord.error;
 
     if (typeof detail === 'string') {
       return detail;
     }
 
-    return detail?.message || detail?.error || error?.message || this.translate('Request failed.');
+    const detailRecord = asUnknownRecord(detail);
+    return String(detailRecord.message ?? detailRecord.error ?? errorRecord.message ?? this.translate('Request failed.'));
   }
 
   private clearWorkspaceStatus(): void {
@@ -466,7 +470,7 @@ export class AiDirectory implements OnChanges, OnDestroy {
   }
 
   private loadExistingWorkspaceStatus(): void {
-    const sessionId = this.activeWorkspaceSessionId || this.sessionId;
+    const sessionId = this.activeWorkspaceSessionId ?? this.sessionId;
 
     if (!sessionId) {
       return;
@@ -474,9 +478,9 @@ export class AiDirectory implements OnChanges, OnDestroy {
 
     this.nexusChatService.getWorkspaceStatus(sessionId).subscribe({
       next: (response) => {
-        const result = response.result || response;
+        const result = response.result ?? response;
 
-        this.repositoryRepoUrl = result.repo_url || '';
+        this.repositoryRepoUrl = result.repo_url ?? '';
 
         if (result.status === 'approved') {
           this.updateWorkspaceStatus('approved',
@@ -497,14 +501,14 @@ export class AiDirectory implements OnChanges, OnDestroy {
         if (result.status === 'infected') {
           this.updateWorkspaceStatus('infected',
             result.message || this.translate('Repository blocked because a threat was detected.'),
-            result.scan_output || result.error,);
+            result.scan_output ?? result.error,);
           return;
         }
 
         if (['failed', 'timeout', 'error'].includes(result.status)) {
           this.updateWorkspaceStatus('failed',
-            result.message || result.error || this.translate('Repository import failed.'),
-            result.error || result.scan_output,);
+            result.message ?? result.error ?? this.translate('Repository import failed.'),
+            result.error ?? result.scan_output,);
           this.workspaceTree = null;
           return;
         }

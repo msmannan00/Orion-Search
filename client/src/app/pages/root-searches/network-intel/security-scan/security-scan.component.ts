@@ -2,7 +2,6 @@ import { CommonModule, NgClass, NgOptimizedImage } from '@angular/common';
 import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { CodeBlockComponent } from '../../../../shared/partials/code-block/code-block.component';
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
 import { SecurityScanExportComponentComponent } from './security-scan-export-component/security-scan-export-component.component';
@@ -17,6 +16,7 @@ import { NetworkIntelScanService } from '../../../../shared/services/network-int
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { ExportChoiceModalComponent } from '../../../../shared/partials/export-choice-modal/export-choice-modal.component';
 import { SECURITY_SCAN_EXPORT_OPTIONS } from '../../../../shared/model/report/export-choice.model';
+import { isIpv4Address } from '../../../../shared/utils/network-validation.util';
 
 @Component({
   selector: 'app-security-scan',
@@ -34,14 +34,14 @@ import { SECURITY_SCAN_EXPORT_OPTIONS } from '../../../../shared/model/report/ex
     ReactiveFormsModule,
     EmptyQueryComponent, TranslatePipe, ExportChoiceModalComponent],
   templateUrl: './security-scan.component.html',
+  styleUrls: ['./security-scan.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
 })
 export class SecurityScanComponent implements OnInit {
   meta: UrlScanMeta | null = null;
   categories: { name: string; total: number; items: UrlScanThreatItem[]; }[] = [];
   requestedUrl = '';
-  searchQuery: any = '';
+  searchQuery = '';
   requestedDomain = '';
   isLoading = false;
   isFetched = false;
@@ -50,7 +50,7 @@ export class SecurityScanComponent implements OnInit {
   skeletonCards = Array.from({ length: 3 });
   progress = signal(0);
   currentStep = '';
-  scanType: string = '';
+  scanType = '';
   grade = '';
   gradeCounts: { high: number; medium: number; low: number; informational: number; } = { high: 0, medium: 0, low: 0, informational: 0, };
   trackByCategory = ( _: number, c: { name: string; } ) => c.name;
@@ -61,11 +61,11 @@ export class SecurityScanComponent implements OnInit {
   constructor(private router: Router, private route: ActivatedRoute, private scanner: ScannerService, private graphReportExport: ReportExportService, private scanHelperMethodsService: NetworkIntelScanService) { }
 
   ngOnInit(): void {
-    this.scanType = this.route.snapshot.data['type'];
+    this.scanType = this.route.snapshot.data.type;
     if (!this.scanType) {
       this.scanType = 'basic';
     }
-    const rawParam = this.route.snapshot.queryParamMap.get('domain') || '';
+    const rawParam = this.route.snapshot.queryParamMap.get('domain') ?? '';
     this.searchQuery = rawParam;
     if (!rawParam) {
       return;
@@ -74,7 +74,7 @@ export class SecurityScanComponent implements OnInit {
     try {
       const u = new URL(resolved);
       const host = u.hostname;
-      const isIPv4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+      const isIPv4 = isIpv4Address(host);
       const validHost = host === 'localhost' || isIPv4 || host.includes('.');
       if (!validHost) {
         return;
@@ -113,7 +113,7 @@ export class SecurityScanComponent implements OnInit {
       .scanDomain(this.requestedUrl, this.scanType)
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
-        next: (res: any) => {
+        next: (res) => {
           if (res?.result?.status === 'busy' || res?.result?.status === 'pending' || res?.status === 'pending') {
             const p = res?.result?.progress ?? res?.progress;
             if (typeof p === 'number' && !Number.isNaN(p)) {
@@ -126,34 +126,34 @@ export class SecurityScanComponent implements OnInit {
             return;
           }
           this.isFetched = true;
-          const safe = !!(res?.result?.meta);
-          if (!safe) {
+          const result = res.result;
+          if (!result?.meta) {
             this.hasError = true;
             this.errorMessage = 'No data received from scanner.';
             return;
           }
-          const m = res.result.meta;
+          const m = result.meta;
           this.meta = {
             ...m,
             Host: (m?.Host?.trim()) || this.extractHost(m?.URL) || this.requestedDomain,
             URL: m?.URL || this.requestedUrl,
           };
-          this.grade = res.result.grade || '';
-          this.gradeCounts = res.result.grade_counts || { high: 0, medium: 0, low: 0, informational: 0 };
+          this.grade = result.grade ?? '';
+          this.gradeCounts = result.grade_counts ?? { high: 0, medium: 0, low: 0, informational: 0 };
           const proofMap = new Map<string, string>();
-          const proofs = res.result.proofs || {};
+          const proofs = result.proofs ?? {};
           Object.entries(proofs).forEach(([cat, items]) => {
-            (items as any[] || []).forEach((p: any) => {
+            items.forEach((p) => {
               const k = cat + '|' + (p.header || '').trim().toLowerCase();
               if (p.proof && !proofMap.has(k)) {
                 proofMap.set(k, p.proof);
               }
             });
           });
-          const entries = Object.entries(res.result.threats || {});
+          const entries = Object.entries(result.threats ?? {});
           this.categories = entries
             .map(([name, items]) => {
-              const list: any[] = Array.isArray(items) ? items : [];
+              const list: UrlScanThreatItem[] = Array.isArray(items) ? items : [];
               const seen = new Set<string>();
               const uniqueItems = list
                 .filter((it) => {
@@ -169,7 +169,7 @@ export class SecurityScanComponent implements OnInit {
                   const mergedProof = proofMap.get(name + '|' + key);
                   return mergedProof ? { ...it, proof: mergedProof } : it;
                 });
-              return { name, total: list.length, items: uniqueItems as UrlScanThreatItem[] };
+              return { name, total: list.length, items: uniqueItems };
             })
             .filter((c) => c.items.length > 0);
         },
@@ -177,7 +177,7 @@ export class SecurityScanComponent implements OnInit {
           this.isFetched = true;
           this.hasError = true;
           this.errorMessage =
-                    (err && (err.error?.detail || err.message)) || 'Failed to fetch security scan results.';
+                    String(err?.error?.detail ?? '') || String(err?.message ?? '') || 'Failed to fetch security scan results.';
         },
       });
   }
@@ -197,7 +197,7 @@ export class SecurityScanComponent implements OnInit {
     this.closeExportChoice();
   }
 
-  private exportReport(type: string = 'report'): void {
+  private exportReport(type = 'report'): void {
     if (!this.meta) {
       return;
     }
@@ -205,7 +205,7 @@ export class SecurityScanComponent implements OnInit {
     const now = new Date().toISOString();
     const host = this.displayHost || 'report';
     const totalFindings = this.categories.reduce((acc, c) => acc + (c.items?.length || 0), 0);
-    const summarize = (text: string, limit: number = 180): string => {
+    const summarize = (text: string, limit = 180): string => {
       const v = (text || '').replace(/\s+/g, ' ').trim();
       return v.length > limit ? `${v.slice(0, limit - 3)}...` : (v || 'not available');
     };
@@ -280,7 +280,7 @@ export class SecurityScanComponent implements OnInit {
       return '';
     }
     try {
-      const u = new URL(v.match(/^https?:\/\//i) ? v : `https://${v.replace(/^\/+/, '')}`);
+      const u = new URL((/^https?:\/\//i.exec(v)) ? v : `https://${v.replace(/^\/+/, '')}`);
       return u.toString();
     }
     catch {
@@ -298,7 +298,7 @@ export class SecurityScanComponent implements OnInit {
   }
 
   get displayHost(): string {
-    return this.meta?.Host || this.extractHost(this.meta?.URL) || this.requestedDomain;
+    return this.meta?.Host ?? this.extractHost(this.meta?.URL) ?? this.requestedDomain;
   }
 
   get displayPort(): string {

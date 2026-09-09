@@ -5,7 +5,7 @@ export function toUsername(raw: string): string {
   }
   try {
     const segment = new URL(value).pathname.split('/').filter(Boolean).pop();
-    return segment || value;
+    return segment ?? value;
   }
   catch {
     return value;

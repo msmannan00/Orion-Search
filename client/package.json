@@ -8,10 +8,10 @@
     "build": "npm run prebuild && NO_COLOR=1 NG_BUILD_MAX_ERRORS=1000 ng build --configuration=production && node post-build.js",
     "production": "npm run prebuild && NO_COLOR=1 NG_BUILD_MAX_ERRORS=1000 ng build --configuration=production && node post-build.js",
     "test": "cypress",
-    "lint": "npm run lint:styles && npx eslint src/app --ext .ts,.html --max-warnings=1000",
+    "lint": "npm run lint:styles && npx eslint src/app src/main.ts --ext .ts,.html --max-warnings=1000",
     "lint:styles": "npx stylelint \"src/**/*.{css,scss}\"",
-    "lint:fix": "npx eslint src/app --ext .ts,.html --fix",
-    "lint:watch": "npx eslint src/app --ext .ts,.html --watch",
+    "lint:fix": "npx eslint src/app src/main.ts --ext .ts,.html --fix",
+    "lint:watch": "npx eslint src/app src/main.ts --ext .ts,.html --watch",
     "serve": "node --disable-warning=DEP0060 ./node_modules/@angular/cli/bin/ng serve",
     "serve:watch": "node --disable-warning=DEP0060 ./node_modules/@angular/cli/bin/ng serve"
   },
@@ -28,11 +28,11 @@
     "@angular/platform-browser-dynamic": "22.1.2",
     "@angular/router": "22.1.2",
     "@cypress/code-coverage": "4.0.3",
+    "@maplibre/maplibre-gl-leaflet": "0.1.4",
     "@types/leaflet": "^1.9.22",
     "@types/leaflet.markercluster": "^1.5.6",
     "cypress-axe": "1.7.0",
     "d3": "7.9.0",
-    "esri-loader": "^3.7.0",
     "franc-min": "6.2.0",
     "glob": "13.0.6",
     "i18n-iso-countries": "7.14.0",
@@ -40,6 +40,7 @@
     "jspdf-autotable": "^5.0.8",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
+    "maplibre-gl": "5.24.0",
     "ngx-print": "22.1.1",
     "qrcode": "1.5.4",
     "rxjs": "7.8.2",
@@ -50,11 +51,10 @@
     "zone.js": "0.16.2"
   },
   "devDependencies": {
-    "@angular-builders/custom-webpack": "22.0.1",
-    "@angular-devkit/build-angular": "22.1.4",
     "@angular-eslint/eslint-plugin": "22.1.0",
     "@angular-eslint/eslint-plugin-template": "22.1.0",
     "@angular-eslint/template-parser": "22.1.0",
+    "@angular/build": "22.1.4",
     "@angular/cli": "22.1.4",
     "@angular/compiler-cli": "22.1.2",
     "@babel/core": "7.29.7",
@@ -85,12 +85,6 @@
     "typescript-eslint": "^8.67.0"
   },
   "overrides": {
-    "@angular-devkit/build-angular": {
-      "http-proxy-middleware": "3.0.7",
-      "picomatch": "4.0.4",
-      "piscina": "5.2.0",
-      "webpack-dev-server": "5.2.6"
-    },
     "@angular-devkit/core": {
       "picomatch": "4.0.4"
     },
@@ -100,6 +94,9 @@
       "piscina": "5.2.0",
       "undici": "7.29.0",
       "vite": "7.3.5"
+    },
+    "@angular/cli": {
+      "listr2": "10.2.1"
     },
     "anymatch": {
       "picomatch": "2.3.2"
@@ -145,6 +142,9 @@
     },
     "@cypress/code-coverage": {
       "js-yaml": "4.3.1"
+    },
+    "test-exclude": {
+      "glob": "13.0.6"
     }
   },
   "nyc": {

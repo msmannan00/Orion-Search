@@ -65,7 +65,7 @@ class EntityRequestGenerator:
     }
 
     @staticmethod
-    def get_cluster_documents_query(normalized_value: str, depth_level: int, document_limit: int):
+    def get_cluster_documents_query(normalized_value: str, document_limit: int):
         if normalized_value == "all":
             queried_id = "all_clusters"
             per_cluster_limit = max(document_limit - 20, 1)
@@ -229,7 +229,7 @@ class EntityRequestGenerator:
             return queried_id, query_str, bind_vars
 
     @staticmethod
-    def build_property_search_query(normalized_value: str, depth_level: int, document_limit: int, scope_cluster: str = ""):
+    def build_property_search_query(normalized_value: str, document_limit: int, scope_cluster: str = ""):
         if scope_cluster and scope_cluster != "all":
             return EntityRequestGenerator.build_scoped_property_search_query(
                 normalized_value=normalized_value,
@@ -403,7 +403,6 @@ class EntityRequestGenerator:
     def get_document_or_property_query(normalized_value: str,
             normalized_type: str,
             depth_level: int,
-            secondary_depth_level: int,
             document_limit: int,
             data_point_type: str):
         start_vertex = (

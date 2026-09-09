@@ -121,7 +121,9 @@ class CaseShareManager:
         if not record:
             raise HTTPException(status_code=404, detail="Share link not found")
         share = next((item for item in (record.shares or []) if item.shareId == share_id), None)
-        if not share or share.tokenHash != CaseHelperMethods.hash_share_token(token):
+        if share is None:
+            raise HTTPException(status_code=404, detail="Share link not found")
+        if share.tokenHash != CaseHelperMethods.hash_share_token(token):
             raise HTTPException(status_code=404, detail="Share link not found")
         if payload.get("caseId") != record.caseId or payload.get("tenant_uuid") != record.tenant_uuid:
             raise HTTPException(status_code=401, detail="Invalid share token")

@@ -3,7 +3,6 @@ import { AsyncPipe, DatePipe } from '@angular/common';
 import { Observable } from 'rxjs';
 import { AuditLogCallbackModel } from '../model/auditlog.model';
 import { AuditlogService } from '../services/auditlog.service';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { AppService } from '../../../../services/core/app/app.service';
 import { ConfirmationPopupComponent } from '../../../../shared/partials/confirmation-popup/confirmation-popup.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
@@ -13,7 +12,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
   imports: [AsyncPipe, DatePipe, ConfirmationPopupComponent, TranslatePipe],
   templateUrl: './auditlog-list.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem],
+  styleUrls: ['./auditlog-list.component.css'],
 })
 export class AuditlogListComponent {
   auditData$: Observable<AuditLogCallbackModel | null>;

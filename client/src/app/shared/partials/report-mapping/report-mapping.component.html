@@ -16,7 +16,7 @@
     @if (isExpanded) {
       <div class="mt-4">
         @if (loading) {
-          <div class="grid gap-3 md:grid-cols-2" @fadeInDashboardItem>
+          <div class="grid gap-3 md:grid-cols-2 report-mapping-fade-in">
             @for (item of skeletonItems; track item) {
               <div class="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]/85 p-3 shadow-[0_8px_18px_rgba(0,0,0,0.14)] [body.light-theme_&]:bg-[#f8fafc]">
                 <div class="flex items-start justify-between gap-3">
@@ -46,7 +46,7 @@
           </div>
         }
         @if (!loading && filteredItems.length > 0) {
-          <div class="grid gap-3 xl:grid-cols-2" @fadeInDashboardItem>
+          <div class="grid gap-3 xl:grid-cols-2 report-mapping-fade-in">
             @for (item of filteredItems; track item.trackId) {
               <div role="button" tabindex="0" (click)="viewReport(item.id)" (keydown.enter)="viewReport(item.id)" (keydown.space)="$event.preventDefault(); viewReport(item.id)" class="group cursor-pointer rounded-[10px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)]/85 p-3 shadow-[0_8px_18px_rgba(0,0,0,0.14)] transition-colors hover:border-[var(--color-blue-640)]/60 hover:bg-[var(--color-blue-790)] [body.light-theme_&]:bg-[#f8fafc] [body.light-theme_&]:hover:bg-[#edf4fb]">
                 <div class="flex items-start justify-between gap-3">

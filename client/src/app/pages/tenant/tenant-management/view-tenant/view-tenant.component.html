@@ -32,7 +32,7 @@
                 </tr>
               </thead>
               @if ((filteredTenants?.length || 0) > 0) {
-                <tbody @fadeInDashboardItem>
+                <tbody class="fade-in-dashboard-item">
                   @for (tenant of filteredTenants; track tenant.id || tenant.name || tenant.companyName || $index; let i = $index) {
                     <tr data-testid="tenant-row" tabindex="0" class="cursor-pointer border-t !border-[var(--tenant-line)] bg-[var(--tenant-row-bg)] transition-colors hover:!border-[var(--tenant-line)] hover:bg-[var(--ui-table-row-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-[-1px] focus-visible:outline-[var(--color-blue-640)] last:border-b-0 max-[1300px]:last:border-b max-[1300px]:last:border-[var(--tenant-line)]" [ngClass]="tenant._expanded ? '!border-t-0' : ''" [attr.aria-expanded]="tenant._expanded === true" [attr.aria-label]="((tenant._expanded ? 'Collapse' : 'Expand') | translate) + ' ' + (tenant.companyName || tenant.name || '')" (click)="tenant._expanded = !tenant._expanded" (keydown.enter)="tenant._expanded = !tenant._expanded" (keydown.space)="$event.preventDefault(); tenant._expanded = !tenant._expanded">
                       <td class="overflow-clip align-middle whitespace-nowrap px-4 py-2.5 text-[14px] font-medium text-[var(--color-text2)]">{{ i + 1 }}</td>
@@ -261,7 +261,7 @@
               }
             </table>
           </div>
-          <div class="space-y-3 p-3 md:hidden [.light-theme_&]:[&>div]:!shadow-none" @fadeInDashboardItem>
+          <div class="fade-in-dashboard-item space-y-3 p-3 md:hidden [.light-theme_&]:[&>div]:!shadow-none">
             @if ((filteredTenants?.length || 0) > 0) {
               @for (tenant of filteredTenants; track tenant.id || tenant.name || tenant.companyName || $index; let i = $index) {
                 <div class="overflow-visible md:overflow-hidden rounded-[10px] border border-[var(--tenant-line)] bg-[var(--tenant-row-bg)]">
@@ -427,7 +427,7 @@
                   <th class="px-4 py-3.5 font-semibold"><span class="sr-only">{{ 'Expand' | translate }}</span></th>
                 </tr>
               </thead>
-              <tbody @fadeInDashboardItem>
+              <tbody class="fade-in-dashboard-item">
                 <tr class="border-t !border-[var(--tenant-line)] bg-[var(--tenant-expand-bg)]">
                   <td class="px-4 py-3"><div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-3 w-12 rounded bg-[var(--color-blue-760)]"></div></td>
                   <td class="px-4 py-3"><div class="ui-shimmer relative isolate box-border max-w-full overflow-hidden [--ui-shimmer-base:rgb(255_255_255/6%)] [--ui-shimmer-edge:rgb(255_255_255/2%)] [--ui-shimmer-slide-highlight:rgb(255_255_255/16%)] [&&]:!bg-[linear-gradient(180deg,var(--ui-shimmer-base),var(--ui-shimmer-base))] before:pointer-events-none before:absolute before:inset-0 before:content-[''] before:bg-[linear-gradient(180deg,var(--ui-shimmer-edge),transparent)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[linear-gradient(110deg,transparent_20%,var(--ui-shimmer-slide-highlight)_48%,transparent_76%)] after:[animation:ui-shimmer-slide_1.55s_linear_infinite] [.light-theme_&]:[--ui-shimmer-base:#cfdceb] [.light-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/42%)] [.light-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/88%)] [.dark-theme_&]:[--ui-shimmer-base:rgb(255_255_255/9%)] [.dark-theme_&]:[--ui-shimmer-edge:rgb(255_255_255/4.5%)] [.dark-theme_&]:[--ui-shimmer-slide-highlight:rgb(255_255_255/20%)] h-3 w-24 rounded bg-[var(--color-blue-760)]"></div></td>
@@ -462,7 +462,7 @@
   @if (isIocSelectorOpen && activeIocTenant) {
     <div data-testid="tenant-ioc-selector-overlay" class="fixed inset-0 z-[1500]">
       <div class="absolute inset-0 bg-black/50 transition-opacity duration-300 [body.light-theme_&]:bg-[rgba(23,34,53,0.18)]" [ngClass]="isIocSelectorDrawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'" (click)="closeIocSelector()"></div>
-      <aside data-testid="tenant-ioc-selector-modal" class="absolute right-0 top-0 flex h-full w-full max-w-2xl transform-gpu flex-col border-l border-[var(--color-border)] bg-[var(--color-blue-830)] text-[var(--color-text1)] shadow-[-18px_0_40px_rgba(0,0,0,0.34)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-none" [class.translate-x-0]="isIocSelectorDrawerOpen" [class.translate-x-[102%]]="!isIocSelectorDrawerOpen" (click)="$event.stopPropagation()">
+      <aside data-testid="tenant-ioc-selector-modal" class="absolute right-0 top-0 flex h-full w-full max-w-2xl transform-gpu flex-col border-l border-[var(--color-border)] bg-[var(--color-blue-830)] text-[var(--color-text1)] shadow-[-18px_0_40px_rgba(0,0,0,0.34)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [body.light-theme_&]:bg-white [body.light-theme_&]:shadow-none" [class.translate-x-0]="isIocSelectorDrawerOpen" [ngClass]="{ 'translate-x-[102%]': !isIocSelectorDrawerOpen }" (click)="$event.stopPropagation()">
         <div class="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-blue-830)]/95 px-6 py-3 backdrop-blur [body.light-theme_&]:bg-white/95">
           <h2 class="text-[16px] font-semibold leading-tight text-[var(--color-text1)]">{{ 'Add IOCs' | translate }}</h2>
         </div>

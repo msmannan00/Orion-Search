@@ -4,11 +4,9 @@ import { ChatResultItem } from '../../../../shared/model/results/chat/chat.callb
 import { CommonModule, NgClass, SlicePipe } from '@angular/common';
 import { ResultListComponent } from '../../../../shared/partials/result-components/result-list/result-list.component';
 import { ResultSectionComponent } from '../../../../shared/partials/result-components/result-section/result-section.component';
-import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
 import { JsonApiViewerComponent } from '../../../../shared/partials/json-api-viewer/json-api-viewer.component';
 import { last } from 'rxjs';
-import { AuthService } from '../../../../services/authetication/auth.service';
 import { SocialResultItem } from '../../../../shared/model/results/social/social.callback.model';
 import { ReportHeaderComponent } from '../../../../shared/partials/report-header/report-header.component';
 import { DashboardService } from '../../../../services/dashboard/dashboard.service';
@@ -19,10 +17,13 @@ import { formatKeyLabel as formatKeyLabelUtil, getDisplayTitle as getDisplayTitl
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { ReportInteractionHostComponent } from '../../../../shared/partials/report-interactions/report-interaction-host/report-interaction-host.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+
 
 @Component({
   selector: 'app-report-chat',
   templateUrl: './report-chat.component.html',
+  styleUrls: ['./report-chat.component.css'],
   standalone: true,
   imports: [
     ResultListComponent,
@@ -36,7 +37,6 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
     ChatWidgetComponent,
     ReportInteractionHostComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
-  animations: [fadeInDashboardItem]
 })
 export class ReportChatComponent implements OnInit, AfterViewInit {
   private readonly commentTabKeys = new Set(['m_comments', 'm_post_comments', 'm_post_comments_list', 'm_post_comment_list', 'm_comment_list', 'm_comments_list', 'comments', 'comment_items', 'comment_details', 'comments_list', 'post_comments_list', 'm_replies', 'replies', 'm_thread_comments', 'thread_comments']);
@@ -45,13 +45,13 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
 
   resultItem: ChatResultItem | SocialResultItem | null = null;
   arrayKeys: string[] = [];
-  listItems: any[] = [];
+  listItems: string[] = [];
   activeTab = '';
   content = '';
   summary = '';
   isExpandedMetadata = true;
 
-  constructor(protected appService: AppService, private route: ActivatedRoute, protected authService: AuthService, public dashboardService: DashboardService, private router: Router, private scrollService: ScrollService, private elementRef: ElementRef<HTMLElement>, private scanHelperMethodsService: NetworkIntelScanService) {
+  constructor(protected appService: AppService, private route: ActivatedRoute, public dashboardService: DashboardService, private router: Router, private scrollService: ScrollService, private elementRef: ElementRef<HTMLElement>, private scanHelperMethodsService: NetworkIntelScanService) {
   }
 
   ngOnInit(): void {
@@ -71,8 +71,8 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     this.elementRef.nativeElement.scrollIntoView({ block: 'start', behavior: 'auto' });
   }
 
-  langUpdate(result: ChatResultItem | SocialResultItem) {
-    this.resultItem = result;
+  langUpdate(result: unknown) {
+    this.resultItem = result as ChatResultItem | SocialResultItem;
     this.processResultItem();
     this.syncActiveMetadataTab();
   }
@@ -85,21 +85,22 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
   }
 
   processResultItem() {
-    if (this.resultItem) {
-      this.content = this.resultItem.m_content || '';
-      this.summary = (this.resultItem.m_summary?.[0]) || '';
+    const resultItem = this.resultItem;
+    if (resultItem) {
+      this.content = resultItem.m_content ?? '';
+      this.summary = (resultItem.m_summary?.[0]) || '';
       this.arrayKeys = [];
       const addedKeys = new Set<string>();
-      if (this.resultItem.m_content?.trim()) {
+      if (resultItem.m_content?.trim()) {
         this.arrayKeys.push('m_content');
         addedKeys.add('m_content');
       }
-      if (Array.isArray(this.resultItem.m_summary) && this.resultItem.m_summary[0]?.trim()) {
+      if (Array.isArray(resultItem.m_summary) && resultItem.m_summary[0]?.trim()) {
         this.arrayKeys.push('m_summary');
         addedKeys.add('m_summary');
       }
-      Object.keys(this.resultItem).forEach((key) => {
-        const value = (this.resultItem as any)[key];
+      Object.keys(resultItem).forEach((key) => {
+        const value = getOwnProperty(resultItem, key);
         if (Array.isArray(value) &&
                     value.length > 0 &&
                     !isHiddenReportMetadataKey(key) &&
@@ -120,7 +121,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
           selectedTab = 'm_content_type';
         }
         else if (this.arrayKeys.length > 0) {
-          selectedTab = this.arrayKeys[0];
+          selectedTab = this.arrayKeys[0] ?? '';
         }
         if (selectedTab) {
           this.setActiveTab(selectedTab);
@@ -147,7 +148,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
       this.listItems = [];
       return;
     }
-    if (this.resultItem && Array.isArray((this.resultItem as any)[this.activeTab])) {
+    if (this.resultItem && Array.isArray(this.resultItem[this.activeTab])) {
       this.listItems = this.getMetadataListItems(this.activeTab);
     }
     else {
@@ -165,7 +166,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     if (tab === 'm_content' || tab === 'm_summary') {
       this.listItems = [];
     }
-    else if (this.resultItem && Array.isArray((this.resultItem as any)[tab])) {
+    else if (this.resultItem && Array.isArray(getOwnProperty(this.resultItem, tab))) {
       this.listItems = this.getMetadataListItems(tab);
     }
     else {
@@ -173,11 +174,11 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     }
   }
 
-  getContentLines(item: any): string[] {
+  getContentLines(item: ChatResultItem | SocialResultItem | null): string[] {
     return item?.m_content
       ? item.m_content
         .split('\n')
-        .filter((line: string) => line.trim() && (line.match(/ /g) || []).length > 5)
+        .filter((line: string) => line.trim() && (line.match(/ /g) ?? []).length > 5)
       : [];
   }
 
@@ -191,7 +192,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
       .join('\n');
   }
 
-  hasCodeType(obj: any): boolean {
+  hasCodeType(obj: ChatResultItem | SocialResultItem | null): boolean {
     const t = obj?.m_content_type;
     return Array.isArray(t) ? t.some((x: string) => x?.includes('code')) : (typeof t === 'string' && t.includes('code'));
   }
@@ -207,7 +208,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     if (key === 'm_summary') {
       return this.summary ? 1 : 0;
     }
-    const value = (this.resultItem as any)?.[key];
+    const value = getOwnProperty(this.resultItem, key);
     return Array.isArray(value) ? value.length : value ? 1 : 0;
   }
 
@@ -215,7 +216,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     if (!this.resultItem) {
       return [];
     }
-    const value = (this.resultItem as any)[tab];
+    const value = getOwnProperty(this.resultItem, tab);
     if (this.commentTabKeys.has(tab)) {
       return this.normalizeCommentValues(value).slice(0, 100);
     }
@@ -245,16 +246,17 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
       return [trimmed];
     }
     if (typeof value === 'object') {
-      const comment = value as any;
-      const text = comment.text || comment.comment || comment.comment_text || comment.m_comment_text || comment.m_comment || comment.m_text || comment.content || comment.comment_content || comment.m_content || comment.message || comment.body || comment.m_body || comment.comment_body || comment.reply || comment.reply_content || comment.description;
+      const comment = value as Record<string, unknown>;
+      const text = comment.text ?? comment.comment ?? comment.comment_text ?? comment.m_comment_text ?? comment.m_comment ?? comment.m_text ?? comment.content ?? comment.comment_content ?? comment.m_content ?? comment.message ?? comment.body ?? comment.m_body ?? comment.comment_body ?? comment.reply ?? comment.reply_content ?? comment.description;
       if (text) {
         const meta = [
-          comment.sender_name || comment.m_sender_name || comment.author || comment.m_author || comment.comment_author || comment.username || comment.user || comment.name || comment.from,
-          comment.m_date || comment.date || comment.datetime || comment.created_at || comment.timestamp || comment.time || comment.m_time
-        ].filter(Boolean).join(' - ');
-        return [meta ? `${meta}: ${text}` : String(text)];
+          comment.sender_name ?? comment.m_sender_name ?? comment.author ?? comment.m_author ?? comment.comment_author ?? comment.username ?? comment.user ?? comment.name ?? comment.from,
+          comment.m_date ?? comment.date ?? comment.datetime ?? comment.created_at ?? comment.timestamp ?? comment.time ?? comment.m_time
+        ].map(item => this.toDisplayValue(item)).filter(Boolean).join(' - ');
+        const displayText = this.toDisplayValue(text);
+        return [meta ? `${meta}: ${displayText}` : displayText];
       }
-      return Array.from(this.commentTabKeys).flatMap(key => this.normalizeCommentValues(comment[key]));
+      return Array.from(this.commentTabKeys).flatMap(key => this.normalizeCommentValues(getOwnProperty(comment, key)));
     }
     return [String(value)];
   }
@@ -281,7 +283,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
   }
 
   getDisplayMessageDate(item: ChatResultItem | SocialResultItem | null): string {
-    const rawItem = item as any;
+    const rawItem = item as Record<string, unknown> | null;
     const value = this.getFirstRenderableValue(rawItem?.m_date,
       rawItem?.m_message_date,
       rawItem?.message_date,
@@ -295,9 +297,9 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
   }
 
   getDisplayMessageId(item: ChatResultItem | SocialResultItem | null): string {
-    const rawItem = item as any;
-    const messageId = String(rawItem?.m_message_id || '').trim();
-    if (!messageId || this.isSlugLikeMessageId(messageId, rawItem?.m_platform)) {
+    const rawItem = item as Record<string, unknown> | null;
+    const messageId = String(rawItem?.m_message_id ?? '').trim();
+    if (!messageId || this.isSlugLikeMessageId(messageId, String(rawItem?.m_platform ?? ''))) {
       return '';
     }
     return messageId;
@@ -307,47 +309,8 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
     return this.scanHelperMethodsService.hasRenderableValue(value);
   }
 
-  getMetadataRows(): { label: string; value: string; long?: boolean }[] {
-    if (!this.resultItem) {
-      return [];
-    }
-
-    const item = this.resultItem as any;
-    const rows: { label: string; value: string; long?: boolean }[] = [];
-    const add = (label: string, value: unknown, long = false) => {
-      if (!this.hasValue(value)) {
-        return;
-      }
-      rows.push({
-        label,
-        value: Array.isArray(value) ? value.join(', ') : String(value),
-        long
-      });
-    };
-
-    add('Message Date', this.getDisplayMessageDate(item));
-    add('Views', item.m_views);
-    add('Sender Username', item.m_sender_username);
-    add('Sender', item.m_sender_name);
-    add('Message ID', this.getDisplayMessageId(item), true);
-    add('Platform', item.m_platform);
-    add('Network', item.m_network);
-    add('Post Likes', item.m_post_likes);
-    add('Post Shares', item.m_post_shares);
-    add('Post Comments', item.m_post_comments_count);
-    add('Post Tags', item.m_post_tags, true);
-    add('Post Views', item.m_post_views);
-    add('Post Expiry', item.m_post_expiry);
-    add('Comment Count', item.m_comment_count);
-    add('Likes', item.m_likes);
-    add('Retweets', item.m_retweets);
-    add('Commenters', item.m_commenters, true);
-
-    return rows;
-  }
-
   get reportDocId(): string {
-    return (this.resultItem as any)?.m_hash || (this.resultItem as any)?._id || '';
+    return String(this.resultItem?.m_hash ?? this.resultItem?._id ?? '');
   }
 
   private getFirstRenderableValue(...values: unknown[]): unknown {
@@ -371,7 +334,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
   }
 
   private isSlugLikeMessageId(value: string, platform?: string): boolean {
-    const normalizedPlatform = String(platform || '').toLowerCase();
+    const normalizedPlatform = String(platform ?? '').toLowerCase();
     const hasPercentEncoding = /%[0-9a-f]{2}/i.test(value);
     const decodedValue = this.decodeURIComponentSafe(value);
     const hasSlugSeparator = /[-_/]/.test(decodedValue);

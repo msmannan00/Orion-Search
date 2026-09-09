@@ -7,10 +7,12 @@ from datetime import UTC, datetime, timezone
 from uuid import uuid4
 
 from cryptography.fernet import Fernet
+
 from fastapi import HTTPException
 from fastapi.responses import Response
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
+
 
 from orion.api.interactive.extension_manager.extension_socket_manager import extension_socket_manager
 from orion.api.interactive.profile_manager.constants.constant import MAX_SESSIONS_PER_PLATFORM, PLATFORMS_RESULT_KEY
@@ -107,7 +109,7 @@ class ProfileManager:
             cipher = await self._tenant_cipher(current_user)
             session_id = uuid4().hex
             encrypted = cipher.encrypt(raw)
-            existing_record = None
+            existing_record: db_social_session_model | None = None
             if safe_session:
                 existing_record = await self._engine.find_one(
                     db_social_session_model,
@@ -123,6 +125,7 @@ class ProfileManager:
                 existing_record.username = str(session_file.get("username") or existing_record.username or "")
                 existing_record.verified = False
                 existing_record.verify_error = ""
+                existing_record.verified_at = None
                 await self._engine.save(existing_record)
                 session_id = target_session_id
             else:
@@ -175,9 +178,20 @@ class ProfileManager:
         items = (reply.get("items") if reply.get("implemented") else []) or []
         entry = items[0] if items and isinstance(items[0], dict) else {}
         verified = bool(reply.get("implemented")) and not reply.get("error")
-        return await self._store_verification(record, verified, str(entry.get("username") or ""), str(reply.get("error") or ""))
+        username = str(entry.get("username") or "")
+        if verified and username:
+            duplicate = await self._engine.find_one(
+                db_social_session_model,
+                (db_social_session_model.user_id == user_key)
+                & (db_social_session_model.platform == safe_platform)
+                & (db_social_session_model.username == username)
+                & (db_social_session_model.session_id != record.session_id),
+            )
+            if duplicate is not None:
+                return await self._store_verification(record, False, username, "user_already_exists")
+        return await self._store_verification(record, verified, username, str(reply.get("error") or ""))
 
-    async def _read_session_state(self, current_user, user_key: str, safe_platform: str, file_name: str):
+    async def _read_session_state(self, current_user, user_key: str, safe_platform: str, file_name: str) -> dict | None:
         path = CONSTANTS.S_SESSION_RESOURCE_DIR / user_key / safe_platform / file_name
         if not path.exists():
             return None

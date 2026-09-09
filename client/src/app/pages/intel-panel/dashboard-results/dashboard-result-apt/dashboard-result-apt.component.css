@@ -1,0 +1,15 @@
+@keyframes apt-summary-fade-in {
+  from {
+    opacity: 0%;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.apt-summary-fade-in {
+  animation: apt-summary-fade-in 400ms ease-in-out;
+}

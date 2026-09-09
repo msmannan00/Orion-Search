@@ -22,7 +22,7 @@ export class CaseRelatedEntitiesSectionComponent {
 
   editingRelatedEntityId: string | null = null;
   readonly store = inject(CaseDetailsStore);
-  $index: any;
+  $index: unknown;
 
   get caseData(): Case {
     return this.store.caseData as Case;
@@ -46,7 +46,7 @@ export class CaseRelatedEntitiesSectionComponent {
 
   get selectedEditableRelatedEntity(): CaseEntity | null {
     const relatedEntities = this.getRelatedEntities(this.editedCase);
-    return relatedEntities.find(entity => entity.entityId === this.editingRelatedEntityId) || null;
+    return relatedEntities.find(entity => entity.entityId === this.editingRelatedEntityId) ?? null;
   }
 
   get selectedEditableRelatedEntityIndex(): number {
@@ -58,7 +58,7 @@ export class CaseRelatedEntitiesSectionComponent {
     return getRelatedCaseEntities(caseItem);
   }
 
-  getLinkableEntities(currentEntityId?: string, caseItem: Case | null = this.editedCase || this.caseData): CaseEntity[] {
+  getLinkableEntities(currentEntityId?: string, caseItem: Case | null = this.editedCase ?? this.caseData): CaseEntity[] {
     return getLinkableCaseEntities(caseItem, currentEntityId);
   }
 

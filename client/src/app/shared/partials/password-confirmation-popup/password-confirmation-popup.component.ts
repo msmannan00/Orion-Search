@@ -13,11 +13,11 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 export class PasswordConfirmationPopupComponent {
   readonly error = input<string | null>(null);
   readonly confirmed = output<string>();
-  readonly closed = output<void>();
+  readonly closed = output();
   password = '';
 
   onBackdrop(event: MouseEvent): void {
-    if ((event.target as HTMLElement).dataset['role'] === 'backdrop') {
+    if ((event.target as HTMLElement).dataset.role === 'backdrop') {
       this.close();
     }
   }

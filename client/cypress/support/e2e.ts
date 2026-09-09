@@ -2,14 +2,14 @@ import 'cypress-axe';
 import "./commands";
 
 beforeEach(() => {
-    cy.intercept("POST", "**/api/nexus/chat/clear-session", {
+    void cy.intercept("POST", "**/api/nexus/chat/clear-session", {
         statusCode: 200,
         body: { cleared: true },
     }).as("clearNexusSession");
 });
 
 if (Cypress.expose("coverage")) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+
     require("@cypress/code-coverage/support");
 }
 
@@ -77,7 +77,7 @@ Cypress.on("window:before:load", (win) => {
                     animation.cancel();
                 }
                 catch {
-                    // Ignore animations that cannot be finished or canceled.
+
                 }
             }
         });
@@ -154,8 +154,8 @@ Cypress.on("window:before:load", (win) => {
 });
 
 beforeEach(() => {
-    cy.intercept('POST', '**/api/get/tenant/node', (req) => {
-        req.continue((res) => {
+    void cy.intercept('POST', '**/api/get/tenant/node', (req) => {
+        req.on('before:response', (res) => {
             if (res.body?.user) {
                 res.body.user.demo_tour = true;
             }

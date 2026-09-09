@@ -36,7 +36,7 @@ export class CaseTrackingBoardSettings implements OnInit {
       },
       error: err => {
         this.isLoading = false;
-        this.messageNotificationService.show(err?.error?.detail || this.translationService.translate('Failed to load status board settings'));
+        this.messageNotificationService.show(err?.error?.detail ?? this.translationService.translate('Failed to load status board settings'));
       }
     });
   }
@@ -58,13 +58,13 @@ export class CaseTrackingBoardSettings implements OnInit {
       },
       error: err => {
         this.isSaving = false;
-        this.errorText = err?.error?.detail || this.translationService.translate('Failed to save status board settings');
+        this.errorText = err?.error?.detail ?? this.translationService.translate('Failed to save status board settings');
       }
     });
   }
 
   goBack(): void {
-    this.router.navigate(['/dashboard/profile/case-management/tracking-board']);
+    void this.router.navigate(['/dashboard/profile/case-management/tracking-board']);
   }
 
   isRequiredStatus(status: CaseStatusBoardItem): boolean {

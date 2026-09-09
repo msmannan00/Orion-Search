@@ -91,7 +91,7 @@ class mail_manager:
             return None
 
     async def _selected_mail_config(self, tenant_id: str | None):
-        return (await self._tenant_system_mail_config(tenant_id) or self._global_mail_config())
+        return await self._tenant_system_mail_config(tenant_id) or self._global_mail_config()
 
     async def _prepare_verification_message(self, to_header: str, subject: str, body: str, tenant_id: str | None = None, config=None):
         tenant_context = _mail_tenant_id.set(str(tenant_id) if tenant_id else None)
@@ -159,8 +159,8 @@ class mail_manager:
                         image_part.replace_header("Content-Type", screenshot_mime_type)
                     msg.attach(image_part)
                     attached_screenshot = True
-                except Exception as e:
-                    log.g().e(f"Failed to attach inline screenshot evidence: {e}")
+                except Exception as screenshot_error:
+                    log.g().e(f"Failed to attach inline screenshot evidence: {screenshot_error}")
 
             if html_content:
                 try:
@@ -168,8 +168,8 @@ class mail_manager:
                     html_part['Content-Disposition'] = f'attachment; filename="source_{target_domain}.html"'
                     msg.attach(html_part)
                     attached_html = True
-                except Exception as e:
-                    log.g().e(f"Failed to attach inline HTML evidence: {e}")
+                except Exception as html_error:
+                    log.g().e(f"Failed to attach inline HTML evidence: {html_error}")
 
             safe_screenshot = os.path.basename(screenshot_filename) if screenshot_filename else None
             safe_html = os.path.basename(html_filename) if html_filename else None
@@ -196,7 +196,7 @@ class mail_manager:
                             html_part['Content-Disposition'] = f'attachment; filename="source_{target_domain}.html"'
                             msg.attach(html_part)
                             break
-                    except Exception as e:
+                    except Exception as html_fetch_error:
                         try:
                             req_alt = urllib.request.Request(f"{host}/evidence/view/source/{safe_html}")
                             with urllib.request.urlopen(req_alt, timeout=10) as resp:  # nosec B310
@@ -206,7 +206,7 @@ class mail_manager:
                             msg.attach(html_part)
                             break
                         except Exception as e_alt:
-                            log.g().e(f"Failed to fetch HTML evidence. Error 1: {e} | Error 2: {e_alt}")
+                            log.g().e(f"Failed to fetch HTML evidence. Error 1: {html_fetch_error} | Error 2: {e_alt}")
                             raise HTTPException(status_code=500, detail="Failed to fetch HTML evidence") from e_alt
 
         await asyncio.to_thread(fetch_and_attach)
@@ -231,7 +231,7 @@ class mail_manager:
         except HTTPException:
             raise
         except Exception as exc:
-            smtp_code = getattr(exc, "smtp_code", None)
+            smtp_code = getattr(exc, "smtp_code", "")
             smtp_error = getattr(exc, "smtp_error", None)
             if isinstance(smtp_error, bytes):
                 smtp_error = smtp_error.decode(errors="ignore")

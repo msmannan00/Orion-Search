@@ -19,8 +19,7 @@ export interface NodeVisualState {
     borderWidthSelected?: number;
     image?: string;
 }
-export interface GraphResultItem {
-    vertex: {
+export interface GraphVertex {
         _id?: string;
         _key?: string;
         type?: string;
@@ -33,9 +32,20 @@ export interface GraphResultItem {
         m_document_id?: string;
         cluster_id?: string;
         hidden_by_default?: boolean;
-        [key: string]: any;
-    };
-    edge?: {
+        module?: string;
+        published?: unknown;
+        summary?: unknown;
+        source_reliability?: unknown;
+        entity_role?: unknown;
+        confidence?: unknown;
+        evidence_count?: unknown;
+        first_seen?: unknown;
+        last_seen?: unknown;
+        aliases?: unknown[];
+        [key: string]: unknown;
+}
+
+export interface GraphEdge {
         _id?: string;
         _from?: string;
         _to?: string;
@@ -44,11 +54,15 @@ export interface GraphResultItem {
         label?: string;
         relationship_type?: string;
         confidence?: number;
-        [key: string]: any;
-    };
+        [key: string]: unknown;
+}
+
+export interface GraphResultItem {
+    vertex: GraphVertex;
+    edge?: GraphEdge;
     path?: {
-        vertices?: any[];
-        edges?: any[];
+        vertices?: GraphVertex[];
+        edges?: GraphEdge[];
     };
 }
 export interface CtiGraphFilters {

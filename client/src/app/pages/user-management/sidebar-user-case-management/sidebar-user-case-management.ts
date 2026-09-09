@@ -83,7 +83,7 @@ export class SidebarUserCaseManagement implements OnInit {
         caseItem.description,
         this.formatLabel(caseItem.caseType),
         caseItem.caseTypeOtherValue
-      ].some(value => String(value || '').toLowerCase().includes(search)))
+      ].some(value => String(value ?? '').toLowerCase().includes(search)))
       .filter(caseItem => this.caseFilters.status === 'all' || caseItem.status === this.caseFilters.status)
       .filter(caseItem => this.caseFilters.severity === 'all' || caseItem.severity === this.caseFilters.severity)
       .filter(caseItem => this.caseFilters.priority === 'all' || caseItem.priority === this.caseFilters.priority)
@@ -202,10 +202,6 @@ export class SidebarUserCaseManagement implements OnInit {
       .replace(/\b\w/g, char => char.toUpperCase()));
   }
 
-  toggleArchivedCases(): void {
-    this.setArchivedCases(!this.showArchivedCases);
-  }
-
   openTrackingBoard(): void {
     if (!this.canManageCases()) {
       return;
@@ -239,7 +235,7 @@ export class SidebarUserCaseManagement implements OnInit {
           this.analysts = analysts || [];
         },
         error: (error) => {
-          this.messageNotificationService.show(error?.error?.detail || this.translationService.translate('Failed to load analysts'));
+          this.messageNotificationService.show(error?.error?.detail ?? this.translationService.translate('Failed to load analysts'));
           this.closeAssignAnalystDialog();
         }
       });
@@ -280,7 +276,7 @@ export class SidebarUserCaseManagement implements OnInit {
           this.closeAssignAnalystDialog();
         },
         error: (error) => {
-          this.messageNotificationService.show(error?.error?.detail || this.translationService.translate('Failed to assign analyst'));
+          this.messageNotificationService.show(error?.error?.detail ?? this.translationService.translate('Failed to assign analyst'));
         }
       });
   }
@@ -302,7 +298,7 @@ export class SidebarUserCaseManagement implements OnInit {
   }
 
   private getCaseTimestamp(caseItem: Case): number {
-    const value = caseItem.updatedAt || caseItem.createdAt;
+    const value = caseItem.updatedAt ?? caseItem.createdAt;
 
     if (!value) {
       return 0;
@@ -313,10 +309,10 @@ export class SidebarUserCaseManagement implements OnInit {
   }
 
   private getPriorityWeight(priority?: Priority | null): number {
-    return { low: 1, medium: 2, high: 3, critical: 4 }[priority || 'low'] || 0;
+    return { low: 1, medium: 2, high: 3, critical: 4 }[priority ?? 'low'] || 0;
   }
 
   private getSeverityWeight(severity?: Severity | null): number {
-    return { info: 1, low: 2, medium: 3, high: 4, critical: 5 }[severity || 'info'] || 0;
+    return { info: 1, low: 2, medium: 3, high: 4, critical: 5 }[severity ?? 'info'] || 0;
   }
 }

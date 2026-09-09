@@ -1,4 +1,4 @@
-const PDF_ASCII_REPLACEMENTS: ReadonlyArray<[RegExp, string]> = [
+const PDF_ASCII_REPLACEMENTS: readonly [RegExp, string][] = [
   [/\u00a0/g, ' '],
   [/[\u200b-\u200d\u2060\ufeff]/g, ''],
   [/[\u2018\u2019\u201a\u201b]/g, '\''],
@@ -19,7 +19,7 @@ export function normalizePdfText(value: unknown): string {
   text = text
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\x09\x0a\x20-\x7e]/g, '?')
+    .replace(/[^\t\n\x20-\x7e]/g, '?')
     .replace(/\t/g, '  ')
     .replace(/[ \f\v]+$/gm, '')
     .replace(/\n{3,}/g, '\n\n');

@@ -18,7 +18,7 @@ from orion.helper_manager.helper_controller import helper_controller
 from orion.services.mongo_manager.shared_model.db_alert_model import db_alert_model, visible_alerts
 from orion.services.mongo_manager.shared_model.db_keys import db_keys
 from orion.services.mongo_manager.shared_model.db_system_settings import AllowedKeys, db_system_model
-from orion.services.mongo_manager.shared_model.db_tenant_model import (IocCategory, TenantRequest, TenantStatus, db_tenant_model, normalize_tenant_slug)
+from orion.services.mongo_manager.shared_model.db_tenant_model import (IocCategory, TenantRequest, TenantStatus, DismissedIocType, db_tenant_model, normalize_tenant_slug)
 from orion.services.mongo_manager.shared_model.db_auth_models import UserStatus, db_user_account, LicenseName, user_role
 from orion.services.permission_manager.permission_models import UserPermission
 from orion.services.encryption_manager.key_manager import KeyManager
@@ -46,7 +46,7 @@ class TenantManager:
     def __init__(self):
         from orion.services.mongo_manager.mongo_controller import mongo_controller
         self.BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-        self.IMAGE_DIR = self.BASE_DIR / "static" / "resource" / "profile"
+        self.IMAGE_DIR = self.BASE_DIR / "workspace" / "resource" / "profile"
         self._engine = mongo_controller.get_instance().get_engine()
 
         if TenantManager.__instance is not None:
@@ -114,7 +114,8 @@ class TenantManager:
 
         parsed = urlsplit(base_url)
         slug = normalize_tenant_slug(tenant.slug)
-        if not slug or not parsed.hostname:
+        parsed_hostname = parsed.hostname
+        if not slug or not parsed_hostname:
             raise HTTPException(status_code=400, detail="Tenant subdomain not configured")
 
         tenant_base_domain = str(
@@ -122,12 +123,23 @@ class TenantManager:
         ).strip().lower().rstrip(".").removeprefix("*.")
         hostname = (
             f"{slug}.localhost"
-            if parsed.hostname in {"localhost", "127.0.0.1"}
-            else f"{slug}.{tenant_base_domain or parsed.hostname}"
+            if parsed_hostname in {"localhost", "127.0.0.1"}
+            else f"{slug}.{tenant_base_domain or parsed_hostname}"
         )
-        netloc = f"{hostname}:{parsed.port}" if parsed.port else hostname
+        parsed_port = parsed.port
+        netloc = f"{hostname}:{parsed_port}" if parsed_port else hostname
         tenant_url = urlunsplit((parsed.scheme, netloc, parsed.path.rstrip("/"), "", ""))
         return f"{tenant_url}/{path.lstrip('/')}"
+
+    @staticmethod
+    def tenant_access_url(tenant: db_tenant_model) -> str:
+        app_url = str(env_handler.get_instance().env("APP_URL", "") or "").strip()
+        if not app_url:
+            return ""
+        try:
+            return TenantManager.build_tenant_url(app_url, tenant, "/")
+        except HTTPException:
+            return ""
 
     @staticmethod
     def validate_signup_username(username: str):
@@ -178,7 +190,7 @@ class TenantManager:
             result.append({
                 "id": tenant_id,
                 "name": enc.decrypt(tenant.name.encode()).decode(),
-                "email": enc.decrypt(tenant.email.encode()).decode(),
+                "email": enc.decrypt(tenant.email.encode()).decode() if tenant.email else "",
             })
         return result
 
@@ -245,7 +257,7 @@ class TenantManager:
             tenant_data = {
                 "id": tenant_id,
                 "name": enc.decrypt(tenant.name.encode()).decode(),
-                "email": enc.decrypt(tenant.email.encode()).decode(),
+                "email": enc.decrypt(tenant.email.encode()).decode() if tenant.email else "",
                 "is_active": tenant.status == TenantStatus.ACTIVE
             }
 
@@ -495,7 +507,7 @@ class TenantManager:
             tenant_email = enc.decrypt(tenant.email.encode()).decode() if tenant.email else ""
             tenant.iocs = [IocCategory(
                 ioc_id=enc.encrypt(ioc.ioc_id.encode()).decode(),
-                name=enc.encrypt(ioc.name.encode()).decode(),
+                name=enc.encrypt((ioc.name or "").encode()).decode(),
                 values=[enc.encrypt(v.encode()).decode() for v in (ioc.values or [])]) for ioc in self.build_privileged_iocs(tenant_email)]
 
         if "alert_run_time" in data.model_fields_set:
@@ -509,7 +521,7 @@ class TenantManager:
                 raise HTTPException(status_code=403, detail="You don't have permission to manage IOCs outside your domain. Ask your network administrator.")
             tenant.iocs = [IocCategory(
                 ioc_id=enc.encrypt(ioc.ioc_id.encode()).decode(),
-                name=enc.encrypt(ioc.name.encode()).decode(),
+                name=enc.encrypt((ioc.name or "").encode()).decode(),
                 values=[enc.encrypt(v.encode()).decode() for v in (ioc.values or [])]) for ioc in (data.iocs or [])]
 
         await self._engine.save(tenant)
@@ -553,6 +565,7 @@ class TenantManager:
 
         tenant_data = tenant.model_dump()
         tenant_data["id"] = str(tenant.id)
+        tenant_data["access_url"] = TenantManager.tenant_access_url(tenant)
 
         tenant_data["name"] = enc.decrypt((tenant_data.get("name") or "").encode()).decode() if tenant_data.get(
             "name") else ""
@@ -565,18 +578,7 @@ class TenantManager:
         tenant_data["postal_code"] = enc.decrypt(
             (tenant_data.get("postal_code") or "").encode()).decode() if tenant_data.get("postal_code") else ""
         tenant_data["licenses"] = [enc.decrypt(x.encode()).decode() for x in (tenant_data.get("licenses") or [])]
-        tenant_data["accounts_mail_password"] = None
-        tenant_data["accounts_mail"] = ""
-        tenant_data["accounts_smtp_server"] = ""
-        tenant_data["accounts_smtp_port"] = ""
-        settings_record = await self._engine.find_one(db_system_model, (db_system_model.tenant_id == str(tenant.id)) & (db_system_model.key == AllowedKeys.SYSTEM_SETTINGS))
-        if settings_record and settings_record.value:
-            system_settings = json.loads(settings_record.value)
-            meta_info = json.loads(system_settings.get(AllowedKeys.META_INFO.value) or "{}")
-            tenant_data["accounts_mail"] = meta_info.get("ACCOUNTS_MAIL") or ""
-            tenant_data["accounts_smtp_server"] = meta_info.get("ACCOUNTS_SMTP_SERVER") or ""
-            tenant_data["accounts_smtp_port"] = meta_info.get("ACCOUNTS_SMTP_PORT") or ""
-            tenant_data["ai_endpoint_enabled"] = system_settings.get(AllowedKeys.AI_ENDPOINT_ENABLED.value) == "1"
+        await self._apply_tenant_system_settings(tenant_data, str(tenant.id))
         tenant_data["iocs"] = [{**ioc, "ioc_id": enc.decrypt((ioc.get("ioc_id") or "").encode()).decode() if ioc.get(
             "ioc_id") else "", "name": enc.decrypt((ioc.get("name") or "").encode()).decode() if ioc.get(
             "name") else "", "values": [enc.decrypt(v.encode()).decode() for v in (ioc.get("values") or [])], } for ioc
@@ -611,23 +613,13 @@ class TenantManager:
                 tenant.email = ""
             tenant.iocs = [IocCategory(
                 ioc_id=enc.decrypt(ioc.ioc_id.encode()).decode(),
-                name=enc.decrypt(ioc.name.encode()).decode(),
+                name=enc.decrypt(ioc.name.encode()).decode() if ioc.name else "",
                 values=[enc.decrypt(v.encode()).decode() for v in (ioc.values or [])]) for ioc in (tenant.iocs or [])]
 
             tenant_data = tenant.model_dump()
             tenant_data["id"] = str(tenant.id)
-            tenant_data["accounts_mail_password"] = None
-            tenant_data["accounts_mail"] = ""
-            tenant_data["accounts_smtp_server"] = ""
-            tenant_data["accounts_smtp_port"] = ""
-            settings_record = await self._engine.find_one(db_system_model, (db_system_model.tenant_id == str(tenant.id)) & (db_system_model.key == AllowedKeys.SYSTEM_SETTINGS))
-            if settings_record and settings_record.value:
-                system_settings = json.loads(settings_record.value)
-                meta_info = json.loads(system_settings.get(AllowedKeys.META_INFO.value) or "{}")
-                tenant_data["accounts_mail"] = meta_info.get("ACCOUNTS_MAIL") or ""
-                tenant_data["accounts_smtp_server"] = meta_info.get("ACCOUNTS_SMTP_SERVER") or ""
-                tenant_data["accounts_smtp_port"] = meta_info.get("ACCOUNTS_SMTP_PORT") or ""
-                tenant_data["ai_endpoint_enabled"] = system_settings.get(AllowedKeys.AI_ENDPOINT_ENABLED.value) == "1"
+            tenant_data["access_url"] = TenantManager.tenant_access_url(tenant)
+            await self._apply_tenant_system_settings(tenant_data, str(tenant.id))
             maintainer = maintainer_by_tenant_id.get(str(tenant.id))
             tenant_data["password_reset_required"] = getattr(maintainer, "password_reset_required", False)
             result.append(tenant_data)
@@ -658,12 +650,94 @@ class TenantManager:
         await self._engine.delete(tenant)
         return {"message": "Tenant deleted successfully"}
 
+    async def dismiss_stealer_log(self, tenant_id: str, stealer_log_hash: str, user_id: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG, all_tenants: bool = False) -> dict:
+        collection = self._engine.get_collection(db_tenant_model)
+        not_dismissed = {"dismissed_iocs": {"$not": {"$elemMatch": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}}}
+        push = {"$push": {"dismissed_iocs": {"hash": stealer_log_hash, "user_id": user_id, "type": dismissed_ioc_type.value}}}
+
+        if all_tenants:
+            result = await collection.update_many(not_dismissed, push)
+            return {"status": "dismissed" if result.modified_count else "already_dismissed"}
+
+        if not ObjectId.is_valid(tenant_id):
+            return {"status": "invalid_tenant"}
+        result = await collection.update_one({"_id": ObjectId(tenant_id), **not_dismissed}, push)
+        if result.modified_count == 0:
+            return {"status": "already_dismissed"}
+        return {"status": "dismissed"}
+
+    async def restore_stealer_log(self, tenant_id: str, stealer_log_hash: str, dismissed_ioc_type: DismissedIocType = DismissedIocType.STEALER_LOG, all_tenants: bool = False) -> dict:
+        collection = self._engine.get_collection(db_tenant_model)
+        pull = {"$pull": {"dismissed_iocs": {"hash": stealer_log_hash, "type": dismissed_ioc_type.value}}}
+
+        if all_tenants:
+            result = await collection.update_many({}, pull)
+            return {"status": "restored" if result.modified_count else "not_dismissed"}
+
+        if not ObjectId.is_valid(tenant_id):
+            return {"status": "invalid_tenant"}
+        result = await collection.update_one({"_id": ObjectId(tenant_id)}, pull)
+        if result.modified_count == 0:
+            return {"status": "not_dismissed"}
+        return {"status": "restored"}
+
     async def get_visible_tenant_alerts_summary(self, current_user) -> List[dict]:
         tenant_ids = await self.resolve_visible_alert_tenant_ids_for_user(current_user)
         if not tenant_ids:
             return []
         tenants = await self.get_admin_visible_alert_tenants(tenant_ids)
         return await self.build_tenant_alert_summary(tenants)
+
+    async def _apply_tenant_system_settings(self, tenant_data: dict, tenant_id: str) -> None:
+        tenant_data["accounts_mail_password"] = None
+        tenant_data["accounts_mail"] = ""
+        tenant_data["accounts_smtp_server"] = ""
+        tenant_data["accounts_smtp_port"] = ""
+        settings_record = await self._engine.find_one(db_system_model, (db_system_model.tenant_id == tenant_id) & (db_system_model.key == AllowedKeys.SYSTEM_SETTINGS))
+        if settings_record and settings_record.value:
+            system_settings = json.loads(settings_record.value)
+            meta_info = json.loads(system_settings.get(AllowedKeys.META_INFO.value) or "{}")
+            tenant_data["accounts_mail"] = meta_info.get("ACCOUNTS_MAIL") or ""
+            tenant_data["accounts_smtp_server"] = meta_info.get("ACCOUNTS_SMTP_SERVER") or ""
+            tenant_data["accounts_smtp_port"] = meta_info.get("ACCOUNTS_SMTP_PORT") or ""
+            tenant_data["ai_endpoint_enabled"] = system_settings.get(AllowedKeys.AI_ENDPOINT_ENABLED.value) == "1"
+
+    async def _collect_tenant_alerts(self, tenant_id: str, page: int, limit: int, alert_type: str | None, paginate: bool):
+        alerts_data = await self._engine.find_one(db_alert_model, db_alert_model.tenant_id == tenant_id)
+        if not alerts_data:
+            if paginate:
+                return {
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "limit": limit,
+                    "has_more": False
+                }
+            return []
+
+        alerts = visible_alerts(alerts_data.alerts)
+        if alert_type:
+            normalized_type = alert_type.strip().lower()
+            alerts = [alert for alert in alerts if (alert.type or "").strip().lower() == normalized_type]
+
+        if not paginate:
+            return alerts
+
+        sorted_alerts = sorted(
+            alerts,
+            key=lambda alert: alert.last_seen or alert.first_seen or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True)
+        total = len(sorted_alerts)
+        start = (page - 1) * limit
+        end = start + limit
+
+        return {
+            "items": sorted_alerts[start:end],
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "has_more": end < total,
+        }
 
     async def get_visible_tenant_alerts(self, tenant_id: str, current_user, page: int = 1, limit: int = 20, alert_type: str | None = None, paginate: bool = False):
         visible_tenant_ids = set(await self.resolve_visible_alert_tenant_ids_for_user(current_user))
@@ -679,82 +753,14 @@ class TenantManager:
         if not tenant or getattr(tenant, "is_default", False) or getattr(tenant, "alerts_visible_to_admin", True) is False:
             raise HTTPException(status_code=404, detail="Tenant alerts not available")
 
-        alerts_data = await self._engine.find_one(db_alert_model, db_alert_model.tenant_id == tenant_id)
-        if not alerts_data:
-            if paginate:
-                return {
-                    "items": [],
-                    "total": 0,
-                    "page": page,
-                    "limit": limit,
-                    "has_more": False
-                }
-            return []
-
-        alerts = visible_alerts(alerts_data.alerts)
-        if alert_type:
-            normalized_type = alert_type.strip().lower()
-            alerts = [alert for alert in alerts if (alert.type or "").strip().lower() == normalized_type]
-
-        if not paginate:
-            return alerts
-
-        sorted_alerts = sorted(
-            alerts,
-            key=lambda alert: alert.last_seen or alert.first_seen or datetime.min.replace(tzinfo=timezone.utc),
-            reverse=True)
-        total = len(sorted_alerts)
-        start = (page - 1) * limit
-        end = start + limit
-
-        return {
-            "items": sorted_alerts[start:end],
-            "total": total,
-            "page": page,
-            "limit": limit,
-            "has_more": end < total,
-        }
+        return await self._collect_tenant_alerts(tenant_id, page, limit, alert_type, paginate)
 
     async def get_admin_tenant_alerts(self, tenant_id: str, page: int = 1, limit: int = 20, alert_type: str | None = None, paginate: bool = False):
         tenant = await self._engine.find_one(db_tenant_model, db_tenant_model.id == ObjectId(tenant_id))
         if not tenant or getattr(tenant, "is_default", False) or getattr(tenant, "alerts_visible_to_admin", True) is False:
             raise HTTPException(status_code=404, detail="Tenant alerts not available")
 
-        alerts_data = await self._engine.find_one(db_alert_model, db_alert_model.tenant_id == tenant_id)
-        if not alerts_data:
-            if paginate:
-                return {
-                    "items": [],
-                    "total": 0,
-                    "page": page,
-                    "limit": limit,
-                    "has_more": False
-                }
-            return []
-
-        alerts = visible_alerts(alerts_data.alerts)
-        if alert_type:
-            normalized_type = alert_type.strip().lower()
-            alerts = [alert for alert in alerts if (alert.type or "").strip().lower() == normalized_type]
-
-        if not paginate:
-            return alerts
-
-        sorted_alerts = sorted(
-            alerts,
-            key=lambda alert: alert.last_seen or alert.first_seen or datetime.min.replace(tzinfo=timezone.utc),
-            reverse=True)
-        total = len(sorted_alerts)
-        start = (page - 1) * limit
-        end = start + limit
-
-        return {
-            "items": sorted_alerts[start:end],
-            "total": total,
-            "page": page,
-            "limit": limit,
-            "has_more": end < total,
-        }
+        return await self._collect_tenant_alerts(tenant_id, page, limit, alert_type, paginate)
 
     async def get_visible_tenant_alert_filter_options(self, tenant_id: str, current_user, field: str, query: str = "", limit: int = 25, alert_type: str | None = None) -> dict[str, list[str]]:
         from orion.api.interactive.alert_manager.alert_manager import AlertManager
@@ -798,7 +804,7 @@ class TenantManager:
 
             hashed_password = await AccountManager.get_instance().create_tenant_user(existing_user, existing_mail, password)
 
-            tenant_uuid = getattr(current_user, "tenant_uuid", None)
+            tenant_uuid = getattr(current_user, "tenant_uuid", None) or ""
             if not tenant_uuid:
                 raise HTTPException(status_code=400, detail="Invalid company association")
 
@@ -825,6 +831,9 @@ class TenantManager:
 
             if requested and not requested.issubset(tenant_allowed) and not current_user.role in ["admin"]:
                 raise HTTPException(status_code=400, detail="User assigned license not allowed for this tenant")
+
+            if UserPermission.ORION_MAIL in (data.permissions or []):
+                raise HTTPException(status_code=403, detail="Orion Mail permission is limited to root tenant users")
 
             alerts_allowed_all, alerts_allowed_tenant_ids = await self.validate_alert_access_assignment(data, current_user)
 

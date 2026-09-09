@@ -12,7 +12,7 @@ export type CaseType =
     'dark_web_mention' |
     'other';
 
-export type CaseStatus = 
+export type CaseStatus =
     'new' |
     'intake_review' |
     'under_investigation' |

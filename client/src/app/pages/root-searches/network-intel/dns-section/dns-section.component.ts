@@ -59,7 +59,7 @@ export class DnsSectionComponent implements OnDestroy {
   }
 
   getRowLoadingStepLabel(row: IpRowState): string {
-    return this.ui.getLoadingStepLabel(row.step || `Loading details for ${row.ip}...`);
+    return this.ui.getLoadingStepLabel(row.step ?? `Loading details for ${row.ip}...`);
   }
 
   getRowProgressValue(row: IpRowState): number {
@@ -88,10 +88,6 @@ export class DnsSectionComponent implements OnDestroy {
     return this.hasSearched() && !this.isScanning() && !this.errorMessage && !!this.dnsResult() && this.ipRows.length === 0;
   }
 
-  isProgressSegmentActive(index: number): boolean {
-    return index < Math.ceil(this.progress() / 5);
-  }
-
   trackByIp(_: number, row: IpRowState): string {
     return row.ip;
   }
@@ -109,10 +105,10 @@ export class DnsSectionComponent implements OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['ipRows']) {
+    if (changes.ipRows) {
       const totalPages = this.totalPages;
       this.currentPage = Math.min(this.currentPage, totalPages);
-      if (!changes['ipRows'].previousValue || changes['ipRows'].previousValue !== changes['ipRows'].currentValue) {
+      if (!changes.ipRows.previousValue || changes.ipRows.previousValue !== changes.ipRows.currentValue) {
         this.currentPage = 1;
       }
     }

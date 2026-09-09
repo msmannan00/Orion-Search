@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from 
 import { SatelliteIntelPanel, SatelliteIntelPanelEnum } from '../../../enums/geo-fencing.enums';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
 
-const PANEL_TABS: Array<{ id: SatelliteIntelPanel; label: string }> = [
+const PANEL_TABS: { id: SatelliteIntelPanel; label: string }[] = [
   { id: SatelliteIntelPanelEnum.Dashboard, label: 'Dashboard' },
   { id: SatelliteIntelPanelEnum.Compare, label: 'Imagery Analysis' },
 ];

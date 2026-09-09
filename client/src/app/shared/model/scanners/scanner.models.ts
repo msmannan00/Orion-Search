@@ -1,4 +1,5 @@
 export interface SubdomainResponse {
+    progress?: number;
     result?: {
         status?: string;
         subdomains?: string[];
@@ -34,6 +35,7 @@ export interface WaybackSnapshot {
     mimetype?: string;
 }
 export interface WaybackResponse {
+    progress?: number;
     result?: {
         status?: string;
         snapshots?: WaybackSnapshot[];

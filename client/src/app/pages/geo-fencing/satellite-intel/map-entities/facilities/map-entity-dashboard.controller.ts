@@ -7,7 +7,7 @@ export class SatelliteMapEntityDashboardController {
   private isMapEntityFlushing = false;
   private streamFinished = false;
   private dashboardTypeFilterCache: OrionSatelliteDashboardFilter[] = ORION_POWER_FILTERS.map((option) => ({
-    key: option.key as OrionSatelliteFeatureType,
+    key: option.key,
     label: option.label,
     color: option.color,
     count: 0,
@@ -145,11 +145,11 @@ export class SatelliteMapEntityDashboardController {
     }
     this.mapEntityFlushTimer = setTimeout(() => {
       this.mapEntityFlushTimer = null;
-      void this.flushQueue();
+      this.flushQueue();
     }, this.mapEntityFlushIntervalMs);
   }
 
-  private async flushQueue(): Promise<void> {
+  private flushQueue(): void {
     if (this.isMapEntityFlushing) {
       return;
     }
@@ -199,14 +199,14 @@ export class SatelliteMapEntityDashboardController {
   private refreshStats(data: OrionSatelliteFeature[]): void {
     const counts = new Map<OrionSatelliteFeatureType, number>();
     for (const feature of data) {
-      counts.set(feature.type, (counts.get(feature.type) || 0) + 1);
+      counts.set(feature.type, (counts.get(feature.type) ?? 0) + 1);
     }
 
     this.dashboardTypeFilterCache = ORION_POWER_FILTERS.map((option) => ({
-      key: option.key as OrionSatelliteFeatureType,
+      key: option.key,
       label: option.label,
       color: option.color,
-      count: counts.get(option.key as OrionSatelliteFeatureType) || 0,
+      count: counts.get(option.key) ?? 0,
     }));
 
     this.visiblePowerCountCache = this.filteredData.filter((feature) => feature.source === 'WRI').length;

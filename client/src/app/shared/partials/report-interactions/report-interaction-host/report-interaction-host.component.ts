@@ -28,7 +28,7 @@ export class ReportInteractionHostComponent implements OnChanges {
   constructor(private dashboardService: DashboardService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['docId']) {
+    if (changes.docId) {
       this.feedbackModel = new ReportFeedbackModel({ doc_id: this.docId });
       this.feedbackSavingKey = '';
       this.isCommentSaving = false;

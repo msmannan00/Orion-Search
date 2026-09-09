@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, RedirectResponse
@@ -17,7 +19,7 @@ class content_block_middleware(BaseHTTPMiddleware):
         path = request.url.path
 
         if path == "/admin" or path.startswith("/admin/") or path == "/dashboard/admin" or path.startswith("/dashboard/admin/"):
-            tenant = getattr(request.state, "tenant", None)
+            tenant: Any = getattr(request.state, "tenant", None)
             admin_root_allowed = await config_controller.getInstance().get_cached(
                 AllowedKeys.ADMIN_ROOT_ALLOWED.value,
                 "0",
