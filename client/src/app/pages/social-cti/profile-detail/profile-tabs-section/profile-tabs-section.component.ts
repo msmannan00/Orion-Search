@@ -131,7 +131,7 @@ export class SocialProfileTabsSectionComponent {
     }
     return entries;
   });
-  readonly hasProfileData = computed(() => this.platformData()?.profile_details?.is_parsed === true || this.detailEntries().length > 0);
+  readonly hasProfileData = computed(() => this.platformData()?.profile_details?.is_parsed === true);
   readonly darkwebSections = computed<{ title: string; date: string; entries: { key: string; value: unknown }[] }[]>(() =>
     this.darkwebReport().map((doc, index) => {
       const entries = Object.entries(doc ?? {})

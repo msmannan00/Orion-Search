@@ -198,7 +198,7 @@ export class DashboardSidebarComponent implements OnInit, OnDestroy {
 
   getProfileCategories(): string[] {
     const categories = Object.values(ProfileSubCategory);
-    const canAccessFeeder = this.isAdmin() && this.appService.userSessionData().tenant.isDefault && this.licenseService.getLicenses().some(license => ['feeder', 'enterprise'].includes(license));
+    const canAccessFeeder = this.appService.userSessionData().tenant.isDefault && this.licenseService.getLicenses().some(license => ['feeder', 'enterprise'].includes(license));
     const canAccessCaseManagement = this.isAdmin() || this.licenseService.isMaintainer() || ((this.isAnalyst() || this.isMember()) && (this.appService.userSessionData().user.permissions ?? []).includes('case_management'));
     const isMobileDemo = this.appService.isMobileMode();
 

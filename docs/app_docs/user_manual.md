@@ -355,7 +355,7 @@ The exact menu depends on license and permissions, but the Orion UI commonly exp
 | Consolidated | Combined multi-source investigation | IOCs, Deep Search, Network Intel |
 | News Feed | News-style intelligence stream | News, Tracking |
 | Stealer Logs | Credential and IOC investigation | IOCs |
-| Entity Lookup | Entity-based live lookups | Email Breach, Social Scanner, Wanted List, National Identity, Playstore Scanner, Software Scanner, File Scanner, Text Analysis, Crypto Scanner |
+| Entity Lookup | Entity-based live lookups | Email Breach, Social Scanner, Wanted List, National Identity, Playstore Scanner, Software Scanner, File Scanner, Text Analysis, Crypto Scanner, DKIM Lookup |
 | Web Scans | Live web-target scanning | Basic Scan, Port Scan, Repository Scan, SEO Scan, APK Scan, scan reports |
 | Network Intel | Domain, IP, and vulnerability recon | Host Recon, IP Scan, Vulnerability Scan with depth controls |
 | Satellite Intel | Geo-fencing, satellite map, facilities, aircraft, and ship tracking | Satellite Map, Threat Lens, Imagery Analysis |
@@ -708,6 +708,14 @@ Use Stealer Logs when you already have a domain, email, or IP and need to confir
 Structured result review for credential-focused investigations.
 ```
 
+### Dismissing Results
+
+Stealer-log and credential results can be dismissed so they stop appearing in future investigations. Dismissal is tenant-wide: once a result is dismissed, every user in that tenant stops seeing it, not just the person who dismissed it. A dismissed result can be restored again from the same control.
+
+A `Hide dismissed` toggle controls whether dismissed rows are hidden from the current view or shown with a dismissed marker, so reviewers can still audit what was dismissed when needed.
+
+Dismissing and restoring results requires the `Dismiss Result` user permission. Users without that permission can review results but cannot dismiss or restore them, and the dismiss control is not available to them. The permission is granted per user in tenant user management (see [Tenant Users](#tenant-users)); tenant administrators can dismiss across the tenant.
+
 ## Live Lookup and Scan Modules
 
 ### Entity Lookup
@@ -725,6 +733,7 @@ Available lookup types:
 - `File Scanner`
 - `Text Analysis`
 - `Crypto Scanner`
+- `DKIM Lookup`
 
 ```{figure} ../screenshots/entity-api-email-breach-20260326.png
 :alt: Entity Lookup view
@@ -741,6 +750,26 @@ Entity Lookup interface for live lookup workflows.
 - file analysis
 - text analysis for spam or malicious URL detection
 - crypto-address context
+- email-authentication (DKIM/DMARC/SPF) posture checks
+
+### DKIM Lookup
+
+DKIM Lookup is part of Entity Lookup. It inspects a domain's email-authentication posture: it discovers DKIM selectors, validates each DKIM DNS record, and runs the related DMARC and SPF checks.
+
+Inputs:
+
+- `Domain` (required), for example `example.com`
+- `Selector` (optional)
+
+If a selector is provided, only that selector is checked. If the selector field is left empty, the lookup discovers selectors automatically from public archives and common selector names, then validates each discovered selector one at a time.
+
+For each selector the result shows whether the record was found, the syntax and public-key checks, the key type and size, the source (live DNS or archive), any warnings (such as a weak 1024-bit key or a record seen only in archives), and the raw record. A `Domain Security` panel summarizes the domain's DMARC policy and SPF record. Completed lookups can be exported as a report.
+
+Use DKIM Lookup for:
+
+- confirming a domain's DKIM selectors and record validity
+- reviewing DMARC policy and SPF publication for a domain
+- spotting weak keys or selectors no longer published in live DNS
 
 ### Text Analysis
 
@@ -2509,6 +2538,8 @@ Displayed information commonly includes:
 - alert access scope where enabled
 
 The page also respects quota-based restrictions.
+
+Per-user permissions are assigned here when adding or editing a user. Assignable permissions include `Case Management`, `Orion Mail`, and `Dismiss Result`. The `Dismiss Result` permission controls who can dismiss or restore stealer-log and credential results for the tenant (see [Dismissing Results](#dismissing-results)); users without it can view results but cannot dismiss them.
 
 The broader tested user-management lifecycle also covers:
 
