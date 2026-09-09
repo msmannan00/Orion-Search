@@ -1,9 +1,9 @@
 import { NgClass } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit, ViewRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EMPTY, Observable, timer } from 'rxjs';
-import { expand, finalize, switchMap, takeWhile } from 'rxjs/operators';
+import { EMPTY, from, Observable, timer } from 'rxjs';
+import { catchError, concatMap, expand, finalize, map, switchMap, takeWhile, tap } from 'rxjs/operators';
 import { EmptyQueryComponent } from '../../../shared/partials/empty-query/empty-query.component';
 import { ExportChoiceModalComponent } from '../../../shared/partials/export-choice-modal/export-choice-modal.component';
 import { TooltipDirective } from '../../../shared/directive/tooltip-directive.directive';
@@ -25,6 +25,7 @@ export type { DkimLookupResponse, DkimSelectorEntry, DkimValidation } from './mo
 export class DkimLookupComponent implements OnInit {
   domain = '';
   manualSelector = '';
+  initialSelector = '';
   loading = false;
   queryTriggered = false;
   discoveryError = '';
@@ -37,10 +38,14 @@ export class DkimLookupComponent implements OnInit {
   isExportChoiceOpen = false;
   readonly reportExportOptions = DASHBOARD_API_EXPORT_OPTIONS;
 
-  constructor(private api: ApiService, private route: ActivatedRoute, private router: Router, private reportExport: ReportExportService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute, private router: Router, private reportExport: ReportExportService, private zone: NgZone, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     const q = this.route.snapshot.queryParamMap.get('q')?.trim();
+    const s = this.route.snapshot.queryParamMap.get('s')?.trim();
+    if (s) {
+      this.initialSelector = s;
+    }
     if (q) {
       this.domain = q;
       this.searchDomain(null);
@@ -114,25 +119,33 @@ export class DkimLookupComponent implements OnInit {
     if (!value) {
       return;
     }
+    const selector = this.initialSelector.trim();
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { q: value },
+      queryParams: { q: value, s: selector || null },
       queryParamsHandling: 'merge',
       replaceUrl: true
     }).then();
 
-    this.loading = true;
     this.queryTriggered = true;
     this.discoveryError = '';
     this.needsSelector = false;
     this.noSelectorMessage = '';
     this.manualSelector = '';
-    this.selectors = [];
     this.domainInfo = null;
     this.progress = 5;
     this.currentStep = 'Discovering selectors...';
 
+    if (selector) {
+      this.loading = false;
+      this.selectors = [this.newEntry(selector)];
+      this.validateSelector(value, selector);
+      return;
+    }
+
+    this.loading = true;
+    this.selectors = [];
     this.runJob(value, '').pipe(finalize(() => {
       this.loading = false;
     })).subscribe({
@@ -186,7 +199,17 @@ export class DkimLookupComponent implements OnInit {
   private runJob(domain: string, selector: string): Observable<DkimLookupResponse> {
     const payload = { text: { domain, selector } };
     const scanReq = () => this.api.post<DkimLookupResponse>('dkim/check', payload);
-    return scanReq().pipe(expand(res => (this.isPending(res) ? timer(3000).pipe(switchMap(() => scanReq())) : EMPTY)), takeWhile(res => this.isPending(res), true));
+    return scanReq().pipe(expand(res => (this.isPending(res) ? timer(3000).pipe(switchMap(() => scanReq())) : EMPTY)), takeWhile(res => this.isPending(res), true), source => new Observable<DkimLookupResponse>(subscriber => source.subscribe({
+      next: value => this.zone.run(() => { subscriber.next(value); this.render(); }),
+      error: err => this.zone.run(() => { subscriber.error(err); this.render(); }),
+      complete: () => this.zone.run(() => { subscriber.complete(); this.render(); })
+    })));
+  }
+
+  private render(): void {
+    if (!(this.cdr as ViewRef).destroyed) {
+      this.cdr.detectChanges();
+    }
   }
 
   private handleDiscovery(domain: string, res: DkimLookupResponse): void {
@@ -214,15 +237,17 @@ export class DkimLookupComponent implements OnInit {
     }
 
     this.selectors = found.map(selector => this.newEntry(selector));
-    found.forEach(selector => {
-      this.validateSelector(domain, selector);
-    });
+    from(found).pipe(concatMap(selector => this.runValidation(domain, selector))).subscribe();
   }
 
   private validateSelector(domain: string, selector: string): void {
+    this.runValidation(domain, selector).subscribe();
+  }
+
+  private runValidation(domain: string, selector: string): Observable<void> {
     const entry = this.selectors.find(item => item.selector === selector);
     if (!entry) {
-      return;
+      return EMPTY;
     }
     entry.loading = true;
     entry.error = '';
@@ -230,10 +255,8 @@ export class DkimLookupComponent implements OnInit {
     entry.progress = 10;
     entry.step = 'Validating...';
 
-    this.runJob(domain, selector).pipe(finalize(() => {
-      entry.loading = false;
-    })).subscribe({
-      next: res => {
+    return this.runJob(domain, selector).pipe(
+      tap(res => {
         if (this.isPending(res)) {
           entry.progress = res.progress ?? 30;
           entry.step = this.humanize(res.step) || 'Validating...';
@@ -249,12 +272,16 @@ export class DkimLookupComponent implements OnInit {
         if (!this.domainInfo && res.result) {
           this.setDomainInfo(domain, res.result);
         }
-      },
-      error: err => {
-        entry.loading = false;
+      }),
+      catchError(err => {
         entry.error = this.readError(err);
-      }
-    });
+        return EMPTY;
+      }),
+      finalize(() => {
+        entry.loading = false;
+      }),
+      map(() => undefined)
+    );
   }
 
   private setDomainInfo(domain: string, result: DkimValidation): void {
@@ -267,7 +294,7 @@ export class DkimLookupComponent implements OnInit {
   }
 
   private newEntry(selector: string): DkimSelectorEntry {
-    return { selector, loading: true, progress: 10, step: 'Validating...', error: '', validation: null };
+    return { selector, loading: true, progress: 5, step: 'Queued...', error: '', validation: null };
   }
 
   private isPending(res: DkimLookupResponse): boolean {

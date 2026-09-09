@@ -2,6 +2,26 @@
   animation: fade-in-dashboard-item 400ms ease-in-out;
 }
 
+.dkim-shimmer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-blue-720);
+}
+
+.dkim-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 20%, rgb(255 255 255 / 16%) 48%, transparent 76%);
+  animation: ui-shimmer-slide 1.55s linear infinite;
+}
+
+:host-context(.light-theme) .dkim-shimmer::after {
+  background: linear-gradient(110deg, transparent 20%, rgb(255 255 255 / 88%) 48%, transparent 76%);
+}
+
 @keyframes fade-in-dashboard-item {
   from {
     opacity: 0%;
