@@ -7,6 +7,7 @@ import { ManageProfilesService } from '../manage-profiles.service';
 import { PlatformEntry, SessionEntry, SocialPersona, SocialPersonaCreateRequest, SocialPlatform, SocialProfile, SocialProfileConnectRequest, SocialProfilePurpose } from '../model/manage-profiles.model';
 import { CaseEditDrawerComponent } from '../../user-management/sidebar-user-case-management/model/case-details/case-edit-drawer/case-edit-drawer';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../shared/utils/type-guards.util';
 
 export type ManageProfilePopupMode = 'persona' | 'profile';
 export type ManageProfilePopupSaveEvent = 'persona' | 'profile';
@@ -46,17 +47,17 @@ export class ManageProfilePopupComponent {
         name: persona.name,
         age_group: persona.age_group,
         gender: persona.gender,
-        country: persona.country || '',
-        city: persona.city || '',
+        country: persona.country ?? '',
+        city: persona.city ?? '',
         interests: [...(persona.interests || []).slice(0, 3)],
       });
     }
     if (profile) {
       this.profileForm.set({
         platform: profile.platform,
-        session_id: profile.session_id || '',
-        profile_name: profile.profile_name || '',
-        profile_username: profile.profile_username || '',
+        session_id: profile.session_id ?? '',
+        profile_name: profile.profile_name ?? '',
+        profile_username: profile.profile_username ?? '',
         purposes: [...(profile.purposes || [])],
       });
     }
@@ -88,11 +89,11 @@ export class ManageProfilePopupComponent {
   }
 
   onProfilePlatform(value: string | null): void {
-    this.profileForm.update(form => ({ ...form, platform: this.safePlatform(value || '') as SocialPlatform, session_id: '' }));
+    this.profileForm.update(form => ({ ...form, platform: this.safePlatform(value ?? '') as SocialPlatform, session_id: '' }));
   }
 
   onProfileSession(value: string | null): void {
-    this.profileForm.update(form => ({ ...form, session_id: value || '' }));
+    this.profileForm.update(form => ({ ...form, session_id: value ?? '' }));
   }
 
   onProfilePurposes(values: string[]): void {
@@ -110,9 +111,9 @@ export class ManageProfilePopupComponent {
     if (!platform) {
       return [];
     }
-    const currentProfileId = this.profile()?.profile_id || '';
+    const currentProfileId = this.profile()?.profile_id ?? '';
     const used = new Set(this.profiles().filter(profile => profile.profile_id !== currentProfileId).map(profile => profile.session_id).filter(Boolean));
-    return (this.sessions()[platform] || [])
+    return (getOwnProperty(this.sessions(), platform) ?? [])
       .filter(session => !used.has(session.id))
       .map(session => ({ key: session.id, label: `Session #${session.id.slice(0, 8)} - ${new Date(session.capturedAt).toLocaleString()}` }));
   }
@@ -137,11 +138,17 @@ export class ManageProfilePopupComponent {
       return;
     }
     this.saving.set(true);
-    const personaId = this.persona()?.persona_id || '';
+    const personaId = this.persona()?.persona_id ?? '';
     const request = personaId ? this.service.updatePersona(personaId, form) : this.service.createPersona(form);
-    request.pipe(finalize(() => this.saving.set(false))).subscribe({
-      next: () => this.saved.emit('persona'),
-      error: (error) => this.formError.set(error?.error?.detail || 'Failed to save persona'),
+    request.pipe(finalize(() => {
+      this.saving.set(false); 
+    })).subscribe({
+      next: () => {
+        this.saved.emit('persona'); 
+      },
+      error: (error) => {
+        this.formError.set(error?.error?.detail ?? 'Failed to save persona');
+      },
     });
   }
 
@@ -156,11 +163,17 @@ export class ManageProfilePopupComponent {
       return;
     }
     this.saving.set(true);
-    const profileId = this.profile()?.profile_id || '';
+    const profileId = this.profile()?.profile_id ?? '';
     const request = profileId ? this.service.updateProfile(profileId, form) : this.service.connectProfile(form);
-    request.pipe(finalize(() => this.saving.set(false))).subscribe({
-      next: () => this.saved.emit('profile'),
-      error: (error) => this.formError.set(error?.error?.detail || 'Failed to save profile'),
+    request.pipe(finalize(() => {
+      this.saving.set(false); 
+    })).subscribe({
+      next: () => {
+        this.saved.emit('profile'); 
+      },
+      error: (error) => {
+        this.formError.set(error?.error?.detail ?? 'Failed to save profile');
+      },
     });
   }
 
@@ -169,6 +182,6 @@ export class ManageProfilePopupComponent {
   }
 
   private platformLabel(platform: string): string {
-    return this.platforms().find(entry => this.safePlatform(entry.platform) === platform)?.platform || platform;
+    return this.platforms().find(entry => this.safePlatform(entry.platform) === platform)?.platform ?? platform;
   }
 }

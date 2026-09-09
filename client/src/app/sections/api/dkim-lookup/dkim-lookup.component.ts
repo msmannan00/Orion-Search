@@ -200,9 +200,21 @@ export class DkimLookupComponent implements OnInit {
     const payload = { text: { domain, selector } };
     const scanReq = () => this.api.post<DkimLookupResponse>('dkim/check', payload);
     return scanReq().pipe(expand(res => (this.isPending(res) ? timer(3000).pipe(switchMap(() => scanReq())) : EMPTY)), takeWhile(res => this.isPending(res), true), source => new Observable<DkimLookupResponse>(subscriber => source.subscribe({
-      next: value => this.zone.run(() => { subscriber.next(value); this.render(); }),
-      error: err => this.zone.run(() => { subscriber.error(err); this.render(); }),
-      complete: () => this.zone.run(() => { subscriber.complete(); this.render(); })
+      next: value => {
+        this.zone.run(() => {
+          subscriber.next(value); this.render(); 
+        }); 
+      },
+      error: err => {
+        this.zone.run(() => {
+          subscriber.error(err); this.render(); 
+        }); 
+      },
+      complete: () => {
+        this.zone.run(() => {
+          subscriber.complete(); this.render(); 
+        }); 
+      }
     })));
   }
 
@@ -255,33 +267,31 @@ export class DkimLookupComponent implements OnInit {
     entry.progress = 10;
     entry.step = 'Validating...';
 
-    return this.runJob(domain, selector).pipe(
-      tap(res => {
-        if (this.isPending(res)) {
-          entry.progress = res.progress ?? 30;
-          entry.step = this.humanize(res.step) || 'Validating...';
-          return;
-        }
-        entry.loading = false;
-        if (res.status === 'error' && !res.result) {
-          entry.error = res.message ?? res.error_message ?? 'DKIM validation failed.';
-          return;
-        }
-        entry.progress = 100;
-        entry.validation = res.result ?? null;
-        if (!this.domainInfo && res.result) {
-          this.setDomainInfo(domain, res.result);
-        }
-      }),
-      catchError(err => {
-        entry.error = this.readError(err);
-        return EMPTY;
-      }),
-      finalize(() => {
-        entry.loading = false;
-      }),
-      map(() => undefined)
-    );
+    return this.runJob(domain, selector).pipe(tap(res => {
+      if (this.isPending(res)) {
+        entry.progress = res.progress ?? 30;
+        entry.step = this.humanize(res.step) || 'Validating...';
+        return;
+      }
+      entry.loading = false;
+      if (res.status === 'error' && !res.result) {
+        entry.error = res.message ?? res.error_message ?? 'DKIM validation failed.';
+        return;
+      }
+      entry.progress = 100;
+      entry.validation = res.result ?? null;
+      if (!this.domainInfo && res.result) {
+        this.setDomainInfo(domain, res.result);
+      }
+    }),
+    catchError(err => {
+      entry.error = this.readError(err);
+      return EMPTY;
+    }),
+    finalize(() => {
+      entry.loading = false;
+    }),
+    map(() => undefined));
   }
 
   private setDomainInfo(domain: string, result: DkimValidation): void {

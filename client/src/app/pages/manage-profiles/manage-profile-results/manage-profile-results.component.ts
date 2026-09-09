@@ -38,12 +38,16 @@ export class ManageProfileResultsComponent {
       return;
     }
     this.resultsLoading.set(true);
-    this.service.getProfileResults(profileId).pipe(finalize(() => this.resultsLoading.set(false))).subscribe({
+    this.service.getProfileResults(profileId).pipe(finalize(() => {
+      this.resultsLoading.set(false); 
+    })).subscribe({
       next: (response) => {
         this.adDetectionResults.set(response?.ad_detection_results || []);
         this.postResults.set(response?.post_results || []);
       },
-      error: (error) => this.notification.show(error?.error?.detail || 'Failed to load results'),
+      error: (error) => {
+        this.notification.show(error?.error?.detail ?? 'Failed to load results');
+      },
     });
   }
 
@@ -52,7 +56,14 @@ export class ManageProfileResultsComponent {
   }
 
   resultsProfileOptions(): UiDropdownOption[] {
-    return this.profiles().map(profile => ({ key: profile.profile_id, label: `${this.platformLabel(profile.platform)} - ${profile.profile_name || profile.profile_username || 'Profile'}` }));
+    return this.profiles().map(profile => ({ key: profile.profile_id, label: `${this.platformLabel(profile.platform)} - ${this.profileDisplayName(profile)}` }));
+  }
+
+  private profileDisplayName(profile: SocialProfile): string {
+    if (profile.profile_name?.trim()) {
+      return profile.profile_name;
+    }
+    return profile.profile_username?.trim() ? profile.profile_username : 'Profile';
   }
 
   toggleResult(key: string): void {
@@ -77,6 +88,6 @@ export class ManageProfileResultsComponent {
   }
 
   private platformLabel(platform: string): string {
-    return this.platforms().find(entry => this.safePlatform(entry.platform) === this.safePlatform(platform))?.platform || platform;
+    return this.platforms().find(entry => this.safePlatform(entry.platform) === this.safePlatform(platform))?.platform ?? platform;
   }
 }
