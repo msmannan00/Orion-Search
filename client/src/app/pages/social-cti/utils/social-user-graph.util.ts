@@ -31,7 +31,7 @@ function personNodeId(person: SocialGraphPerson): string {
   return person.owner ? `user:${person.owner}` : `person:${person.handle}`;
 }
 
-function handleFromUrl(url: string): string {
+export function handleFromUrl(url: string): string {
   if (!/^https?:\/\//i.test(url)) {
     return '';
   }

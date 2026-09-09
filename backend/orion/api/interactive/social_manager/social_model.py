@@ -19,6 +19,7 @@ from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
 from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.helper_manager.env_handler import env_handler
 from orion.services.mongo_manager.shared_model.db_social_model import SOCIAL_COLLECTION, social_profile, social_profile_config
+from orion.services.mongo_manager.shared_model.db_graph_sessions_model import db_graph_sessions_model
 
 
 
@@ -515,6 +516,7 @@ class social_model:
             return JSONResponse(status_code=500, content={"detail": "Failed to fetch social profiles"})
 
     GRAPH_PEOPLE_IDS = {"followers", "following", "friends", "connections", "organizations", "contacts", "members", "subscribers"}
+    SOCIAL_GRAPH_TYPE = "social-users"
 
     @staticmethod
     def _graph_handle(value) -> str:
@@ -643,7 +645,45 @@ class social_model:
                     {"root_username": normalized_username},
                 ],
             })
+            deleted_handle = self._graph_handle(normalized_username)
+            await self._filter_graph_usernames(user_id, lambda handle: handle != deleted_handle)
             return {"profile_username": normalized_username, "deleted": result.deleted_count}
 
         except Exception:
             return JSONResponse(status_code=500, content={"detail": "Failed to delete social profile data"})
+
+    async def _filter_graph_usernames(self, user_id: str, keep) -> int:
+        session = await self._engine.find_one(db_graph_sessions_model, {"user_id": user_id, "graph_type": self.SOCIAL_GRAPH_TYPE})
+        if session is None:
+            return 0
+        extra = dict(session.extra or {})
+        usernames = extra.get("usernames")
+        if not isinstance(usernames, list):
+            return 0
+        kept = [entry for entry in usernames if isinstance(entry, str) and keep(self._graph_handle(entry))]
+        if len(kept) == len(usernames):
+            return 0
+        extra["usernames"] = kept
+        session.extra = extra
+        session.updated_at = datetime.now(UTC)
+        await self._engine.save(session)
+        return len(usernames) - len(kept)
+
+    async def prune_dangling_graph_roots(self, user_id: str):
+        try:
+            response = await self.get_social_profiles(user_id)
+            documents = response.get("result") if isinstance(response, dict) else None
+            valid = set()
+            if isinstance(documents, list):
+                for document in documents:
+                    if not isinstance(document, dict):
+                        continue
+                    for key in ("profile_username", "root_username"):
+                        handle = self._graph_handle(document.get(key))
+                        if handle:
+                            valid.add(handle)
+            removed = await self._filter_graph_usernames(user_id, lambda handle: handle in valid)
+            return {"removed": removed}
+
+        except Exception:
+            return JSONResponse(status_code=500, content={"detail": "Failed to prune social graph"})

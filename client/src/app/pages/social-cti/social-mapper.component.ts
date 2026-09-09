@@ -21,6 +21,7 @@ import { SocialBreadcrumbComponent } from './breadcrumb/social-breadcrumb.compon
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { getInputValue } from '../../shared/utils/event-input.util';
 import { getOwnProperty } from '../../shared/utils/type-guards.util';
+import { handleFromUrl, normalizeHandle } from './utils/social-user-graph.util';
 
 
 @Component({
@@ -176,6 +177,7 @@ export class SocialMapperComponent {
     if (usernameToDelete) {
       this.profileListing()?.cancelAllFetchesForUser(usernameToDelete);
       this.removeUserScanData(usernameToDelete);
+      this.removeGraphUser(usernameToDelete);
       this.storageService.deleteProfiles(usernameToDelete).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
     this.closeDeleteConfirmation();
@@ -226,6 +228,17 @@ export class SocialMapperComponent {
     const last = usernames[usernames.length - 1];
     if (last) {
       this.sidebarState.activeUsername.set(last);
+    }
+  }
+
+  private removeGraphUser(username: string): void {
+    const target = handleFromUrl(username) || normalizeHandle(username);
+    if (!target) {
+      return;
+    }
+    const remaining = this.graphUsernames().filter(entry => (handleFromUrl(entry) || normalizeHandle(entry)) !== target);
+    if (remaining.length !== this.graphUsernames().length) {
+      this.setGraphUsers(remaining);
     }
   }
 

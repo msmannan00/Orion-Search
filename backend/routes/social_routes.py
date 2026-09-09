@@ -208,3 +208,11 @@ async def get_social_profiles(profile_username: str, current_user=Depends(get_cu
 async def delete_social_profiles(profile_username: str, current_user=Depends(get_current_user)):
     return await social_model.getInstance().delete_social_profiles(str(current_user.id), profile_username)
 
+
+@social_routes.post(
+    "/api/social/graph/prune",
+    include_in_schema=False,
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("scanning", bypass_licenses=["osint_advanced"]))])
+async def prune_social_graph(current_user=Depends(get_current_user)):
+    return await social_model.getInstance().prune_dangling_graph_roots(str(current_user.id))
+
