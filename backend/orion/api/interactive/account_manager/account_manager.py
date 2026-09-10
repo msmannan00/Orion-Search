@@ -79,6 +79,14 @@ class AccountManager:
                 raise HTTPException(status_code=400, detail="Invalid password")
         return hashed_password
 
+    def _assert_monitoring_allowed(self, permissions, current_user, target_role):
+        if UserPermission.MONITORING not in (permissions or []):
+            return
+        if current_user.role != user_role.ADMIN:
+            raise HTTPException(status_code=403, detail="Only an admin can assign the Monitoring permission")
+        if target_role not in (user_role.ADMIN, user_role.ANALYST):
+            raise HTTPException(status_code=403, detail="Monitoring permission is limited to analyst users")
+
     async def _assert_orion_mail_allowed(self, permissions, tenant_uuid, current_user):
         if UserPermission.ORION_MAIL not in (permissions or []):
             return
@@ -139,6 +147,7 @@ class AccountManager:
             existing_mail = await engine.find_one(db_user_account, db_user_account.email == email)
             hashed_password = self.create_tenant_user(existing_user, existing_mail, password)
 
+            self._assert_monitoring_allowed(data.permissions, current_user, data.role)
             await self._assert_orion_mail_allowed(data.permissions, current_user.tenant_uuid, current_user)
 
             user = db_user_account(
@@ -249,6 +258,7 @@ class AccountManager:
                     raise HTTPException(status_code=400, detail="User assigned license not allowed for this tenant")
             user.licenses = request.licenses
         if request.permissions is not None:
+            self._assert_monitoring_allowed(request.permissions, current_user, user.role)
             await self._assert_orion_mail_allowed(request.permissions, user.tenant_uuid, current_user)
             user.permissions = request.permissions
             if UserPermission.CASE_MANAGEMENT not in (user.permissions or []):

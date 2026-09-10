@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi import Depends, UploadFile
 
-from configs.app_dependency import license_required, role_required, status_required, get_current_user
+from configs.app_dependency import license_required, permission_required, role_required, status_required, get_current_user
 from orion.api.interactive.account_manager.account_manager import AccountManager
 from orion.api.interactive.account_manager.chat_share_manager import ChatShareManager
 from orion.api.interactive.account_manager.models.chat_history_model import CreateChatShareRequest
@@ -17,6 +17,7 @@ from orion.api.interactive.resource_manager.resource_manager import ResourceMana
 from orion.api.interactive.system_log_manager.system_log_manager import SystemLogManager
 from orion.api.interactive.tenant_manager.models.tenant_param_model import tenant_param_model
 from orion.services.mongo_manager.shared_model.db_auth_models import user_role, UserStatus
+from orion.services.permission_manager.permission_models import UserPermission
 from orion.services.mongo_manager.shared_model.db_tenant_model import TenantRequest
 from orion.api.interactive.tenant_manager.tenant_manager import TenantManager
 from orion.services.mongo_manager.shared_model.db_alert_model import AlertModel
@@ -275,7 +276,8 @@ async def delete_audit_log(log_id: str, _current_user=Depends(get_current_user))
     "/api/profile/system-logs",
     status_code=200,
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN]))], )
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.ANALYST])),
+        Depends(permission_required([UserPermission.MONITORING]))], )
 async def get_system_logs(log_type: str | None = Query(None), date: str | None = Query(None), date_range: str | None = Query(None), page: int = Query(1), limit: int = Query(200)):
     try:
         flushed_at = await redis_controller.getInstance().invoke_trigger(REDIS_COMMANDS.S_GET_STRING, [SYSTEM_LOG_FLUSHED_AT_KEY, None, None])
