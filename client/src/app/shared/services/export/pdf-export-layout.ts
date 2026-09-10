@@ -103,7 +103,7 @@ export function drawInstitutionalCover(doc: jsPDF, options: InstitutionalCoverOp
   doc.setLineWidth(0.55);
   doc.line(margin, contentsY + 13, pageWidth - margin, contentsY + 13);
 
-  const sectionRows = options.sections.slice(0, 3);
+  const sectionRows = options.sections.slice(0, 8);
   while (sectionRows.length < 3) {
     sectionRows.push(['Executive Overview', 'Detailed Intelligence', 'Supporting Evidence'][sectionRows.length]);
   }

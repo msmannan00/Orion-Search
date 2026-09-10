@@ -984,8 +984,12 @@ async def ipscanner(param: NetIntelDeepScanRequest = Body(...), force_new: bool 
     status_code=200,
     dependencies=SCAN_WITH_LIMITER_DEPS,
 )
-async def url_vulnerability_scan(param: UrlVulnerabilityScanRequest = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def url_vulnerability_scan(request: Request, param: UrlVulnerabilityScanRequest = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     await _validate_public_scan_target(param.domain)
+    if str(param.depth).lower() == "full":
+        tenant = getattr(request.state, "tenant", None)
+        if current_user.role != user_role.ADMIN or not getattr(tenant, "is_default", False):
+            raise HTTPException(status_code=403, detail="Full scan is restricted to root tenant administrators")
     await AuditLogManager.get_instance().search_audit(current_user, "url_vulnerability_scan", param.domain+", depth: "+param.depth)
     return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/url_vulnerability_scan", payload=param.model_dump(), metadata={"title": "URL Vulnerability Scan", "target": param.domain}, runner=lambda: search_model.getInstance().network_intel(param, "url_vulnerability_scan", user_id=str(current_user.id), force_new=True), force_new=force_new)
 

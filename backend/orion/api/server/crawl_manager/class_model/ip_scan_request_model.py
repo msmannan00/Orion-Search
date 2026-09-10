@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -11,9 +11,10 @@ class IPScanRequest(BaseModel):
 
 class NetIntelDeepScanRequest(BaseModel):
     ip: str
+    depth: Optional[str] = "medium"
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"ip": "8.8.8.8"}})
+        json_schema_extra={"example": {"ip": "8.8.8.8", "depth": "medium"}})
 
 
 class ResolveIPRequest(BaseModel):

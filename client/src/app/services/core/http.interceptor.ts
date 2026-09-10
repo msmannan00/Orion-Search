@@ -93,7 +93,7 @@ export const httpInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
       if (isGatewayMaintenance) {
         if (!maintenancePageLoading) {
           maintenancePageLoading = true;
-          window.location.replace('/static/maintenance.html');
+          window.location.reload();
         }
         return throwError(() => error);
       }
