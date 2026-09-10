@@ -455,7 +455,7 @@ if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
     fi
 fi
 
-compose pull --include-deps --ignore-buildable --policy missing "${compose_up_services[@]}"
+compose up -d --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
 
 up_extra_args=()
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ] && [ "$EXTRA_FLAG" = "-full" ]; then
