@@ -462,7 +462,7 @@ if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ] && [ "$EXTRA_FLAG" = "-full" ]
     up_extra_args=(--force-recreate)
 fi
 
-compose up --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
+compose up -d --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
 
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
     compose exec -T nginx nginx -t
