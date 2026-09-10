@@ -1,4 +1,7 @@
+import { stubExtensionPresence } from './08-social-extension.controller';
+
 export function setupManageProfilesStubs() {
+  stubExtensionPresence(true);
   cy.intercept('GET', '**/api/extension/session', {
     statusCode: 200,
     body: { extension_connected: true }

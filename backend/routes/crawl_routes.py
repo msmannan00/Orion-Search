@@ -47,7 +47,7 @@ async def parser():
 @crawl_routes.get(
     "/api/profile/feeder/catalog",
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.MEMBER, user_role.ANALYST])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def get_feeder_catalog(current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().get_catalog(current_user)
 
@@ -55,7 +55,7 @@ async def get_feeder_catalog(current_user=Depends(get_current_user)):
 @crawl_routes.get(
     "/api/profile/feeder/scripts",
     include_in_schema=False,
-    dependencies=[Depends(role_required([user_role.ADMIN])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
+    dependencies=[Depends(role_required([user_role.ADMIN, user_role.MEMBER, user_role.ANALYST])), Depends(default_tenant_required), Depends(license_required("module:feeder"))], )
 async def get_feeder_scripts(rule_key: str | None = None, entry_type: str | None = None, page: int = 1, limit: int = 1000, current_user=Depends(get_current_user)):
     return await FeederManager.get_instance().list_scripts(current_user, rule_key=rule_key, page=page, limit=limit, entry_type=entry_type)
 
