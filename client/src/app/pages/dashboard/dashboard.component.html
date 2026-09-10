@@ -46,7 +46,8 @@
     [message]="duplicatePrompt.message"
     [confirmLabel]="'Run New Scan'"
     [warning]="true"
-    [showCancel]="false"
+    [showCancel]="true"
+    [cancelLabel]="'Show existing result'"
     (confirmed)="handleDuplicateScanChoice($event)">
   </app-confirmation-popup>
 }
