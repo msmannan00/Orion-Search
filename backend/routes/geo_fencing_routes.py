@@ -52,10 +52,9 @@ async def stream_map_entities(param: search_map_entities_param_model = Body(...)
         stream,
         media_type="application/x-ndjson",
         headers={
-            "Cache-Control": "no-cache, no-transform",
+            "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-            "Content-Encoding": "identity",
         },
     )
 
