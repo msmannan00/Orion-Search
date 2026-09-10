@@ -10,10 +10,7 @@ import urllib.request
 
 BASE_URL = "https://api.codacy.com/api/v3"
 DEFAULT_TOOLS = ("ESLint",)
-DEFAULT_PATTERNS = (
-    "ESLint8_@typescript-eslint_no-unnecessary-condition",
-    "ESLint8_no-unused-vars",
-)
+DEFAULT_PATTERNS = ()
 
 
 def normalize(value: str) -> str:
@@ -82,6 +79,9 @@ def main() -> int:
         return 1
 
     patterns = args.patterns or list(DEFAULT_PATTERNS)
+    if not patterns:
+        print("No patterns configured to disable; Codacy result filtering is off (nothing to do).")
+        return 0
     wanted_tools = {normalize(name) for name in (args.tools or DEFAULT_TOOLS)}
     tools = list_tools(args, auth)
     if not tools:
