@@ -7,6 +7,7 @@ import { DnsEmailSecurity, DnsResult, IpRowState } from '../../../../shared/mode
 import { IpDetailComponent } from '../ip-detail/ip-detail.component';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-network-intel-dns-section',
@@ -23,6 +24,7 @@ export class DnsSectionComponent implements OnDestroy {
       this.elapsedNowMs.set(Date.now());
     }
   }, 1000);
+  private readonly dnsRecordOrder = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];
 
   readonly errorMessageInput = input<string | null>(null, { alias: 'errorMessage' });
   readonly ipRowsInput = input<IpRowState[]>([], { alias: 'ipRows' });
@@ -50,13 +52,11 @@ export class DnsSectionComponent implements OnDestroy {
     return this.ui.isEmbeddedInConsolidated(this.router.url);
   }
 
-  private readonly dnsRecordOrder = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];
-
   get dnsRecordGroups(): { type: string; values: string[] }[] {
     const records = this.dnsResult()?.records ?? {};
     return this.dnsRecordOrder
-      .filter((type) => Array.isArray(records[type]) && (records[type] as string[]).length > 0)
-      .map((type) => ({ type, values: records[type] as string[] }));
+      .filter((type) => Array.isArray(getOwnProperty(records, type)) && (getOwnProperty(records, type) as string[]).length > 0)
+      .map((type) => ({ type, values: getOwnProperty(records, type) as string[] }));
   }
 
   get emailSecurity(): DnsEmailSecurity | null {
@@ -65,7 +65,7 @@ export class DnsSectionComponent implements OnDestroy {
 
   get hasDnsRecords(): boolean {
     const email = this.emailSecurity;
-    return this.dnsRecordGroups.length > 0 || !!(email?.spf || email?.dmarc);
+    return this.dnsRecordGroups.length > 0 || !!email?.spf || !!email?.dmarc;
   }
 
   get progressValue(): number {
