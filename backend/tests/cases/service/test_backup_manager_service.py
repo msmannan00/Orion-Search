@@ -979,7 +979,7 @@ def test_restore_never_writes_into_the_live_log_directory(tmp_path):
     _run(manager._run_restore_engine(source_dir))
 
     assert all("logs" not in target.parts for target in targets), targets
-    assert targets == [CONSTANTS.BASE_DIR / "static" / "resource"]
+    assert targets == [CONSTANTS.BASE_DIR / "static" / "resource", CONSTANTS.S_SESSION_RESOURCE_DIR]
 
 
 def test_backup_still_archives_the_logs_directory(tmp_path):
