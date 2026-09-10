@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import warnings
 from datetime import datetime
 from typing import Any, List, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
+
+warnings.filterwarnings("ignore", message=r'Field name "schema"', category=UserWarning)
 
 
 class social_scan_status(BaseModel):

@@ -224,10 +224,22 @@ class ProfileManager:
         )
         if session is None:
             return None
+        session_path = CONSTANTS.S_SESSION_RESOURCE_DIR / user_key / session.platform / session.file_name
+        if not session_path.exists():
+            if CONSTANTS.S_SESSION_RESOURCE_DIR.exists():
+                await self._prune_orphan_session(session, session_path)
+            return None
         state = await self._read_session_state(current_user, user_key, session.platform, session.file_name)
         if state is None:
-            log.g().w(f"Session file unreadable: {CONSTANTS.S_SESSION_RESOURCE_DIR / user_key / session.platform / session.file_name}")
+            log.g().w(f"Session file unreadable: {session_path}")
         return state
+
+    async def _prune_orphan_session(self, session, session_path):
+        try:
+            await self._engine.delete(session)
+            log.g().i(f"Pruned orphaned social session (file missing): {session_path}")
+        except Exception as ex:
+            log.g().w(f"Failed to prune orphaned social session {session_path}: {str(ex)}")
 
     @staticmethod
     def _seed_payload(state: dict) -> dict:

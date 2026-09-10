@@ -443,7 +443,7 @@ docker network create --driver bridge orion_nexus_backend 2>/dev/null || true
 compose_up_services=()
 
 if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
-    compose_up_services=(web nginx)
+    compose_up_services=(web nginx documentation)
 elif [ "$COMPOSE_FILE" = "docker-compose-production.yml" ] && is_nginx_running; then
     compose_up_services=("${PRODUCTION_SERVICES[@]}")
 fi
@@ -462,7 +462,7 @@ if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ] && [ "$EXTRA_FLAG" = "-full" ]
     up_extra_args=(--force-recreate)
 fi
 
-compose up -d --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
+compose up --pull missing "${up_extra_args[@]}" "${compose_up_services[@]}"
 
 if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
     compose exec -T nginx nginx -t

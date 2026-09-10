@@ -260,6 +260,7 @@ class BackupManager:
         await asyncio.to_thread(self._copy_folder, CONSTANTS.BASE_DIR / "workspace" / "logs", backup_dir / "logs")
         await step(4, "Copying resources")
         await asyncio.to_thread(self._copy_folder, CONSTANTS.BASE_DIR / "static" / "resource", backup_dir / "resource")
+        await asyncio.to_thread(self._copy_folder, CONSTANTS.S_SESSION_RESOURCE_DIR, backup_dir / "session_data")
         await step(5, "Finalizing")
 
         manifest["completed"] = True
@@ -436,6 +437,7 @@ class BackupManager:
         await asyncio.to_thread(self._restore_arango, source_dir / "arango")
         await self._restore_elastic(source_dir / "elastic")
         await asyncio.to_thread(self._restore_folder, source_dir / "resource", CONSTANTS.BASE_DIR / "static" / "resource")
+        await asyncio.to_thread(self._restore_folder, source_dir / "session_data", CONSTANTS.S_SESSION_RESOURCE_DIR)
 
     async def _validate_restore(self, manifest=None):
         try:
