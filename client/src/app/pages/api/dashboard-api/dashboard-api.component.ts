@@ -363,7 +363,7 @@ export class DashboardApiComponent extends ValuePresentationBase implements OnIn
               ? normalized
               : this.asResponse(normalized);
             this.breachData = (this.cardsData && this.cardsData.length > 0) ? this.cardsData[0] : null;
-            this.expandedResultIndex = this.genericItems.length > 0 ? 0 : null;
+            this.expandedResultIndex = this.genericItems.length === 1 ? 0 : null;
           }
           this.displayQ1 = this.q1;
           this.displayQ2 = this.q2;
