@@ -191,12 +191,11 @@ class ProfileManager:
                 return await self._store_verification(record, False, username, "user_already_exists")
         return await self._store_verification(record, verified, username, str(reply.get("error") or ""))
 
-    async def _read_session_state(self, current_user, user_key: str, safe_platform: str, file_name: str) -> dict | None:
-        path = CONSTANTS.S_SESSION_RESOURCE_DIR / user_key / safe_platform / file_name
+    @staticmethod
+    def read_session_state_file(path, cipher: Fernet) -> dict | None:
         if not path.exists():
             return None
         try:
-            cipher = await self._tenant_cipher(current_user)
             raw = cipher.decrypt(path.read_bytes())
             with zipfile.ZipFile(io.BytesIO(raw)) as archive:
                 state = json.loads(archive.read("session.json").decode("utf-8"))
@@ -204,6 +203,12 @@ class ProfileManager:
             return None
         state["cookies"] = [c for c in (state.get("cookies") or []) if isinstance(c, dict) and c.get("name")]
         return state
+
+    async def _read_session_state(self, current_user, user_key: str, safe_platform: str, file_name: str) -> dict | None:
+        return self.read_session_state_file(
+            CONSTANTS.S_SESSION_RESOURCE_DIR / user_key / safe_platform / file_name,
+            await self._tenant_cipher(current_user),
+        )
 
     async def get_all_social_profile_records(self) -> list[db_social_profile_management_model]:
         return await self._engine.find(db_social_profile_management_model)

@@ -335,6 +335,14 @@ class CaseTask(EmbeddedModel):
     completedAt: Optional[datetime] = None
 
 
+class CaseCommunication(EmbeddedModel):
+    communicationId: str
+    name: str
+    url: str
+    platform: str = ""
+    sessionResourceId: str = ""
+
+
 class CaseLink(EmbeddedModel):
     targetCaseId: str
     relationship: CaseLinkRelationship = Field(default=CaseLinkRelationship.RELATED)
@@ -400,6 +408,7 @@ class db_case_model(Model):
     tasks: List[CaseTask] = Field(default_factory=list)
     comments: List[CaseComment] = Field(default_factory=list)
     linkedCases: List[CaseLink] = Field(default_factory=list)
+    communications: List[CaseCommunication] = Field(default_factory=list)
     shares: List[CaseShare] = Field(default_factory=list)
 
     closure: Optional[CaseClosure] = None

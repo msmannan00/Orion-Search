@@ -1,7 +1,7 @@
 import { ReportFeedbackModel } from '../../../../../shared/partials/report-interactions/models/report-feedback.model';
-import { ArtifactReportOption, Case, CaseAnalyst, CaseArtifact, CaseArtifactFile, CaseClosure, CaseEntity, CaseLink, CaseTask } from '../case.model';
+import { ArtifactReportOption, Case, CaseAnalyst, CaseArtifact, CaseArtifactFile, CaseClosure, CaseCommunication, CaseEntity, CaseLink, CaseTask } from '../case.model';
 
-export type CaseDetailsEditSection = 'caseDetails' | 'primaryEntity' | 'relatedEntities' | 'artifacts' | 'tasks' | 'linkedCases';
+export type CaseDetailsEditSection = 'caseDetails' | 'primaryEntity' | 'relatedEntities' | 'artifacts' | 'tasks' | 'linkedCases' | 'communications';
 
 export abstract class CaseDetailsStore {
   abstract caseData: Case | null;
@@ -12,11 +12,13 @@ export abstract class CaseDetailsStore {
   abstract isAddingArtifact: boolean;
   abstract isAddingTask: boolean;
   abstract isAddingLinkedCase: boolean;
+  abstract isAddingCommunication: boolean;
   abstract isClosingCase: boolean;
   abstract newRelatedEntity: CaseEntity | null;
   abstract newArtifact: CaseArtifact | null;
   abstract newTask: CaseTask | null;
   abstract newLinkedCase: CaseLink | null;
+  abstract newCommunication: CaseCommunication | null;
   abstract newClosure: CaseClosure | null;
   abstract analysts: CaseAnalyst[];
   abstract accessibleCases: Case[];
@@ -65,6 +67,12 @@ export abstract class CaseDetailsStore {
   abstract removeLinkedCase(index: number): void;
   abstract saveNewLinkedCase(): void;
   abstract goToLinkedCase(caseId: string): void;
+  abstract openAddCommunication(): void;
+  abstract saveNewCommunication(): void;
+  abstract saveCommunication(communication: CaseCommunication): void;
+  abstract removeCommunication(communicationId: string): void;
+  abstract openCommunication(communication: CaseCommunication): void;
+  abstract isCommunicationBusy(communication: CaseCommunication): boolean;
   abstract openCloseCase(): void;
   abstract openEditClosure(): void;
   abstract saveClosure(): void;

@@ -1,8 +1,9 @@
 import { ChangeDetectorRef, Component, forwardRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { finalize } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReportFeedbackModel } from '../../../../../shared/partials/report-interactions/models/report-feedback.model';
-import { ArtifactReportOption, Case, CaseAnalyst, CaseArtifact, CaseArtifactFile, CaseClosure, CaseCommentRequest, CaseEntity, CaseLink, CaseTask, CaseUpdateRequest, TaskStatus } from '../case.model';
+import { ArtifactReportOption, Case, CaseAnalyst, CaseArtifact, CaseArtifactFile, CaseClosure, CaseCommentRequest, CaseCommunication, CaseCommunicationRequest, CaseEntity, CaseLink, CaseTask, CaseUpdateRequest, TaskStatus } from '../case.model';
 import { DEFAULT_CASE_ARTIFACT_TEMPLATE, DEFAULT_CASE_TASK_TEMPLATE, DEFAULT_RELATED_CASE_ENTITY_TEMPLATE } from '../case-management.defaults';
 import { CaseManagement } from '../../case-management-service/case-management';
 import { MessageNotificationService } from '../../../../../services/message_notification/message-notification.service';
@@ -10,6 +11,7 @@ import { ConfirmationPopupComponent } from '../../../../../shared/partials/confi
 import { HttpClient } from '@angular/common/http';
 import { CaseArtifactsSectionComponent } from './case-artifacts-section/case-artifacts-section';
 import { CaseClosureSectionComponent } from './case-closure-section/case-closure-section';
+import { CaseCommunicationsSectionComponent } from './case-communications-section/case-communications-section';
 import { CaseLinkedCasesSectionComponent } from './case-linked-cases-section/case-linked-cases-section';
 import { CaseRelatedEntitiesSectionComponent } from './case-related-entities-section/case-related-entities-section';
 import { CaseTasksSectionComponent } from './case-tasks-section/case-tasks-section';
@@ -40,6 +42,7 @@ import { getOwnProperty } from '../../../../../shared/utils/type-guards.util';
     CaseArtifactsSectionComponent,
     CaseClosureSectionComponent,
     CaseCommentsSectionComponent,
+    CaseCommunicationsSectionComponent,
     CaseDetailsSkeletonComponent,
     CaseHeaderActionsComponent,
     CaseLinkedCasesSectionComponent,
@@ -67,12 +70,15 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
   isAddingArtifact = false;
   isAddingTask = false;
   isAddingLinkedCase = false;
+  isAddingCommunication = false;
   isClosingCase = false;
   newRelatedEntity: CaseEntity | null = null;
   newArtifact: CaseArtifact | null = null;
   newTask: CaseTask | null = null;
   newLinkedCase: CaseLink | null = null;
+  newCommunication: CaseCommunication | null = null;
   newClosure: CaseClosure | null = null;
+  readonly busyCommunicationIds = new Set<string>();
   analysts: CaseAnalyst[] = [];
   accessibleCases: Case[] = [];
   isCommentSaving = false;
@@ -175,6 +181,7 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
         caseData.tasks = caseData.tasks || [];
         caseData.comments = caseData.comments || [];
         caseData.linkedCases = caseData.linkedCases || [];
+        caseData.communications = caseData.communications || [];
         caseData.closure = caseData.closure ?? null;
         caseData.assignedAnalystIds = caseData.assignedAnalystIds || [];
         caseData.assignedAnalysts = caseData.assignedAnalysts ?? [];
@@ -227,6 +234,7 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     editedCase.assignedAnalystIds = editedCase.assignedAnalystIds || [];
     editedCase.comments = editedCase.comments || [];
     editedCase.linkedCases = editedCase.linkedCases || [];
+    editedCase.communications = editedCase.communications || [];
     editedCase.closure = editedCase.closure ?? null;
     editedCase.entities = (editedCase.entities || []).map(entity => ensureEntityDefaults(entity));
     editedCase.artifacts = (editedCase.artifacts || []).map(artifact => ensureArtifactDefaults(artifact));
@@ -683,6 +691,7 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     this.isAddingArtifact = false;
     this.isAddingTask = false;
     this.isAddingLinkedCase = false;
+    this.isAddingCommunication = false;
     this.isClosingCase = false;
 
     this.newRelatedEntity = null;
@@ -691,6 +700,7 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     this.pendingNewArtifactFileInput = null;
     this.newTask = null;
     this.newLinkedCase = null;
+    this.newCommunication = null;
     this.newClosure = null;
   }
 
@@ -850,6 +860,23 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     };
   }
 
+  openAddCommunication(): void {
+    if (!this.canManageCases()) {
+      return;
+    }
+    if (!this.caseData || this.isEditing) {
+      return;
+    }
+
+    this.cancelAllSectionModes();
+    this.isAddingCommunication = true;
+    this.newCommunication = {
+      communicationId: '',
+      name: '',
+      url: ''
+    };
+  }
+
   openAddLinkedCase(): void {
     if (!this.canManageCases()) {
       return;
@@ -923,6 +950,7 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     updated.tasks = updated.tasks || [];
     updated.comments = updated.comments || [];
     updated.linkedCases = updated.linkedCases || [];
+    updated.communications = updated.communications || [];
     updated.assignedAnalystIds = updated.assignedAnalystIds || [];
     updated.closure = updated.closure ?? null;
   }
@@ -1261,6 +1289,158 @@ export class CaseDetails extends CaseDetailsStore implements OnInit {
     draft.linkedCases = [...(draft.linkedCases || []), this.newLinkedCase];
 
     this.saveCasePayload(cleanCaseForSave(draft), 'Linked case added successfully');
+  }
+
+  saveNewCommunication(): void {
+    if (!this.requireManageCases() || !this.caseData || !this.newCommunication) {
+      return;
+    }
+
+    const payload = this.buildCommunicationRequest(this.newCommunication);
+
+    if (!payload) {
+      return;
+    }
+
+    this.caseService.addCommunication(this.caseData.caseId, payload).subscribe({
+      next: updated => {
+        this.applyCommunicationResult(updated, 'External communication added successfully'); 
+      },
+      error: err => {
+        this.showCommunicationError(err); 
+      }
+    });
+  }
+
+  saveCommunication(communication: CaseCommunication): void {
+    if (!this.requireManageCases() || !this.caseData) {
+      return;
+    }
+
+    const payload = this.buildCommunicationRequest(communication);
+
+    if (!payload) {
+      return;
+    }
+
+    this.caseService.updateCommunication(this.caseData.caseId, communication.communicationId, payload).subscribe({
+      next: updated => {
+        this.applyCommunicationResult(updated, 'External communication updated successfully'); 
+      },
+      error: err => {
+        this.showCommunicationError(err); 
+      }
+    });
+  }
+
+  removeCommunication(communicationId: string): void {
+    if (!this.requireManageCases() || !this.caseData) {
+      return;
+    }
+
+    this.caseService.deleteCommunication(this.caseData.caseId, communicationId).subscribe({
+      next: updated => {
+        this.applyCommunicationResult(updated, 'External communication deleted successfully'); 
+      },
+      error: err => {
+        this.showCommunicationError(err); 
+      }
+    });
+  }
+
+  isCommunicationBusy(communication: CaseCommunication): boolean {
+    return this.busyCommunicationIds.has(communication.communicationId);
+  }
+
+  openCommunication(communication: CaseCommunication): void {
+    if (!this.caseData || this.isCommunicationBusy(communication)) {
+      return;
+    }
+
+    this.busyCommunicationIds.add(communication.communicationId);
+
+    this.caseService.openCommunication(this.caseData.caseId, communication.communicationId).subscribe(result => {
+      if (result.error) {
+        this.busyCommunicationIds.delete(communication.communicationId);
+        this.messageNotificationService.show(this.getCommunicationSessionError(result.error));
+        return;
+      }
+
+      this.messageNotificationService.show(this.translate('External communication opened in the browser extension'), 'success');
+      this.captureCommunicationSession(communication);
+    });
+  }
+
+  private captureCommunicationSession(communication: CaseCommunication): void {
+    if (!this.caseData) {
+      return;
+    }
+
+    this.caseService.saveCommunicationSession(this.caseData.caseId, communication.communicationId)
+      .pipe(finalize(() => this.busyCommunicationIds.delete(communication.communicationId)))
+      .subscribe(result => {
+        if (result.case) {
+          this.applyCommunicationResult(result.case, 'Session saved successfully');
+          return;
+        }
+
+        if (result.error && !this.isSilentSessionOutcome(result.error)) {
+          this.messageNotificationService.show(this.getCommunicationSessionError(result.error));
+        }
+      });
+  }
+
+  private isSilentSessionOutcome(error: string): boolean {
+    return error === 'extension_timeout' || error === 'no_session_data' || error === 'communication_not_open';
+  }
+
+  private applyCommunicationResult(updated: Case, successMessage: string): void {
+    this.normalizeCaseCollections(updated);
+    this.caseData = updated;
+    this.isEditing = false;
+    this.activeEditSection = null;
+    this.editedCase = null;
+    this.cancelAllSectionModes();
+    this.messageNotificationService.show(this.translate(successMessage), 'success');
+  }
+
+  private showCommunicationError(err: unknown): void {
+    const error = err as { error?: { detail?: string }; message?: string };
+    this.messageNotificationService.show(error?.error?.detail ?? error?.message ?? this.translate('Failed to save changes'));
+  }
+
+  private buildCommunicationRequest(communication: CaseCommunication): CaseCommunicationRequest | null {
+    const name = communication.name?.trim() ?? '';
+    const url = communication.url?.trim() ?? '';
+
+    if (!name) {
+      this.messageNotificationService.show(this.translate('External communication name is required'));
+      return null;
+    }
+
+    if (!this.isValidCommunicationUrl(url)) {
+      this.messageNotificationService.show(this.translate('External communication URL must be a valid http or https address'));
+      return null;
+    }
+
+    return { name, url };
+  }
+
+  private isValidCommunicationUrl(url: string): boolean {
+    try {
+      return ['http:', 'https:'].includes(new URL(url).protocol);
+    }
+    catch {
+      return false;
+    }
+  }
+
+  private getCommunicationSessionError(error: string): string {
+    if (error === 'extension_required') {
+      return this.translate('Connect the browser extension to open external communications');
+    }
+
+    return this.translate('Session could not be saved');
   }
 
   saveClosure(): void {
