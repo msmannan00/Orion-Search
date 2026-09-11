@@ -17,6 +17,7 @@ from orion.services.mongo_manager.shared_model.db_social_session_model import db
 from orion.services.mongo_manager.shared_model.db_social_profile_management_model import db_social_profile_management_model
 from orion.services.mongo_manager.shared_model.db_social_automation_result_model import db_social_automation_result_model
 from orion.services.mongo_manager.shared_model.db_alert_connector_model import db_alert_connector_model
+from orion.services.mongo_manager.shared_model.db_cronjob_status_model import db_cronjob_status_model
 from orion.services.mongo_manager.shared_model.db_takedown_request_model import db_takedown_request_model
 from orion.services.mongo_manager.shared_model.db_tenant_model import db_tenant_model
 from orion.services.mongo_manager.shared_model.db_auth_models import db_user_account, user_role
@@ -78,6 +79,7 @@ class mongo_controller:
         self.__engine.get_collection(db_social_profile_management_model).create_index([("user_id", 1)], unique=True)
         await self.__engine.get_collection(db_social_automation_result_model).create_index([("user_id", 1)], unique=True, name="unique_social_automation_result_user")
         await self.__engine.get_collection(db_alert_connector_model).create_index([("connector_type", 1), ("provider", 1), ("tenant_id", 1)], unique=True, name="unique_alert_connector_scope")
+        await self.__engine.get_collection(db_cronjob_status_model).create_index("job_name", unique=True)
         feeder_collection = self.__engine.get_collection(db_feeder_script_model)
         try:
             await feeder_collection.drop_index("name_1")

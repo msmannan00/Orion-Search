@@ -606,3 +606,76 @@ class ProfileManager:
 
     def _profile_response(self, profile: ManagedSocialProfile) -> SocialProfileResponse:
         return SocialProfileResponse(**profile.model_dump())
+
+    async def trigger_post_monitoring(self, current_user, persona_id: str):
+        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import db_cronjob_status_model
+        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == "social_loop")
+        if cron_record and cron_record.status == "running":
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Daily run scheduler is currently running. Please try again 5 minutes later.")
+
+        record = await self._get_or_create_social_record(current_user)
+        persona = self._find_persona(record, persona_id)
+        
+        now = datetime.now(UTC)
+        if persona.last_manual_post_trigger:
+            if persona.last_manual_post_trigger.date() == now.date():
+                from fastapi import HTTPException
+                raise HTTPException(status_code=400, detail="Manual post can only be triggered once a day for a persona.")
+                
+        persona.last_manual_post_trigger = now
+        await self._engine.save(record)
+        
+        from orion.management.jobs.social_profile.social_profile_job import social_profile_job
+        job = social_profile_job.get_instance()
+        
+        import uuid
+        from orion.helper_manager.env_handler import env_handler
+        
+        for profile in record.profiles:
+            if profile.assigned_persona_id == persona_id and profile.session_id:
+                session_state = await self.read_profile_session_state(current_user, profile)
+                if session_state:
+                    task_id = str(uuid.uuid4())
+                    if env_handler.get_instance().env("PRODUCTION", "0") == "1":
+                        base_url = env_handler.get_instance().env("ORION_WEB_INTERNAL_URL")
+                    else:
+                        base_url = "http://trusted-web-main:8070"
+                    cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
+                    
+                    import asyncio
+                    asyncio.create_task(job.run_posting(profile, persona, session_state, cb_url, record.user_id))
+                    
+        return {"status": "success", "message": "Post monitoring triggered"}
+
+    async def trigger_ad_monitoring(self, current_user, persona_id: str):
+        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import db_cronjob_status_model
+        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == "social_loop")
+        if cron_record and cron_record.status == "running":
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Daily run scheduler is currently running. Please try again 5 minutes later.")
+
+        record = await self._get_or_create_social_record(current_user)
+        persona = self._find_persona(record, persona_id)
+        
+        from orion.management.jobs.social_profile.social_profile_job import social_profile_job
+        job = social_profile_job.get_instance()
+        
+        import uuid
+        from orion.helper_manager.env_handler import env_handler
+        
+        for profile in record.profiles:
+            if profile.assigned_persona_id == persona_id and profile.session_id:
+                session_state = await self.read_profile_session_state(current_user, profile)
+                if session_state:
+                    task_id = str(uuid.uuid4())
+                    if env_handler.get_instance().env("PRODUCTION", "0") == "1":
+                        base_url = env_handler.get_instance().env("ORION_WEB_INTERNAL_URL")
+                    else:
+                        base_url = "http://trusted-web-main:8070"
+                    cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
+                    
+                    import asyncio
+                    asyncio.create_task(job.run_ad_monitoring(profile, persona, session_state, cb_url, record.user_id))
+                    
+        return {"status": "success", "message": "Ad monitoring triggered"}

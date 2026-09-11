@@ -109,3 +109,15 @@ async def social_profile_callback(data: SocialProfileCallbackRequest = Body(...)
 @manage_profiles_routes.get("/api/manage-profiles/results/{profile_id}", response_model=SocialProfileResultsResponse, dependencies=route_permissions)
 async def get_profile_results(profile_id: str, current_user=Depends(get_current_user)):
     return await ProfileManager.get_instance().get_profile_results(current_user, profile_id)
+
+
+
+
+@manage_profiles_routes.post("/api/manage-profiles/personas/{persona_id}/trigger-post-monitoring", dependencies=route_permissions)
+async def trigger_post_monitoring(persona_id: str, current_user=Depends(get_current_user)):
+    return await ProfileManager.get_instance().trigger_post_monitoring(current_user, persona_id)
+
+
+@manage_profiles_routes.post("/api/manage-profiles/personas/{persona_id}/trigger-ad-monitoring", dependencies=route_permissions)
+async def trigger_ad_monitoring(persona_id: str, current_user=Depends(get_current_user)):
+    return await ProfileManager.get_instance().trigger_ad_monitoring(current_user, persona_id)

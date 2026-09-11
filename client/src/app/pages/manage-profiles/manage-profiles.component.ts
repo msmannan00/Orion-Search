@@ -346,6 +346,37 @@ export class ManageProfilesComponent {
     this.confirmationMessage.set('Are you sure you want to remove this assignment?');
   }
 
+  triggerPostMonitoring(personaId: string, name: string): void {
+    this.triggerMonitoring('post', personaId, name);
+  }
+
+  triggerAdMonitoring(personaId: string, name: string): void {
+    this.triggerMonitoring('ad', personaId, name);
+  }
+
+  private triggerMonitoring(type: 'post' | 'ad', personaId: string, name: string): void {
+    if (type === 'post') {
+      this.service.triggerPostMonitoring(personaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.notification.show(`Post monitoring triggered for ${name}`, 'success'); 
+        },
+        error: (err) => {
+          this.notification.show(err?.error?.detail ?? `Failed to trigger post monitoring for ${name}`, 'fail'); 
+        }
+      });
+    }
+    else {
+      this.service.triggerAdMonitoring(personaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.notification.show(`Ad monitoring triggered for ${name}`, 'success'); 
+        },
+        error: (err) => {
+          this.notification.show(err?.error?.detail ?? `Failed to trigger ad monitoring for ${name}`, 'fail'); 
+        }
+      });
+    }
+  }
+
   personaOptions(): UiDropdownOption[] {
     return this.personas().map(persona => ({ key: persona.persona_id, label: persona.name }));
   }

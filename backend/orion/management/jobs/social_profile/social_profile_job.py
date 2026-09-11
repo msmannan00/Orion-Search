@@ -37,58 +37,66 @@ class social_profile_job:
             social_profile_job.__instance = self
             self._profile_manager = ProfileManager.get_instance()
             self._posts_cache = {}
+            self.is_running = False
 
 
     async def run_daily_social_profiles(self):
-        records = await self._profile_manager.get_all_social_profile_records()
+        if self.is_running:
+            return {"status": "skipped", "message": "Already running"}
+            
+        self.is_running = True
+        try:
+            records = await self._profile_manager.get_all_social_profile_records()
 
-        processed_profile_count = 0
-        skipped_profile_count = 0
-        error_count = 0
-        for record in records:
-            current_user = await self._profile_manager.get_user_for_social_record(record)
-            if current_user is None:
-                skipped_profile_count += len(record.profiles or [])
-                continue
-
-            personas = {persona.persona_id: persona for persona in record.personas}
-            for profile in record.profiles:
-                try:
-                    if not profile.assigned_persona_id:
-                        skipped_profile_count += 1
-                        continue
-                    if not profile.session_id:
-                        skipped_profile_count += 1
-                        continue
-                    if not profile.purposes:
-                        skipped_profile_count += 1
-                        continue
-
-                    persona = personas.get(profile.assigned_persona_id)
-                    if persona is None:
-                        skipped_profile_count += 1
-                        continue
-
-                    session_state = await self._profile_manager.read_profile_session_state(current_user, profile)
-                    if session_state is None:
-                        skipped_profile_count += 1
-                        continue
-
-                    await self._run_profile_purposes(profile, persona, session_state, record.user_id)
-                    processed_profile_count += 1
-                except Exception as exc:
-                    error_count += 1
-                    log.g().e(f"Social profile daily processing failed for profile_id={profile.profile_id}: {exc}")
-
-        return {
-            "status": "success",
-            "mail_status": "sent",
-            "message": "Social profile daily job finished.",
-            "record_count": len(records),
-            "processed_profile_count": processed_profile_count,
-            "skipped_profile_count": skipped_profile_count,
-            "error_count": error_count,
-        }
+            processed_profile_count = 0
+            skipped_profile_count = 0
+            error_count = 0
+            for record in records:
+                current_user = await self._profile_manager.get_user_for_social_record(record)
+                if current_user is None:
+                    skipped_profile_count += len(record.profiles or [])
+                    continue
+    
+                personas = {persona.persona_id: persona for persona in record.personas}
+                for profile in record.profiles:
+                    try:
+                        if not profile.assigned_persona_id:
+                            skipped_profile_count += 1
+                            continue
+                        if not profile.session_id:
+                            skipped_profile_count += 1
+                            continue
+                        if not profile.purposes:
+                            skipped_profile_count += 1
+                            continue
+    
+                        persona = personas.get(profile.assigned_persona_id)
+                        if persona is None:
+                            skipped_profile_count += 1
+                            continue
+    
+                        session_state = await self._profile_manager.read_profile_session_state(current_user, profile)
+                        if session_state is None:
+                            skipped_profile_count += 1
+                            continue
+    
+                        await self._run_profile_purposes(profile, persona, session_state, record.user_id)
+                        processed_profile_count += 1
+                    except Exception as exc:
+                        error_count += 1
+                        log.g().e(f"Social profile daily processing failed for profile_id={profile.profile_id}: {exc}")
+    
+            return {
+                "status": "success",
+                "mail_status": "sent",
+                "message": "Social profile daily job finished.",
+                "record_count": len(records),
+                "processed_profile_count": processed_profile_count,
+                "skipped_profile_count": skipped_profile_count,
+                "error_count": error_count,
+            }
+        finally:
+            self.is_running = False
 
     async def _wait_for_task(self, task_id: str, timeout_seconds: int = 300):
         redis_key = f"{REDIS_KEYS.SOCIAL_AUTOMATION_TASK}:{task_id}"
