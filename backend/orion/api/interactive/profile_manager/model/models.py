@@ -139,7 +139,7 @@ class SocialAutomationAdDetectionResultRequest(BaseModel):
     session_expired: bool = False
 
 
-class SocialAutomationCallbackRequest(BaseModel):
+class SocialAutomationResultRequest(BaseModel):
     user_id: str
     profile_id: str
     result_type: str

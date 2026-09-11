@@ -5,18 +5,19 @@ import re
 import zipfile
 from datetime import UTC, datetime, timezone
 from uuid import uuid4
+import asyncio
+
 
 from cryptography.fernet import Fernet
 
 from fastapi import HTTPException
-from fastapi.responses import Response
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 
 from orion.api.interactive.extension_manager.extension_socket_manager import extension_socket_manager
 from orion.api.interactive.profile_manager.constants.constant import MAX_SESSIONS_PER_PLATFORM, PLATFORMS_RESULT_KEY
-from orion.api.interactive.profile_manager.model.models import SocialAutomationCallbackRequest, SocialPersonaCreateRequest, SocialPersonaListResponse, SocialPersonaResponse, SocialPersonaUpdateRequest, SocialProfileAssignmentRequest, SocialProfileAssignmentResponse, SocialProfileCallbackRequest, SocialProfileCallbackResponse, SocialProfileConnectRequest, SocialProfileListResponse, SocialProfileResponse, SocialProfileResultsResponse, SocialProfileUpdateRequest
+from orion.api.interactive.profile_manager.model.models import SocialAutomationResultRequest, SocialPersonaCreateRequest, SocialPersonaListResponse, SocialPersonaResponse, SocialPersonaUpdateRequest, SocialProfileAssignmentRequest, SocialProfileAssignmentResponse, SocialProfileCallbackRequest, SocialProfileCallbackResponse, SocialProfileConnectRequest, SocialProfileListResponse, SocialProfileResponse, SocialProfileResultsResponse, SocialProfileUpdateRequest
 from orion.constants.constant import CONSTANTS
 from orion.services.encryption_manager.key_manager import KeyManager
 from orion.services.log_manager.log_controller import log
@@ -474,7 +475,7 @@ class ProfileManager:
         await self._engine.save(record)
         return SocialProfileCallbackResponse(message="Social profile callback received", profile_id=profile.profile_id, connection_status=profile.connection_status)
 
-    async def store_automation_result(self, data: SocialAutomationCallbackRequest):
+    async def store_automation_result(self, data: SocialAutomationResultRequest):
         record = await self._get_or_create_automation_result_record(data.user_id)
         now = datetime.now(UTC)
 
@@ -511,7 +512,7 @@ class ProfileManager:
             ))
             session_expired = result.session_expired
         else:
-            log.g().e(f"Automation callback with unknown result_type: {data.result_type}")
+            log.g().e(f"Automation result with unknown result_type: {data.result_type}")
             return {"status": "ignored"}
 
         record.updated_at = now
@@ -625,10 +626,9 @@ class ProfileManager:
         return SocialProfileResponse(**profile.model_dump())
 
     async def trigger_post_monitoring(self, current_user, persona_id: str):
-        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import db_cronjob_status_model
-        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == "social_loop")
-        if cron_record and cron_record.status == "running":
-            from fastapi import HTTPException
+        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import CronjobName, CronjobStatus, db_cronjob_status_model
+        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == CronjobName.SOCIAL_JOB)
+        if cron_record and cron_record.status == CronjobStatus.RUNNING:
             raise HTTPException(status_code=400, detail="Daily run scheduler is currently running. Please try again 5 minutes later.")
 
         record = await self._get_or_create_social_record(current_user)
@@ -637,8 +637,7 @@ class ProfileManager:
         now = datetime.now(UTC)
         if persona.last_manual_post_trigger:
             if persona.last_manual_post_trigger.date() == now.date():
-                from fastapi import HTTPException
-                raise HTTPException(status_code=400, detail="Manual post can only be triggered once a day for a persona.")
+                raise HTTPException(status_code=400, detail="Manual post can only be publish once a day for a profile.")
                 
         persona.last_manual_post_trigger = now
         await self._engine.save(record)
@@ -646,30 +645,19 @@ class ProfileManager:
         from orion.management.jobs.social_profile.social_profile_job import social_profile_job
         job = social_profile_job.get_instance()
         
-        import uuid
-        from orion.helper_manager.env_handler import env_handler
-        
         for profile in record.profiles:
             if profile.assigned_persona_id == persona_id and profile.session_id:
                 session_state = await self.read_profile_session_state(current_user, profile)
                 if session_state:
-                    task_id = str(uuid.uuid4())
-                    if env_handler.get_instance().env("PRODUCTION", "0") == "1":
-                        base_url = env_handler.get_instance().env("ORION_WEB_INTERNAL_URL")
-                    else:
-                        base_url = "http://trusted-web-main:8070"
-                    cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
-                    
-                    import asyncio
-                    asyncio.create_task(job.run_posting(profile, persona, session_state, cb_url, record.user_id))
-                    
+                    run_id = str(uuid4())
+                    asyncio.create_task(job.run_posting(profile, persona, session_state, run_id, record.user_id))
+
         return {"status": "success", "message": "Post monitoring triggered"}
 
     async def trigger_ad_monitoring(self, current_user, persona_id: str):
-        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import db_cronjob_status_model
-        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == "social_loop")
-        if cron_record and cron_record.status == "running":
-            from fastapi import HTTPException
+        from orion.services.mongo_manager.shared_model.db_cronjob_status_model import CronjobName, CronjobStatus, db_cronjob_status_model
+        cron_record = await self._engine.find_one(db_cronjob_status_model, db_cronjob_status_model.job_name == CronjobName.SOCIAL_LOOP)
+        if cron_record and cron_record.status == CronjobStatus.RUNNING:
             raise HTTPException(status_code=400, detail="Daily run scheduler is currently running. Please try again 5 minutes later.")
 
         record = await self._get_or_create_social_record(current_user)
@@ -678,21 +666,11 @@ class ProfileManager:
         from orion.management.jobs.social_profile.social_profile_job import social_profile_job
         job = social_profile_job.get_instance()
         
-        import uuid
-        from orion.helper_manager.env_handler import env_handler
-        
         for profile in record.profiles:
             if profile.assigned_persona_id == persona_id and profile.session_id:
                 session_state = await self.read_profile_session_state(current_user, profile)
                 if session_state:
-                    task_id = str(uuid.uuid4())
-                    if env_handler.get_instance().env("PRODUCTION", "0") == "1":
-                        base_url = env_handler.get_instance().env("ORION_WEB_INTERNAL_URL")
-                    else:
-                        base_url = "http://trusted-web-main:8070"
-                    cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
-                    
-                    import asyncio
-                    asyncio.create_task(job.run_ad_monitoring(profile, persona, session_state, cb_url, record.user_id))
-                    
+                    run_id = str(uuid4())
+                    asyncio.create_task(job.run_ad_monitoring(profile, persona, session_state, run_id, record.user_id))
+
         return {"status": "success", "message": "Ad monitoring triggered"}

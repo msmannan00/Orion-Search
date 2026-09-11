@@ -1,28 +1,19 @@
 import asyncio
-import json
-import os
-import tempfile
 import time
-from orion.helper_manager.env_handler import env_handler
-import urllib.request
 from datetime import datetime
 from typing import Any
 from orion.api.interactive.profile_manager.profile_manager import ProfileManager
 from orion.api.interactive.social_manager.social_model import social_model
+from orion.api.interactive.profile_manager.model.models import SocialAutomationResultRequest
 from orion.services.log_manager.log_controller import log
-from orion.services.redis_manager.redis_controller import redis_controller
-from orion.services.redis_manager.redis_enums import REDIS_COMMANDS, REDIS_KEYS
-from orion.services.mongo_manager.shared_model.db_social_profile_management_model import (
-    ManagedSocialProfile,
-    SocialPersona,
-    SocialProfilePurpose,
-)
+from orion.services.mongo_manager.shared_model.db_social_profile_management_model import (ManagedSocialProfile, SocialPersona, SocialProfilePurpose)
 
 
 class social_profile_job:
     __instance = None
     POST_TASK_TIMEOUT_SECONDS = 300
     AD_DETECTION_TASK_TIMEOUT_SECONDS = 900
+    POLL_INTERVAL_SECONDS = 5
 
     @staticmethod
     def get_instance():
@@ -98,45 +89,52 @@ class social_profile_job:
         finally:
             self.is_running = False
 
-    async def _wait_for_task(self, task_id: str, timeout_seconds: int = 300):
-        redis_key = f"{REDIS_KEYS.SOCIAL_AUTOMATION_TASK}:{task_id}"
-        redis_instance = redis_controller.getInstance()
+    async def _run_and_wait(self, key: str, payload: dict, timeout_seconds: int):
+        headers = social_model._social_headers(None, None)
         deadline = time.monotonic() + timeout_seconds
 
         while time.monotonic() < deadline:
-            if await redis_instance.invoke_trigger(REDIS_COMMANDS.S_GET_BOOL, [redis_key, None]):
-                await redis_instance.invoke_trigger(REDIS_COMMANDS.S_DELETE_KEY, [redis_key])
-                log.g().i(f"Task {task_id} completed successfully.")
-                return
-            await asyncio.sleep(1)
+            status_code, body = await social_model.getInstance().social_request(payload, key, headers)
 
-        await redis_instance.invoke_trigger(REDIS_COMMANDS.S_DELETE_KEY, [redis_key])
-        log.g().w(f"Task {task_id} timed out after {timeout_seconds}s. Starting next purpose.")
+            if status_code != 200 or not isinstance(body, dict):
+                log.g().e(f"Social automation request failed for {key}: {status_code} {body}")
+                return None
+
+            if body.get("status") == "error":
+                log.g().e(f"Social automation job failed for {key}: {body.get('message')}")
+                return None
+
+            if "result" in body:
+                log.g().i(f"Social automation job {body.get('job_id')} finished")
+                return body.get("result")
+
+            log.g().i(f"Social automation job {body.get('job_id')} pending: {body.get('step', '')}")
+            await asyncio.sleep(self.POLL_INTERVAL_SECONDS)
+
+        log.g().w(f"Social automation job for {key} timed out after {timeout_seconds}s")
+        return None
+
+    async def _store_result(self, result: Any):
+        if not isinstance(result, dict):
+            return
+        try:
+            data = SocialAutomationResultRequest.model_validate(result)
+            log.g().i(f"Automation Result: {data.result_type} for profile {data.profile_id}")
+            await self._profile_manager.store_automation_result(data)
+        except Exception as exc:
+            log.g().e(f"Failed to store automation result: {exc}")
 
     async def _run_profile_purposes(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], user_id: str):
         import uuid
         for purpose in profile.purposes:
-
-            task_id = str(uuid.uuid4())
-            if env_handler.get_instance().env("PRODUCTION", "0") == "1":
-                base_url = env_handler.get_instance().env("ORION_WEB_INTERNAL_URL")
-            else:
-                base_url = "http://trusted-web-main:8070"
-            cb_url = f"{base_url}/api/social/automation/callback?task_id={task_id}"
+            run_id = str(uuid.uuid4())
 
             if purpose == SocialProfilePurpose.POSTING:
-                await self.run_posting(profile, persona, session_state, cb_url, user_id)
-                timeout_seconds = self.POST_TASK_TIMEOUT_SECONDS
+                await self.run_posting(profile, persona, session_state, run_id, user_id)
             elif purpose == SocialProfilePurpose.AD_MONITORING:
-                await self.run_ad_monitoring(profile, persona, session_state, cb_url, user_id)
-                timeout_seconds = self.AD_DETECTION_TASK_TIMEOUT_SECONDS
-            else:
-                # Nothing was dispatched, so there is no callback to wait for.
-                continue
+                await self.run_ad_monitoring(profile, persona, session_state, run_id, user_id)
 
-            await self._wait_for_task(task_id, timeout_seconds=timeout_seconds)
-
-    async def run_posting(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], callback_url: str, user_id: str = "" ):
+    async def run_posting(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], run_id: str, user_id: str = "" ):
         log.g().i(f"Running posting for profile {profile.profile_id} on {profile.platform}")
         
         from datetime import timezone
@@ -187,52 +185,36 @@ class social_profile_job:
         caption = post_data.get("caption")
         
         try:
-            headers = social_model._social_headers(None, None)
             payload = {
-                "session_state": session_state,
+                "run_id": run_id,
+                "user_id": user_id,
+                "profile_id": profile.profile_id,
                 "platform": profile.platform,
                 "text": caption,
                 "image_url": image_url,
-                "callback_url": callback_url,
-                "gender": gender_val,
-                "age_group": age_group_val,
-                "interests": interests_list,
-                "user_id": user_id,
-                "profile_id": profile.profile_id
+                "session_state": session_state,
             }
-            status_code, resp_body = await social_model.getInstance().social_request(
-                payload,
-                "automation/post",
-                headers
-            )
-            log.g().i(f"run_posting API response: {status_code} {resp_body}")
-                
+            result = await self._run_and_wait("automation/post", payload, self.POST_TASK_TIMEOUT_SECONDS)
+            await self._store_result(result)
+
         except Exception as e:
             log.g().e(f"Failed to run posting for profile {profile.profile_id}: {e}")
 
-    async def run_ad_monitoring(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], callback_url: str, user_id: str = "" ):
+    async def run_ad_monitoring(self, profile: ManagedSocialProfile, persona: SocialPersona, session_state: dict[str, Any], run_id: str, user_id: str = "" ):
 
         log.g().i(f"Running ad monitoring for profile {profile.profile_id} on {profile.platform}")
         
         try:
-            headers = social_model._social_headers(None, None)
             payload = {
-                "session_state": session_state, 
-                "platform": profile.platform,
-                "callback_url": callback_url,
-                "gender": persona.gender.value if persona.gender else "",
-                "age_group": persona.age_group.value if persona.age_group else "",
-                "interests": persona.interests or [],
+                "run_id": run_id,
                 "user_id": user_id,
-                "profile_id": profile.profile_id
+                "profile_id": profile.profile_id,
+                "platform": profile.platform,
+                "session_state": session_state,
             }
-            status_code, resp_body = await social_model.getInstance().social_request(
-                payload,
-                "automation/ad-monitor",
-                headers
-            )
-            log.g().i(f"run_ad_monitoring API response: {status_code} {resp_body}")
-                
+            result = await self._run_and_wait("automation/ad-monitor", payload, self.AD_DETECTION_TASK_TIMEOUT_SECONDS)
+            await self._store_result(result)
+
         except Exception as e:
             log.g().e(f"Failed to run ad monitoring for profile {profile.profile_id}: {e}")
 
