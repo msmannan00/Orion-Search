@@ -40,7 +40,7 @@
     "jspdf-autotable": "^5.0.8",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
-    "maplibre-gl": "5.24.0",
+    "maplibre-gl": "6.9.0",
     "ngx-print": "22.1.1",
     "qrcode": "1.5.4",
     "rxjs": "7.8.2",
@@ -109,27 +109,27 @@
     },
     "@modelcontextprotocol/sdk": {
       "@hono/node-server": "2.0.10",
-      "hono": "4.13.0"
+      "hono": "4.13.7"
     },
     "@istanbuljs/load-nyc-config": {
-      "js-yaml": "4.3.1"
+      "js-yaml": "4.3.2"
     },
     "cosmiconfig": {
-      "js-yaml": "4.3.1"
+      "js-yaml": "4.3.2"
     },
     "esbuild": "0.28.1",
     "tar": "7.5.21",
     "webpack": "5.105.4",
     "webpack-dev-server": "5.2.6",
     "vite": "7.3.5",
-    "js-yaml": "4.3.1",
+    "js-yaml": "4.3.2",
     "undici": "7.29.0",
     "@babel/core": "7.29.7",
     "yaml": "2.8.3",
     "brace-expansion": "5.0.9",
     "postcss": "$postcss",
     "dompurify": "3.4.13",
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.7",
     "ip-address": "10.4.0",
     "immutable": "5.1.8",
     "less": "4.9.0",
@@ -141,7 +141,7 @@
       "tar": "7.5.21"
     },
     "@cypress/code-coverage": {
-      "js-yaml": "4.3.1"
+      "js-yaml": "4.3.2"
     },
     "test-exclude": {
       "glob": "13.0.6"

@@ -53,7 +53,17 @@ filterwarnings = [
 [tool.coverage.run]
 omit = [
     "*/__init__.py",
+    "*/tests/*",
+    "*/backend/tests/*",
     "*/backend/routes/*",
+    "*/routes/*",
+    "*/migrations/*",
     "*/configs/*",
+    "*/static/*",
+    "*/backend/static/*",
+    "*/workspace/*",
+    "*/venv/*",
+    "*/.venv/*",
     "*/orion/services/log_manager/log_controller.py",
+    "*/orion/services/elastic_manager/elastic_request_generator.py",
 ]

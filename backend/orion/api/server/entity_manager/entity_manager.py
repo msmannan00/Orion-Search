@@ -23,6 +23,55 @@ from orion.services.log_manager.log_controller import log
 from orion.services.redis_manager.redis_controller import redis_controller
 
 
+_CONJUNCTIVE_SCOPE_AND_PROPERTY_HEAD = '''            LET in_scope = @scope_cluster_id == "" ? true : LENGTH(
+              FOR scope_edge IN cti_edges
+                FILTER scope_edge._from == @scope_cluster_id
+                  AND scope_edge._to == doc_id
+                  AND scope_edge.type == "cluster_to_doc"
+                LIMIT 1
+                RETURN 1
+            ) > 0
+            FILTER in_scope
+            LIMIT @document_limit
+            RETURN doc_id
+        )
+
+        LET property_edges = (
+          FOR doc_id IN matched_doc_ids
+            LET doc = DOCUMENT(doc_id)
+            FILTER doc != null AND doc.type == "document"'''
+
+_CONJUNCTIVE_PROPERTY_EDGE_INNER = """                FOR edge IN cti_edges
+                  FILTER edge._from == doc_id
+                    AND edge._to == property_id
+                    AND edge.type == group.edge_type
+                  LET property = DOCUMENT(edge._to)
+                  FILTER property != null
+                  RETURN {
+                    vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
+                    edge: edge,
+                    path: {
+                      vertices: [property, doc],
+                      edges: [edge]
+                    }
+                  }"""
+
+_CONJUNCTIVE_CLUSTER_EDGES = """        LET cluster_edges = (
+          FOR doc_id IN matched_doc_ids
+            FOR edge IN cti_edges
+              FILTER edge._to == doc_id AND edge.type == "cluster_to_doc"
+              LET cluster_key = PARSE_IDENTIFIER(edge._from).key
+              FILTER cluster_key IN @default_clusters
+              LET cluster = DOCUMENT(edge._from)
+              FILTER cluster != null
+              RETURN {
+                vertex: cluster,
+                edge: edge,
+                path: null
+              }
+        )"""
+
+
 class entity_manager:
     __instance = None
     __db = None
@@ -1235,55 +1284,13 @@ class entity_manager:
             COLLECT doc_id = match.doc_id INTO grouped
             LET matched_group_indexes = UNIQUE(grouped[*].match.group_index)
             FILTER LENGTH(matched_group_indexes) == LENGTH(@match_groups)
-            LET in_scope = @scope_cluster_id == "" ? true : LENGTH(
-              FOR scope_edge IN cti_edges
-                FILTER scope_edge._from == @scope_cluster_id
-                  AND scope_edge._to == doc_id
-                  AND scope_edge.type == "cluster_to_doc"
-                LIMIT 1
-                RETURN 1
-            ) > 0
-            FILTER in_scope
-            LIMIT @document_limit
-            RETURN doc_id
-        )
-
-        LET property_edges = (
-          FOR doc_id IN matched_doc_ids
-            LET doc = DOCUMENT(doc_id)
-            FILTER doc != null AND doc.type == "document"
+""" + _CONJUNCTIVE_SCOPE_AND_PROPERTY_HEAD + """
             FOR group IN @match_groups
               FOR property_id IN group.ids
-                FOR edge IN cti_edges
-                  FILTER edge._from == doc_id
-                    AND edge._to == property_id
-                    AND edge.type == group.edge_type
-                  LET property = DOCUMENT(edge._to)
-                  FILTER property != null
-                  RETURN {
-                    vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
-                    edge: edge,
-                    path: {
-                      vertices: [property, doc],
-                      edges: [edge]
-                    }
-                  }
+""" + _CONJUNCTIVE_PROPERTY_EDGE_INNER + """
         )
 
-        LET cluster_edges = (
-          FOR doc_id IN matched_doc_ids
-            FOR edge IN cti_edges
-              FILTER edge._to == doc_id AND edge.type == "cluster_to_doc"
-              LET cluster_key = PARSE_IDENTIFIER(edge._from).key
-              FILTER cluster_key IN @default_clusters
-              LET cluster = DOCUMENT(edge._from)
-              FILTER cluster != null
-              RETURN {
-                vertex: cluster,
-                edge: edge,
-                path: null
-              }
-        )
+""" + _CONJUNCTIVE_CLUSTER_EDGES + """
 
         RETURN {
           depth1: APPEND(property_edges, cluster_edges),
@@ -1406,56 +1413,14 @@ class entity_manager:
                 RETURN 1
             )
             FILTER matched_group_count == LENGTH(ordered_match_groups)
-            LET in_scope = @scope_cluster_id == "" ? true : LENGTH(
-              FOR scope_edge IN cti_edges
-                FILTER scope_edge._from == @scope_cluster_id
-                  AND scope_edge._to == doc_id
-                  AND scope_edge.type == "cluster_to_doc"
-                LIMIT 1
-                RETURN 1
-            ) > 0
-            FILTER in_scope
-            LIMIT @document_limit
-            RETURN doc_id
-        )
-
-        LET property_edges = (
-          FOR doc_id IN matched_doc_ids
-            LET doc = DOCUMENT(doc_id)
-            FILTER doc != null AND doc.type == "document"
+""" + _CONJUNCTIVE_SCOPE_AND_PROPERTY_HEAD + """
             FOR group IN ordered_match_groups
               FILTER group.kind == "property"
               FOR property_id IN group.ids
-                FOR edge IN cti_edges
-                  FILTER edge._from == doc_id
-                    AND edge._to == property_id
-                    AND edge.type == group.edge_type
-                  LET property = DOCUMENT(edge._to)
-                  FILTER property != null
-                  RETURN {
-                    vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
-                    edge: edge,
-                    path: {
-                      vertices: [property, doc],
-                      edges: [edge]
-                    }
-                  }
+""" + _CONJUNCTIVE_PROPERTY_EDGE_INNER + """
         )
 
-        LET cluster_edges = (
-          FOR doc_id IN matched_doc_ids
-            FOR edge IN cti_edges
-              FILTER edge._to == doc_id AND edge.type == "cluster_to_doc"
-              LET cluster_key = PARSE_IDENTIFIER(edge._from).key
-              FILTER cluster_key IN @default_clusters
-              LET cluster = DOCUMENT(edge._from)
-              FILTER cluster != null
-              RETURN {
-                vertex: cluster,
-                edge: edge,
-                path: null
-              }
-        )
+""" + _CONJUNCTIVE_CLUSTER_EDGES + """
 
         RETURN {
           depth1: APPEND(property_edges, cluster_edges),

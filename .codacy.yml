@@ -1,5 +1,8 @@
 ---
 exclude_paths:
+  - "backend/venv/**"
+  - "**/venv/**"
+  - "**/.venv/**"
   - "client/build/**"
   - "client/coverage/**"
   - "client/.angular/**"

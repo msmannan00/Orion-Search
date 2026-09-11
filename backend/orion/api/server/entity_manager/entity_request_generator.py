@@ -3,6 +3,76 @@ from orion.constants.constant import allowed_key_titles
 from orion.constants.cti_graph_schema import DEFAULT_CLUSTER_IDS, DEFAULT_CLUSTER_KEYS
 
 
+_DOC_NODE_PROJECTION = """LET v = DOCUMENT(e._to)
+FILTER v != null AND v.type == 'document'
+LET current_label = FIRST(
+  FOR candidate IN [v.display_value, v.label, v.title, v.doc_id, v.m_document_id, v._key]
+    FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
+    RETURN TRIM(TO_STRING(candidate))
+)
+LET fallback_label = FIRST(
+  FOR label_edge IN cti_edges
+    FILTER label_edge._from == v._id AND label_edge.type IN @document_label_edge_types
+    LET label_vertex = DOCUMENT(label_edge._to)
+    FILTER label_vertex.type IN @document_label_property_keys
+    LET label_value = FIRST(
+      FOR candidate IN [label_vertex.display_value, label_vertex.value, label_vertex.label]
+        FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
+        RETURN TRIM(TO_STRING(candidate))
+    )
+    FILTER label_value != null
+    SORT POSITION(@document_label_property_keys, label_vertex.type, true) ASC
+    RETURN label_value
+)
+LET document_label = fallback_label != null ? fallback_label : CONCAT(TO_STRING(v.cluster_id), " report")
+LET display_vertex = REGEX_TEST(LOWER(TO_STRING(current_label)), "^[a-f0-9]{32,}$")
+  ? MERGE(v, {display_value: document_label, label: document_label, title: document_label})
+  : v
+RETURN {
+  vertex: display_vertex,
+  edge: e,
+  path: {
+    vertices: [start_cluster, display_vertex],
+    edges: [e]
+  }
+}"""
+
+_CLUSTER_TO_DOC_EDGES = """LET cluster_edges = (
+  FOR doc_id IN document_ids
+    FOR e IN cti_edges
+      FILTER e._to == doc_id AND e.type == 'cluster_to_doc'
+      FOR cluster_vertex IN cti_vertices
+        FILTER cluster_vertex._id == e._from AND cluster_vertex.type == 'cluster'
+        RETURN {
+          vertex: cluster_vertex,
+          edge: e,
+          path: null
+        }
+)"""
+
+
+_PROPS_SUBQUERY = """LET props = (
+  FOR property IN cti_vertices
+    FILTER property.normalized_value == @search_value
+    FILTER property.type NOT IN ['document', 'cluster']
+    RETURN property._id
+)"""
+
+_PROPERTY_MATCH_PROJECTION = """LET doc = DOCUMENT(match.doc_id)
+FILTER doc != null AND doc.type == "document"
+FOR relation IN match.property_edges
+  LET property = DOCUMENT(relation.property_id)
+  FILTER property != null
+  RETURN {
+    vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
+    edge: relation.property_edge,
+    path: {
+      vertices: [property, doc],
+      edges: [relation.property_edge]
+    }
+  }"""
+
+
 class EntityRequestGenerator:
     GRAPH_EXTRA_KEY_TITLES = graph_enums.GRAPH_EXTRA_KEY_TITLES
     DOCUMENT_LABEL_PROPERTY_KEYS = (
@@ -79,39 +149,7 @@ class EntityRequestGenerator:
                   FOR e IN cti_edges
                     FILTER e._from == cluster_id AND e.type == 'cluster_to_doc'
                     LIMIT {per_cluster_limit}
-                    LET v = DOCUMENT(e._to)
-                    FILTER v != null AND v.type == 'document'
-                    LET current_label = FIRST(
-                      FOR candidate IN [v.display_value, v.label, v.title, v.doc_id, v.m_document_id, v._key]
-                        FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
-                        RETURN TRIM(TO_STRING(candidate))
-                    )
-                    LET fallback_label = FIRST(
-                      FOR label_edge IN cti_edges
-                        FILTER label_edge._from == v._id AND label_edge.type IN @document_label_edge_types
-                        LET label_vertex = DOCUMENT(label_edge._to)
-                        FILTER label_vertex.type IN @document_label_property_keys
-                        LET label_value = FIRST(
-                          FOR candidate IN [label_vertex.display_value, label_vertex.value, label_vertex.label]
-                            FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
-                            RETURN TRIM(TO_STRING(candidate))
-                        )
-                        FILTER label_value != null
-                        SORT POSITION(@document_label_property_keys, label_vertex.type, true) ASC
-                        RETURN label_value
-                    )
-                    LET document_label = fallback_label != null ? fallback_label : CONCAT(TO_STRING(v.cluster_id), " report")
-                    LET display_vertex = REGEX_TEST(LOWER(TO_STRING(current_label)), "^[a-f0-9]{{32,}}$")
-                      ? MERGE(v, {{display_value: document_label, label: document_label, title: document_label}})
-                      : v
-                    RETURN {{
-                      vertex: display_vertex,
-                      edge: e,
-                      path: {{
-                        vertices: [start_cluster, display_vertex],
-                        edges: [e]
-                      }}
-                    }}
+                    {_DOC_NODE_PROJECTION}
                 )
                 RETURN docs
             )
@@ -123,18 +161,7 @@ class EntityRequestGenerator:
                 RETURN item.vertex._id
             )
 
-            LET cluster_edges = (
-              FOR doc_id IN document_ids
-                FOR e IN cti_edges
-                  FILTER e._to == doc_id AND e.type == 'cluster_to_doc'
-                  FOR cluster_vertex IN cti_vertices
-                    FILTER cluster_vertex._id == e._from AND cluster_vertex.type == 'cluster'
-                    RETURN {{
-                      vertex: cluster_vertex,
-                      edge: e,
-                      path: null
-                    }}
-            )
+            {_CLUSTER_TO_DOC_EDGES}
 
             LET depth1 = APPEND(raw_depth1, cluster_edges)
             LET limit_hit_depth1 = false
@@ -159,39 +186,7 @@ class EntityRequestGenerator:
               FOR e IN cti_edges
                 FILTER e._from == @cluster_id AND e.type == 'cluster_to_doc'
                 LIMIT {document_limit}
-                LET v = DOCUMENT(e._to)
-                FILTER v != null AND v.type == 'document'
-                LET current_label = FIRST(
-                  FOR candidate IN [v.display_value, v.label, v.title, v.doc_id, v.m_document_id, v._key]
-                    FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
-                    RETURN TRIM(TO_STRING(candidate))
-                )
-                LET fallback_label = FIRST(
-                  FOR label_edge IN cti_edges
-                    FILTER label_edge._from == v._id AND label_edge.type IN @document_label_edge_types
-                    LET label_vertex = DOCUMENT(label_edge._to)
-                    FILTER label_vertex.type IN @document_label_property_keys
-                    LET label_value = FIRST(
-                      FOR candidate IN [label_vertex.display_value, label_vertex.value, label_vertex.label]
-                        FILTER candidate != null AND TRIM(TO_STRING(candidate)) != ''
-                        RETURN TRIM(TO_STRING(candidate))
-                    )
-                    FILTER label_value != null
-                    SORT POSITION(@document_label_property_keys, label_vertex.type, true) ASC
-                    RETURN label_value
-                )
-                LET document_label = fallback_label != null ? fallback_label : CONCAT(TO_STRING(v.cluster_id), " report")
-                LET display_vertex = REGEX_TEST(LOWER(TO_STRING(current_label)), "^[a-f0-9]{{32,}}$")
-                  ? MERGE(v, {{display_value: document_label, label: document_label, title: document_label}})
-                  : v
-                RETURN {{
-                  vertex: display_vertex,
-                  edge: e,
-                  path: {{
-                    vertices: [start_cluster, display_vertex],
-                    edges: [e]
-                  }}
-                }}
+                {_DOC_NODE_PROJECTION}
             )
 
             LET document_ids = UNIQUE(
@@ -199,18 +194,7 @@ class EntityRequestGenerator:
                 RETURN item.vertex._id
             )
 
-            LET cluster_edges = (
-              FOR doc_id IN document_ids
-                FOR e IN cti_edges
-                  FILTER e._to == doc_id AND e.type == 'cluster_to_doc'
-                  FOR cluster_vertex IN cti_vertices
-                    FILTER cluster_vertex._id == e._from AND cluster_vertex.type == 'cluster'
-                    RETURN {{
-                      vertex: cluster_vertex,
-                      edge: e,
-                      path: null
-                    }}
-            )
+            {_CLUSTER_TO_DOC_EDGES}
 
             LET depth1 = APPEND(doc_nodes, cluster_edges)
             LET limit_hit_depth1 = LENGTH(doc_nodes) >= {document_limit}
@@ -239,12 +223,7 @@ class EntityRequestGenerator:
 
         queried_id = "all_properties"
         query_str = f"""
-        LET props = (
-          FOR property IN cti_vertices
-            FILTER property.normalized_value == @search_value
-            FILTER property.type NOT IN ['document', 'cluster']
-            RETURN property._id
-        )
+        {_PROPS_SUBQUERY}
 
         LET doc_matches = (
           FOR property_id IN props
@@ -265,19 +244,7 @@ class EntityRequestGenerator:
 
         LET raw_depth1 = (
           FOR match IN doc_matches
-            LET doc = DOCUMENT(match.doc_id)
-            FILTER doc != null AND doc.type == "document"
-            FOR relation IN match.property_edges
-              LET property = DOCUMENT(relation.property_id)
-              FILTER property != null
-              RETURN {{
-                vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
-                edge: relation.property_edge,
-                path: {{
-                  vertices: [property, doc],
-                  edges: [relation.property_edge]
-                }}
-              }}
+            {_PROPERTY_MATCH_PROJECTION}
         )
 
         LET default_clusters = @default_clusters
@@ -312,12 +279,7 @@ class EntityRequestGenerator:
     def build_scoped_property_search_query(normalized_value: str, document_limit: int, scope_cluster: str):
         queried_id = f"cti_vertices/{scope_cluster}"
         query_str = f"""
-        LET props = (
-          FOR property IN cti_vertices
-            FILTER property.normalized_value == @search_value
-            FILTER property.type NOT IN ['document', 'cluster']
-            RETURN property._id
-        )
+        {_PROPS_SUBQUERY}
 
         LET scoped_doc_matches = (
           FOR property_id IN props
@@ -347,19 +309,7 @@ class EntityRequestGenerator:
 
         LET raw_depth1 = (
           FOR match IN scoped_doc_matches
-            LET doc = DOCUMENT(match.doc_id)
-            FILTER doc != null AND doc.type == "document"
-            FOR relation IN match.property_edges
-              LET property = DOCUMENT(relation.property_id)
-              FILTER property != null
-              RETURN {{
-                vertex: KEEP(doc, "_id", "_key", "_rev", "type", "node_class", "doc_id", "m_document_id", "cluster_id", "module", "label", "display_value", "title", "summary", "published", "source", "source_reliability"),
-                edge: relation.property_edge,
-                path: {{
-                  vertices: [property, doc],
-                  edges: [relation.property_edge]
-                }}
-              }}
+            {_PROPERTY_MATCH_PROJECTION}
         )
 
         LET cluster_edges = (
