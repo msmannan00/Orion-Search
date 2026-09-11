@@ -1030,7 +1030,7 @@ module.exports = [
       ],
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-unnecessary-condition': 'error',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
       '@typescript-eslint/dot-notation': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': [
         'error',

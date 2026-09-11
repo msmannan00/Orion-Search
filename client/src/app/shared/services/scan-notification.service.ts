@@ -145,15 +145,19 @@ export class ScanNotificationService {
     this.jobs.set([]);
   }
 
+  private registerJob(job: ScanJob, pollDelayMs: number | undefined): void {
+    const alreadyCached = this.jobCache.has(job.scan_id);
+    this.cacheJob(job);
+    if (!alreadyCached) {
+      this.upsertVisibleJob(job);
+    }
+    this.refreshCounts();
+    this.ensurePolling(job, pollDelayMs);
+  }
+
   createJob(request: ScanJobStartRequest): Observable<ScanJob> {
     return this.createJobRequest(request).pipe(switchMap(response => this.resolveCreateResponse(response, request)), tap(job => {
-      const alreadyCached = this.jobCache.has(job.scan_id);
-      this.cacheJob(job);
-      if (!alreadyCached) {
-        this.upsertVisibleJob(job);
-      }
-      this.refreshCounts();
-      this.ensurePolling(job, request.pollDelayMs);
+      this.registerJob(job, request.pollDelayMs);
     }));
   }
 
@@ -275,13 +279,7 @@ export class ScanNotificationService {
       updated_at: responseRecord.scan_updated_at,
       completed_at: responseRecord.scan_completed_at,
     };
-    const alreadyCached = this.jobCache.has(job.scan_id);
-    this.cacheJob(job);
-    if (!alreadyCached) {
-      this.upsertVisibleJob(job);
-    }
-    this.refreshCounts();
-    this.ensurePolling(job, request.pollDelayMs);
+    this.registerJob(job, request.pollDelayMs);
     return job;
   }
 

@@ -10,7 +10,7 @@ export class MessageNotificationService {
   message = computed(() => this.messageSignal());
   type = computed(() => this.typeSignal());
 
-  show(message: string, type: MessageType = 'fail', duration = 3000) {
+  private clearActiveMessage(): void {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
@@ -20,6 +20,10 @@ export class MessageNotificationService {
       this.showTimeoutId = null;
     }
     this.messageSignal.set(null);
+  }
+
+  show(message: string, type: MessageType = 'fail', duration = 3000) {
+    this.clearActiveMessage();
     this.showTimeoutId = setTimeout(() => {
       this.showTimeoutId = null;
       this.messageSignal.set(message);
@@ -32,14 +36,6 @@ export class MessageNotificationService {
   }
 
   clear() {
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
-    }
-    if (this.showTimeoutId) {
-      clearTimeout(this.showTimeoutId);
-      this.showTimeoutId = null;
-    }
-    this.messageSignal.set(null);
+    this.clearActiveMessage();
   }
 }

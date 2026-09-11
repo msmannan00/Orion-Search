@@ -23,7 +23,7 @@ export class AddTenantComponent implements OnInit {
   private isClosing = false;
 
   licenseList = Object.values(LicenseName);
-  licenses = ['free', 'osint_basic', 'osint_advanced', 'social_mapper', 'pentester', 'maintainer', 'enterprise'];
+  licenses = ['free', 'osint_basic', 'osint_advanced', 'social_mapper', 'pentester', 'maintainer', 'enterprise', 'feeder'];
   alertTenantOptions: AlertAllowedTenantOption[] = [];
   isAdmin = false;
   model: TenantTeamModel = { username: '', email: '', password: '', role: 'analyst', status: 'active', subscription: false, licenses: [], permissions: [], alerts_allowed_all: false, alerts_allowed_tenant_ids: [] };
@@ -262,8 +262,12 @@ export class AddTenantComponent implements OnInit {
       tenant.licenses.splice(index, 1);
       return;
     }
+    if (license === LicenseName.FEEDER) {
+      tenant.licenses.push(LicenseName.FEEDER);
+      return;
+    }
     if (license === LicenseName.ENTERPRISE) {
-      tenant.licenses = [LicenseName.ENTERPRISE];
+      tenant.licenses = tenant.licenses.includes(LicenseName.FEEDER) ? [LicenseName.ENTERPRISE, LicenseName.FEEDER] : [LicenseName.ENTERPRISE];
       return;
     }
     tenant.licenses = tenant.licenses.filter((l) => l !== LicenseName.ENTERPRISE);

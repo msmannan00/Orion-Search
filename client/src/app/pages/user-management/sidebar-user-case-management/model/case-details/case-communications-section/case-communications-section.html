@@ -1,0 +1,123 @@
+<div class="overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-[var(--tenant-expand-bg)] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.014)_0px,rgba(255,255,255,0.014)_1px,transparent_1px,transparent_12px)] [body.light-theme_&]:bg-[repeating-linear-gradient(135deg,rgba(15,23,42,0.022)_0px,rgba(15,23,42,0.022)_1px,transparent_1px,transparent_12px)]">
+    <div class="flex h-12 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-blue-820-light)] px-4">
+        <div class="flex items-center gap-1.5">
+            <h2 class="m-0 text-[16px] font-bold leading-tight text-[var(--color-text1)]">{{ 'External Communication' | translate
+                }}</h2>
+            <img src="/assets/images/shared/theme/info.svg" alt="" aria-hidden="true" [appTooltip]="'Contact channels for this case, such as a leak-forum thread or chat panel. Open browses the channel with its saved session and stores the signed-in state so it can be reopened later.' | translate" class="h-4 w-4 shrink-0 ui-action-icon">
+        </div>
+        @if (canManageCases() && !caseData.closure) {
+        <div class="flex items-center gap-2">
+            <button type="button" (click)="store.openAddCommunication()" class="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-sky-400/20 bg-sky-500/10 px-2.5 text-sm font-medium text-sky-300 transition hover:border-sky-400/35 hover:bg-sky-500/15 hover:text-sky-200 [body.light-theme_&]:border-sky-600/30 [body.light-theme_&]:bg-sky-100 [body.light-theme_&]:text-sky-800 [body.light-theme_&]:hover:border-sky-700/40 [body.light-theme_&]:hover:bg-sky-200/70 [body.light-theme_&]:hover:text-sky-900" data-testid="case-communication-add">
+                <i class="bi bi-plus-lg"></i> {{ 'common.actions.add' | translate }}
+            </button>
+        </div>
+        }
+    </div>
+
+    @if (isEditing && selectedEditableCommunication; as communication) {
+    <app-case-edit-drawer [title]="'Edit External Communication' | translate" [subtitle]="communication.name || caseData.caseId"
+        [saveLabel]="'Save External Communication' | translate" saveTestId="case-communication-save"
+        cancelTestId="case-communication-cancel" drawerTestId="case-communication-edit-drawer"
+        (save)="store.saveCommunication(communication)" (cancel)="cancelCommunicationEditing()">
+        <div class="space-y-4 p-6">
+            <div @caseListItemMotion class="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-830)]/35 p-4">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <span class="rounded-full border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text2)]">{{
+                        'External Communication' | translate }}
+                        {{ (editingCommunicationIndex || 0) + 1 }}</span>
+                    <button type="button" (click)="store.removeCommunication(communication.communicationId)" [attr.aria-label]="'Remove external communication' | translate" class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] border border-red-400/20 bg-red-500/10 px-2.5 text-sm font-medium text-red-300 transition hover:border-red-400/35 hover:bg-red-500/15 hover:text-red-200 [body.light-theme_&]:border-red-600/30 [body.light-theme_&]:bg-red-100 [body.light-theme_&]:text-red-800 [body.light-theme_&]:hover:border-red-700/40 [body.light-theme_&]:hover:bg-red-200/70 [body.light-theme_&]:hover:text-red-900" [attr.data-testid]="'case-communication-remove-' + (editingCommunicationIndex || 0)">
+                        <i class="bi bi-x-lg"></i> {{ 'Remove' | translate }}
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
+                            'Name' | translate }}</label>
+                        <input [(ngModel)]="communication.name" name="communication-name" type="text" class="mt-1 h-10 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 text-sm text-[var(--color-text1)] outline-none focus:border-sky-400/35" data-testid="case-communication-name-input" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
+                            'URL' | translate }}</label>
+                        <input [(ngModel)]="communication.url" name="communication-url" type="url" class="mt-1 h-10 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 text-sm text-[var(--color-text1)] outline-none focus:border-sky-400/35" data-testid="case-communication-url-input" />
+                        <p class="mt-1 text-xs text-[var(--color-text4)]">{{ 'The platform is detected automatically from
+                            the URL.' | translate }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </app-case-edit-drawer>
+    }
+    @if (showExtensionManager) {
+    <div class="px-4 pt-4" data-testid="case-communication-extension-manager">
+        <app-social-extension-manager [mode]="extensionState!"></app-social-extension-manager>
+    </div>
+    }
+    <div @caseModeSwapMotion class="space-y-3 p-4">
+        @for (communication of caseData.communications; track communication.communicationId) {
+        <div @caseListItemMotion class="flex flex-col gap-2 rounded-[8px] border border-[var(--tenant-line)] bg-[var(--tenant-chip-bg)] p-3 transition hover:bg-[var(--tenant-chip-hover)] sm:flex-row sm:items-start sm:justify-between" [attr.data-testid]="'case-communication-card-' + $index">
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-semibold text-[var(--color-text1)]" [attr.data-testid]="'case-communication-name-value-' + $index">{{ communication.name }}</span>
+                    @if (communication.platform) {
+                    <span class="rounded-full border border-[var(--tenant-line)] bg-[var(--color-blue-820-light)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text2)]" [attr.data-testid]="'case-communication-platform-value-' + $index">{{ communication.platform }}</span>
+                    }
+                </div>
+                <div class="mt-1 truncate text-xs text-[var(--color-text4)]" [attr.data-testid]="'case-communication-url-value-' + $index">
+                    {{ communication.url }}
+                </div>
+                <div class="mt-1 text-xs" [attr.data-testid]="'case-communication-session-value-' + $index">
+                    @if (communication.hasSession) {
+                    <span class="text-emerald-400 [body.light-theme_&]:text-emerald-700"><i class="bi bi-shield-check"></i>
+                        {{ 'Session saved' | translate }}</span>
+                    } @else {
+                    <span class="text-[var(--color-text4)]"><i class="bi bi-shield-slash"></i> {{ 'No saved session' |
+                        translate }}</span>
+                    }
+                </div>
+            </div>
+
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <button type="button" (click)="store.openCommunication(communication)" [disabled]="store.isCommunicationBusy(communication) || !isExtensionReady" class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[8px] border border-sky-400/20 bg-sky-500/10 px-2.5 text-xs font-medium text-sky-300 transition hover:border-sky-400/35 hover:bg-sky-500/15 hover:text-sky-200 disabled:cursor-not-allowed disabled:opacity-60 [body.light-theme_&]:border-sky-600/30 [body.light-theme_&]:bg-sky-100 [body.light-theme_&]:text-sky-800" [attr.data-testid]="'case-communication-open-' + $index">
+                    <i class="bi bi-box-arrow-up-right"></i> {{ (store.isCommunicationBusy(communication) ? 'Opening...' :
+                    'Open') | translate }}
+                </button>
+
+                @if (canManageCases() && !caseData.closure) {
+                <button type="button" (click)="openEditCommunication($index)" class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-820-light)] px-2.5 text-xs font-medium text-[var(--color-text2)] transition hover:bg-[var(--color-blue-810)]" [attr.data-testid]="'case-communication-edit-' + $index">
+                    <i class="bi bi-pencil-square"></i> {{ 'Edit' | translate }}
+                </button>
+                }
+            </div>
+        </div>
+        } @empty {
+        <div class="text-sm text-[var(--color-text4)]">{{ 'No external communication added.' | translate }}</div>
+        }
+    </div>
+
+    @if (isAddingCommunication && newCommunication) {
+    <app-case-edit-drawer [title]="'Add External Communication' | translate" [subtitle]="caseData.caseId"
+        [saveLabel]="'Save External Communication' | translate" saveTestId="case-communication-add-save"
+        cancelTestId="case-communication-add-cancel" drawerTestId="case-communication-add-drawer"
+        (save)="store.saveNewCommunication()" (cancel)="store.cancelSectionMode()">
+        <div class="space-y-4 p-6">
+            <div class="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-830)]/35 p-4">
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
+                            'Name' | translate }}</label>
+                        <input [(ngModel)]="newCommunication.name" name="new-communication-name" type="text" class="mt-1 h-10 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 text-sm text-[var(--color-text1)]" data-testid="case-communication-name-input" />
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text4)]">{{
+                            'URL' | translate }}</label>
+                        <input [(ngModel)]="newCommunication.url" name="new-communication-url" type="url" class="mt-1 h-10 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-blue-700)] px-3 text-sm text-[var(--color-text1)]" data-testid="case-communication-url-input" />
+                        <p class="mt-1 text-xs text-[var(--color-text4)]">{{ 'The platform is detected automatically from
+                            the URL.' | translate }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </app-case-edit-drawer>
+    }
+</div>

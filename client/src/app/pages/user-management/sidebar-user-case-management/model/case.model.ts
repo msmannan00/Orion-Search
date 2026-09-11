@@ -213,6 +213,19 @@ export interface CaseEntityRequest {
     linkedEntityId?: string;
 }
 
+export interface CaseCommunication {
+    communicationId: string;
+    name: string;
+    url: string;
+    platform?: string;
+    hasSession?: boolean;
+}
+
+export interface CaseCommunicationRequest {
+    name: string;
+    url: string;
+}
+
 export interface CaseLink {
     targetCaseId: string;
     relationship:
@@ -570,6 +583,7 @@ export interface Case {
     comments: CaseComment[];
     tasks: CaseTask[];
     linkedCases: CaseLink[];
+    communications: CaseCommunication[];
     closure?: CaseClosure | null;
     isArchived?: boolean;
     archivedAt?: Date | string | null;
