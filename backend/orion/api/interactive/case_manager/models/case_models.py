@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 from typing import List
 from typing import Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -142,6 +143,28 @@ class CaseTaskModel(CaseRequestModel):
     artifactIds: List[str] = Field(default_factory=list)
 
 
+class CaseCommunicationModel(CaseRequestModel):
+    name: str
+    url: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_communication_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Communication name is required")
+        return value
+
+    @field_validator("url")
+    @classmethod
+    def validate_communication_url(cls, value: str) -> str:
+        value = value.strip()
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("Communication URL must be a valid http or https address")
+        return value
+
+
 class CaseLinkModel(CaseRequestModel):
     targetCaseId: str
     relationship: CaseLinkRelationship = Field(default=CaseLinkRelationship.RELATED)
@@ -268,6 +291,7 @@ class CaseResponse(BaseModel):
     comments: List[dict] = Field(default_factory=list)
     tasks: List[dict] = Field(default_factory=list)
     linkedCases: List[dict] = Field(default_factory=list)
+    communications: List[dict] = Field(default_factory=list)
     closure: Optional[dict] = None
 
 

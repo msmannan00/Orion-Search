@@ -78,6 +78,10 @@ class CaseManager:
             comment.updatedAt = CaseHelperMethods.as_aware_utc(comment.updatedAt)
 
         data = record.model_dump()
+        data["communications"] = [
+            CaseHelperMethods.sanitize_communication(communication)
+            for communication in (record.communications or [])
+        ]
         data["id"] = str(record.id)
         data["viewerId"] = CaseHelperMethods.actor_id(current_user)
         data["viewerRole"] = getattr(current_user.role, "value", str(current_user.role))
@@ -668,6 +672,9 @@ class CaseManager:
             raise HTTPException(status_code=403, detail="Closed cases cannot be deleted")
         if not CaseHelperMethods.is_maintainer(current_user):
             raise HTTPException(status_code=403, detail="Only maintainers can delete cases")
+
+        for communication in record.communications or []:
+            CaseHelperMethods.delete_communication_session(communication)
 
         await self._engine.delete(record)
         await AuditLogManager.get_instance().register(
