@@ -50,6 +50,9 @@ export class ManageProfileComponent implements OnInit {
       { key: 'case_management', label: this.translationService.translate('Case Management') },
       { key: 'dismiss_result', label: this.translationService.translate('Dismiss Result') },
     ];
+    if (session.user.role === 'admin') {
+      options.push({ key: 'monitoring', label: this.translationService.translate('Monitoring') });
+    }
     if (session.user.role === 'admin' && session.tenant.isDefault) {
       options.push({ key: 'orion_mail', label: this.translationService.translate('Orion Mail') });
     }
