@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, Chang
 import { ThreatLensDisplayFeedItem, ThreatLensFeedItem } from '../../../models/geo-fencing.models';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
 import { ThreatLensArcSelection } from '../../models/threat-lens-map.types';
+import { formatFeedDate } from '../feed-date.util';
 
 @Component({
   selector: 'app-threat-lens-arc-report-popup',
@@ -54,28 +55,9 @@ export class ArcReportPopupComponent implements OnChanges {
         && item.countryKeys.includes(this.arc.countryBKey))
       .map((item) => ({
         ...item,
-        displayDate: this.formatFeedDate(item.date),
+        displayDate: formatFeedDate(item.date),
         colorHex: this.toHexColor(item.color),
       }));
-  }
-
-  private formatFeedDate(value: string): string {
-    if (!value) {
-      return 'Date unavailable';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return 'Date unavailable';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
   }
 
   private toHexColor(color: [number, number, number]): string {

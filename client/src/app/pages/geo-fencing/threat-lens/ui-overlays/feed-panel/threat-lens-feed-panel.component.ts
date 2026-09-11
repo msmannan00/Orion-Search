@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ThreatLensDisplayFeedItem, ThreatLensFeedItem, ThreatLensFeedRange, ThreatLensFeedRangeOption } from '../../../models/geo-fencing.models';
 import { ThreatLensFeedPanelType } from '../../models/threat-lens-map.types';
 import { TranslatePipe } from '../../../../../shared/pipes/translate.pipe';
+import { formatFeedDate } from '../feed-date.util';
 
 @Component({
   selector: 'app-threat-lens-feed-panel',
@@ -128,7 +129,7 @@ export class ThreatLensFeedPanelComponent implements AfterViewInit, OnChanges, O
     this.feedItems = this.items
       .map((item) => ({
         ...item,
-        displayDate: this.formatFeedDate(item.date),
+        displayDate: formatFeedDate(item.date),
         colorHex: this.toHexColor(item.color),
       }))
       .filter((item) => this.feedType === 'news'
@@ -168,25 +169,6 @@ export class ThreatLensFeedPanelComponent implements AfterViewInit, OnChanges, O
     }
 
     return Date.now() - (dayCount * 24 * 60 * 60 * 1000);
-  }
-
-  private formatFeedDate(value: string): string {
-    if (!value) {
-      return 'Date unavailable';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return 'Date unavailable';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
   }
 
   private toHexColor(color: [number, number, number]): string {

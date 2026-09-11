@@ -1,6 +1,9 @@
 name: Codacy Repository Analysis
 
 on:
+  push:
+    branches:
+      - trusted-main
   workflow_dispatch:
 
 permissions:
