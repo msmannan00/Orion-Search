@@ -589,10 +589,10 @@ async def get_screenshot(filename: str):
     response_description=DYNAMIC_DOCS["dynamic_user_email"]["response_description"],
     status_code=200,
     dependencies=SCANNING_DEPS, )
-async def search_dynamic_email(param: search_dynamic_param_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def search_dynamic_email(param: search_dynamic_param_model = Body(...), force_new: bool = Query(False), notify: bool = Query(True), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_user", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/user", payload=param.model_dump(), metadata={"title": "User Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "user", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/user", payload=param.model_dump(), metadata={"title": "User Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "user", user_id=str(current_user.id)), force_new=force_new, notify=notify)
 
 
 @api_routes.post(
@@ -604,10 +604,10 @@ async def search_dynamic_email(param: search_dynamic_param_model = Body(...), fo
     response_description=DYNAMIC_DOCS["dynamic_cracked"]["response_description"],
     status_code=200,
     dependencies=SCANNING_DEPS, )
-async def search_dynamic_cracked(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def search_dynamic_cracked(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), notify: bool = Query(True), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_cracked", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/cracked", payload=param.model_dump(), metadata={"title": "Cracked Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "cracked", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/cracked", payload=param.model_dump(), metadata={"title": "Cracked Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "cracked", user_id=str(current_user.id)), force_new=force_new, notify=notify)
 
 
 @api_routes.post(
@@ -619,10 +619,10 @@ async def search_dynamic_cracked(param: search_dynamic_crack_model = Body(...), 
     response_description=DYNAMIC_DOCS["dynamic_software"]["response_description"],
     status_code=200,
     dependencies=SCANNING_DEPS, )
-async def search_dynamic_software(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def search_dynamic_software(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), notify: bool = Query(True), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_software", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/software", payload=param.model_dump(), metadata={"title": "Software Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "software", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/software", payload=param.model_dump(), metadata={"title": "Software Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "software", user_id=str(current_user.id)), force_new=force_new, notify=notify)
 
 
 @api_routes.post(
@@ -634,10 +634,10 @@ async def search_dynamic_software(param: search_dynamic_crack_model = Body(...),
     response_description=DYNAMIC_DOCS["domain_scan"]["response_description"],
     status_code=200,
     dependencies=SCAN_WITH_LIMITER_DEPS, )
-async def parse_domain_scan(payload: DomainScanRequest, force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def parse_domain_scan(payload: DomainScanRequest, force_new: bool = Query(False), notify: bool = Query(True), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().search_audit(current_user, "domain_scan", payload.domain)
     title = f"{(payload.scanType or 'Domain').upper()} Scan"
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="urlscan/domain", payload=payload.model_dump(), metadata={"title": title, "target": payload.domain}, runner=lambda: _scan_domain_with_type(payload, user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="urlscan/domain", payload=payload.model_dump(), metadata={"title": title, "target": payload.domain}, runner=lambda: _scan_domain_with_type(payload, user_id=str(current_user.id)), force_new=force_new, notify=notify)
 
 
 @api_routes.post(
@@ -713,10 +713,10 @@ async def scrape_social(payload: SocialScrapeRequest, current_user=Depends(get_c
     response_description=DYNAMIC_DOCS["dynamic_social"]["response_description"],
     status_code=200,
     dependencies=SCANNING_DEPS, )
-async def search_dynamic_social(param: search_dynamic_social_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
+async def search_dynamic_social(param: search_dynamic_social_model = Body(...), force_new: bool = Query(False), notify: bool = Query(True), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_social", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/social", payload=param.model_dump(), metadata={"title": "Social Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "social", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/social", payload=param.model_dump(), metadata={"title": "Social Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "social", user_id=str(current_user.id)), force_new=force_new, notify=notify)
 
 @api_routes.post(
     "/api/dynamic/wanted",

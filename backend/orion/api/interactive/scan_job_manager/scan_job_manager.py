@@ -154,7 +154,7 @@ class ScanJobManager:
         priority = 0 if is_unseen_or_incomplete else 1
         return priority, -latest_date.timestamp()
 
-    async def create_job(self, current_user, api_reference: str, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None, force_new: bool = False, confirm_duplicates: bool = True) -> Dict[str, Any]:
+    async def create_job(self, current_user, api_reference: str, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None, force_new: bool = False, confirm_duplicates: bool = True, notify: bool = True) -> Dict[str, Any]:
         config = self._route_config(api_reference)
         metadata = metadata or {}
         now = datetime.now(timezone.utc)
@@ -165,6 +165,8 @@ class ScanJobManager:
         latest_done_scan = None
         for record in existing_records:
             if record.payload != payload:
+                continue
+            if notify and not record.notify:
                 continue
             response = record.response or {}
             scan_status = self._job_status_from_response(response) if response else ScanJobStatus.QUEUED
@@ -188,6 +190,7 @@ class ScanJobManager:
             api_reference=normalized_api_reference,
             title=str(metadata.get("title") or api_reference),
             payload=payload,
+            notify=notify,
             created_at=now,
             updated_at=now,
         )
@@ -198,8 +201,8 @@ class ScanJobManager:
             log.g().w(f"Scan audit logging skipped: {str(ex)}")
         return {**self._build_scan_detail(job, ScanJobStatus.QUEUED.value, target).model_dump(), "source": "new"}
 
-    async def run_tracked_scan(self, current_user, api_reference: str, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]], runner: Callable[[], Awaitable[Any]], force_new: bool = False, confirm_duplicates: bool = True) -> Dict[str, Any]:
-        created = await self.create_job(current_user, api_reference, payload, metadata, force_new, confirm_duplicates,)
+    async def run_tracked_scan(self, current_user, api_reference: str, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]], runner: Callable[[], Awaitable[Any]], force_new: bool = False, confirm_duplicates: bool = True, notify: bool = True) -> Dict[str, Any]:
+        created = await self.create_job(current_user, api_reference, payload, metadata, force_new, confirm_duplicates, notify,)
         if created.get("requires_confirmation"):
             return created
 
@@ -240,7 +243,7 @@ class ScanJobManager:
         skip = (safe_page - 1) * safe_limit
 
         records = await self._engine.find(db_scan_job_model, db_scan_job_model.user_uuid == str(current_user.id), sort=desc(db_scan_job_model.created_at))
-        ordered_records = sorted(records, key=self._scan_notification_priority)
+        ordered_records = sorted([record for record in records if record.notify], key=self._scan_notification_priority)
         total = len(ordered_records)
         page_records = ordered_records[skip:skip + safe_limit]
         items = [self._build_scan_notification(record) for record in page_records]
@@ -251,6 +254,8 @@ class ScanJobManager:
         records = await self._engine.find(db_scan_job_model, db_scan_job_model.user_uuid == str(current_user.id), sort=desc(db_scan_job_model.created_at))
         incomplete_records = []
         for record in records:
+            if not record.notify:
+                continue
             response = record.response or {}
             scan_status = self._job_status_from_response(response) if response else ScanJobStatus.QUEUED
             if not self.is_terminal_status(scan_status.value):
@@ -264,7 +269,7 @@ class ScanJobManager:
         query: Dict[str, Any] = {"user_uuid": str(current_user.id)}
         records = await self._engine.find(db_scan_job_model, query, sort=desc(db_scan_job_model.created_at))
 
-        return { "total": len([record for record in records if not record.seen]) }
+        return { "total": len([record for record in records if record.notify and not record.seen]) }
 
     async def get_job(self, scan_id: str, current_user) -> ScanJobDetailResponse:
         job = await self._engine.find_one(db_scan_job_model, (db_scan_job_model.id == ObjectId(scan_id)) & (db_scan_job_model.user_uuid == str(current_user.id)))
@@ -324,6 +329,8 @@ class ScanJobManager:
             records = await self._engine.find(db_scan_job_model, db_scan_job_model.user_uuid == str(current_user.id))
 
             for record in records:
+                if not record.notify:
+                    continue
                 scan_status = self._scan_status_value(record)
                 if not self.is_terminal_status(scan_status.value):
                     continue

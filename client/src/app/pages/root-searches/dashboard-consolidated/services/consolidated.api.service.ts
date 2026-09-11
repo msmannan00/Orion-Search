@@ -1,7 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { EMPTY, forkJoin, Observable, of, timer } from 'rxjs';
-import { catchError, expand, filter, map, switchMap, takeWhile } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, filter, map } from 'rxjs/operators';
 import { CardData, SearchDynamicEmailCallbackModel } from '../../../../shared/model/api/email/search_dynamic_email_callback_model';
 import { ConsolidatedLiveApiResults, ConsolidatedLiveApis, ConsolidatedScanResults } from '../../../../shared/model/results/consolidated/consolidated.callback.model';
 import { ScanNotificationService } from '../../../../shared/services/scan-notification.service';
@@ -14,7 +13,7 @@ export type { ConsolidatedApiResponse } from './model/consolidated.api.model';
   providedIn: 'root'
 })
 export class ConsolidatedApiService {
-  constructor(private http: HttpClient, private scanNotifications: ScanNotificationService) {
+  constructor(private scanNotifications: ScanNotificationService) {
   }
 
   private getLiveApiDetails(input: ConsolidatedLiveApis): {
@@ -25,23 +24,23 @@ export class ConsolidatedApiService {
     let endpoint: string;
     switch (input.type) {
       case 'user':
-        endpoint = '/api/dynamic/user';
+        endpoint = 'dynamic/user';
         payload = { text: { username: input.q1, email: input.q2 } };
         break;
       case 'social':
-        endpoint = '/api/dynamic/social';
+        endpoint = 'dynamic/social';
         payload = { text: { username: input.q1 } };
         break;
       case 'cracked':
-        endpoint = '/api/dynamic/cracked';
+        endpoint = 'dynamic/cracked';
         payload = { text: { playstore: input.q1 } };
         break;
       case 'software':
-        endpoint = '/api/dynamic/software';
+        endpoint = 'dynamic/software';
         payload = { text: { name: input.q1 } };
         break;
       default:
-        endpoint = '/api/dynamic/';
+        endpoint = 'dynamic/';
         payload = { text: { q1: input.q1, q2: input.q2 } };
         break;
     }
@@ -50,26 +49,13 @@ export class ConsolidatedApiService {
 
   private fetchLiveApiResults(input: ConsolidatedLiveApis): Observable<ConsolidatedApiResponse> {
     const { apiEndpoint, payload } = this.getLiveApiDetails(input);
-    return this.http.post<ConsolidatedApiResponse>(apiEndpoint, payload).pipe(expand(res => {
-      return this.shouldContinueLivePolling(res)
-        ? timer(2000).pipe(switchMap(() => this.http.post<ConsolidatedApiResponse>(apiEndpoint, payload)))
-        : EMPTY;
-    }), takeWhile(res => {
-      return this.shouldContinueLivePolling(res);
-    }, true), catchError(error => {
-      return new Observable<ConsolidatedApiResponse>(observer => {
-        observer.error(error);
-      });
-    }));
-  }
-
-  private shouldContinueLivePolling(res: ConsolidatedApiResponse): boolean {
-    const nested = this.getNestedResponse(res.result);
-    const isPending = res.status === 'pending' || nested?.status === 'busy' || nested?.status === 'pending';
-    const isFailedPending = (res.status === 'pending' || nested?.status === 'pending') &&
-            ((nested?.progress ?? res.progress) === 0) &&
-            ((nested?.step ?? res.step) === 'failed');
-    return isPending && !isFailedPending;
+    return this.scanNotifications.runApiScanAsResponse<ConsolidatedApiResponse>({
+      apiReference: apiEndpoint,
+      payload,
+      forceNew: true,
+      notify: false,
+      pollDelayMs: 2000,
+    });
   }
 
   public runLiveApiSearch(inputs: ConsolidatedLiveApis[]): Observable<ConsolidatedLiveApiResults[]> {
@@ -143,6 +129,7 @@ export class ConsolidatedApiService {
         apiReference: endpoint,
         payload,
         forceNew: true,
+        notify: false,
         metadata: {
           title: `${scanType.toUpperCase()} Scan`,
           target,

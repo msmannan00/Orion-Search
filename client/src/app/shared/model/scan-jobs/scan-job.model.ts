@@ -85,4 +85,5 @@ export interface ScanJobStartRequest {
   pollDelayMs?: number;
   forceNew?: boolean;
   reusePrevious?: boolean;
+  notify?: boolean;
 }

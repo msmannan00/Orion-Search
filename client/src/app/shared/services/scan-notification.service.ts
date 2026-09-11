@@ -145,13 +145,15 @@ export class ScanNotificationService {
     this.jobs.set([]);
   }
 
-  private registerJob(job: ScanJob, pollDelayMs: number | undefined): void {
+  private registerJob(job: ScanJob, pollDelayMs: number | undefined, notify = true): void {
     const alreadyCached = this.jobCache.has(job.scan_id);
     this.cacheJob(job);
-    if (!alreadyCached) {
-      this.upsertVisibleJob(job);
+    if (notify) {
+      if (!alreadyCached) {
+        this.upsertVisibleJob(job);
+      }
+      this.refreshCounts();
     }
-    this.refreshCounts();
     this.ensurePolling(job, pollDelayMs);
   }
 
@@ -215,8 +217,7 @@ export class ScanNotificationService {
   }
 
   private createApiScanRequest<T>(request: ScanJobStartRequest): Observable<T | ScanJobDuplicateChoiceResponse> {
-    const endpoint = request.forceNew ? this.withForceNew(request.apiReference) : request.apiReference;
-    return this.api.post<T | ScanJobDuplicateChoiceResponse>(endpoint, request.payload);
+    return this.api.post<T | ScanJobDuplicateChoiceResponse>(this.withScanFlags(request), request.payload);
   }
 
   private resolveApiScanResponse<T>(response: T | ScanJobDuplicateChoiceResponse, request: ScanJobStartRequest): Observable<T> {
@@ -226,17 +227,13 @@ export class ScanNotificationService {
       }
       return this.askDuplicateScanChoice(response as ScanJobDuplicateChoiceResponse).pipe(switchMap(choice => {
         if (choice === 'previous') {
-          return this.getScanDetail((response as ScanJobDuplicateChoiceResponse).previous_scan.scan_id).pipe(switchMap(job => this.watchTrackedJob<T>(job, request.pollDelayMs)));
+          return this.getScanDetail((response as ScanJobDuplicateChoiceResponse).previous_scan.scan_id).pipe(switchMap(job => this.watchTrackedJob<T>(job, request)));
         }
         if (choice === 'new') {
           return this.createApiScanRequest<T>({ ...request, forceNew: true }).pipe(switchMap(nextResponse => this.resolveApiScanResponse<T>(nextResponse, { ...request, forceNew: true })));
         }
         return EMPTY;
       }));
-    }
-
-    if (this.shouldRetryIncompleteUrlScanResponse(response, request)) {
-      return timer(request.pollDelayMs ?? this.defaultPollDelayMs).pipe(switchMap(() => this.createApiScanRequest<T>(request)), switchMap(nextResponse => this.resolveApiScanResponse<T>(nextResponse, request)));
     }
 
     const job = this.trackApiScanResponse(response, request);
@@ -247,14 +244,14 @@ export class ScanNotificationService {
       }
       return of(response as T);
     }
-    return this.watchTrackedJob<T>(job, request.pollDelayMs);
+    return this.watchTrackedJob<T>(job, request);
   }
 
-  private watchTrackedJob<T>(job: ScanJob, pollDelayMs = this.defaultPollDelayMs): Observable<T> {
-    this.ensurePolling(job, pollDelayMs);
+  private watchTrackedJob<T>(job: ScanJob, request: ScanJobStartRequest): Observable<T> {
+    this.ensurePolling(job, request.pollDelayMs);
     return this.watchJob(job.scan_id).pipe(map(updated => this.toScanResponse<T>(updated)), takeWhile(response => this.isPendingResponse(response), true), tap(response => {
       const scanId = this.asScanResponse(response).scan_id;
-      if (scanId) {
+      if (scanId && request.notify !== false) {
         this.refreshCounts();
       }
     }));
@@ -279,12 +276,23 @@ export class ScanNotificationService {
       updated_at: responseRecord.scan_updated_at,
       completed_at: responseRecord.scan_completed_at,
     };
-    this.registerJob(job, request.pollDelayMs);
+    this.registerJob(job, request.pollDelayMs, request.notify !== false);
     return job;
   }
 
-  private withForceNew(endpoint: string): string {
-    return `${endpoint}${endpoint.includes('?') ? '&' : '?'}force_new=true`;
+  private withScanFlags(request: ScanJobStartRequest): string {
+    const endpoint = request.apiReference;
+    const flags: string[] = [];
+    if (request.forceNew) {
+      flags.push('force_new=true');
+    }
+    if (request.notify === false) {
+      flags.push('notify=false');
+    }
+    if (!flags.length) {
+      return endpoint;
+    }
+    return `${endpoint}${endpoint.includes('?') ? '&' : '?'}${flags.join('&')}`;
   }
 
   markSeen(job: ScanJob): void {
@@ -578,21 +586,6 @@ export class ScanNotificationService {
     }
     return ['pending', 'busy', 'queued', 'running', 'started', 'processing', 'scanning', 'in_progress'].includes(status) ||
       ['queued', 'running', 'started', 'processing', 'scanning', 'in_progress'].some(value => step.includes(value));
-  }
-
-  private shouldRetryIncompleteUrlScanResponse(response: unknown, request: ScanJobStartRequest): boolean {
-    const apiReference = String(request.apiReference ?? '').replace(/^\/?api\//, '');
-    const scanType = String(request.payload?.scanType ?? '').toLowerCase();
-    const responseRecord = this.asScanResponse(response);
-    const nested = this.asScanResponse(responseRecord.result);
-    const status = String(nested.status ?? responseRecord.status ?? responseRecord.scan_status ?? '').toLowerCase();
-    if (apiReference !== 'urlscan/domain' || !['seo', 'repo'].includes(scanType)) {
-      return false;
-    }
-    if (['error', 'failed', 'failure'].includes(status) || Boolean(responseRecord.error) || Boolean(responseRecord.detail)) {
-      return false;
-    }
-    return !nested.meta;
   }
 
   private asScanResponse(value: unknown): ScanResponseRecord {

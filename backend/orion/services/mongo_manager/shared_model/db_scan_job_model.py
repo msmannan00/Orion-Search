@@ -27,6 +27,7 @@ class db_scan_job_model(Model):
     response: Dict[str, Any] = Field(default_factory=dict)
 
     seen: bool = False
+    notify: bool = True
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
