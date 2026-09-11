@@ -78,6 +78,20 @@ def role_required(required_roles: list[user_role]):
     return verify_role
 
 
+def permission_required(required_permissions: list[UserPermission]):
+    async def verify_permission(current_user=Depends(get_current_user)):
+        if _enum_value(getattr(current_user, "role", None)) == user_role.ADMIN.value:
+            return True
+
+        permissions = [_enum_value(permission) for permission in (getattr(current_user, "permissions", None) or [])]
+        if any(_enum_value(required_permission) in permissions for required_permission in required_permissions):
+            return True
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
+
+    return verify_permission
+
+
 async def default_tenant_required(request: Request):
     if not getattr(getattr(request.state, "tenant", None), "is_default", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
