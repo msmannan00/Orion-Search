@@ -10,6 +10,7 @@ import { ProxyController } from '../../../../shared/services/proxy-controller';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import type { SocialThreadComment } from './model/dashboard-result-social.model';
 import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
+import { scrollToResultCard } from '../dashboard-result.util';
 
 export type { SocialThreadComment } from './model/dashboard-result-social.model';
 
@@ -208,13 +209,6 @@ export class DashboardResultSocialComponent implements OnInit, AfterViewInit {
   }
 
   private scrollToResultIndex(index: number): void {
-    if (index < 0) {
-      return;
-    }
-    setTimeout(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-result-index="${index}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
+    scrollToResultCard(this.elementRef.nativeElement, index);
   }
 }

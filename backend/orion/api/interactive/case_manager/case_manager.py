@@ -44,6 +44,13 @@ class CaseManager:
             CaseManager()
         return CaseManager.__instance
 
+    async def _find_case_record(self, case_id, current_user):
+        return await self._engine.find_one(
+            db_case_model,
+            (db_case_model.caseId == case_id)
+            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
+        )
+
     async def _to_response(self, record: db_case_model, current_user) -> CaseResponse:
         enc = await CaseHelperMethods.get_case_cipher(current_user)
         CaseHelperMethods.apply_sensitive_case_values(record, lambda value: CaseHelperMethods.decrypt_value(enc, value))
@@ -324,11 +331,7 @@ class CaseManager:
         return self._serialize_case_users(users)
 
     async def get_case_by_id(self, case_id: str, current_user) -> CaseResponse:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
         if not record:
             await AuditLogManager.get_instance().register(
                 str(current_user.tenant_uuid),
@@ -443,11 +446,7 @@ class CaseManager:
         return old_data != new_data
 
     async def update_case(self, case_id: str, data: UpdateCaseRequest, current_user) -> CaseResponse:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
         if not record:
             await AuditLogManager.get_instance().register(
                 str(current_user.tenant_uuid),
@@ -653,11 +652,7 @@ class CaseManager:
         return await self._to_response(record, current_user)
 
     async def delete_case(self, case_id: str, current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
         if not record:
             raise HTTPException(status_code=404, detail="Case not found")
         if record.isArchived:
@@ -749,11 +744,7 @@ class CaseManager:
         return {"files": uploaded_files}
     
     async def _load_viewable_case(self, case_id: str, current_user):
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
 
         if not record:
             raise HTTPException(status_code=404, detail="Case not found")
@@ -991,11 +982,7 @@ class CaseManager:
         return items
     
     async def archive_case(self, case_id: str, current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
 
         if not record:
             raise HTTPException(status_code=404, detail="Case not found")
@@ -1033,11 +1020,7 @@ class CaseManager:
         if getattr(current_user.role, "value", current_user.role) != user_role.ADMIN.value:
             raise HTTPException(status_code=403, detail="Only admins can unarchive cases")
 
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
 
         if not record:
             raise HTTPException(status_code=404, detail="Case not found")
@@ -1190,11 +1173,7 @@ class CaseManager:
         return await self._to_response(record, current_user)
     
     async def assign_case_analyst(self, case_id: str, data, current_user) -> CaseResponse:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
+        record = await self._find_case_record(case_id, current_user)
 
         if not record:
             raise HTTPException(status_code=404, detail="Case not found")

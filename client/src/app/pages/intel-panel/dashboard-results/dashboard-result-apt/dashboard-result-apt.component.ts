@@ -6,6 +6,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { RecordSidebarComponent } from '../../../../shared/partials/record-sidebar/record-sidebar.component';
 import { AptIntelGroup, AptIntelRecord, AptIntelResultItem, AptIntelSummary } from '../../../../shared/model/results/apt-intel/apt-intel.callback.model';
 import { RecordSidebarItem } from '../../../../shared/partials/record-sidebar/model/record-sidebar.model';
+import { scrollToResultCard } from '../dashboard-result.util';
 
 const STAGGER_RENDER_BATCH_SIZE = 10;
 const STAGGER_RENDER_DELAY_MS = 16;
@@ -453,14 +454,7 @@ export class DashboardResultAptComponent implements OnInit, AfterViewInit, OnDes
   }
 
   private scrollToResultIndex(index: number): void {
-    if (index < 0) {
-      return;
-    }
-    setTimeout(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-result-index="${index}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
+    scrollToResultCard(this.elementRef.nativeElement, index);
   }
 
   private uniqueValues(values: string[]): string[] {

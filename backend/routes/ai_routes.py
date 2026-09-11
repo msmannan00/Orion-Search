@@ -19,6 +19,14 @@ async def ai_enabled_required(request: Request):
         raise HTTPException(status_code=403, detail="AI is disabled")
 
 
+_NEXUS_SCANNING_DEPENDENCIES = [
+    Depends(ai_enabled_required),
+    Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
+    Depends(license_required("scanning")),
+    Depends(limiter_dependency),
+]
+
+
 @ai_routes.post(
     "/api/nlp/parse/ai",
     include_in_schema=False,
@@ -129,12 +137,7 @@ async def nexus_analyze_text(payload: NexusTextAnalysisRequest,current_user=Depe
     "/api/nexus/chats",
     status_code=201,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def create_nexus_chat(payload: dict = Body(default={"title": "New Chat"}), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().create_chat(payload, current_user)
@@ -144,12 +147,7 @@ async def create_nexus_chat(payload: dict = Body(default={"title": "New Chat"}),
     "/api/nexus/chats",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def list_nexus_chats(current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().list_chats(current_user)
@@ -159,12 +157,7 @@ async def list_nexus_chats(current_user=Depends(get_current_user)):
     "/api/nexus/chats",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def delete_all_nexus_chats(current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().delete_all_chats(current_user)
@@ -174,12 +167,7 @@ async def delete_all_nexus_chats(current_user=Depends(get_current_user)):
     "/api/nexus/chats/{session_id}",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def get_nexus_chat(session_id: str, current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().get_chat(session_id, current_user)
@@ -189,12 +177,7 @@ async def get_nexus_chat(session_id: str, current_user=Depends(get_current_user)
     "/api/nexus/chats/{session_id}/messages",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def send_nexus_chat_message(session_id: str, payload: dict = Body(...), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().send_message(session_id, payload, current_user)
@@ -204,12 +187,7 @@ async def send_nexus_chat_message(session_id: str, payload: dict = Body(...), cu
     "/api/nexus/chats/{session_id}",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def rename_nexus_chat(session_id: str, payload: dict = Body(...), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().rename_chat(session_id, payload, current_user)
@@ -219,12 +197,7 @@ async def rename_nexus_chat(session_id: str, payload: dict = Body(...), current_
     "/api/nexus/chats/{session_id}",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def delete_nexus_chat(session_id: str, current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().delete_chat(session_id, current_user)
@@ -234,12 +207,7 @@ async def delete_nexus_chat(session_id: str, current_user=Depends(get_current_us
     "/api/nexus/chats/{session_id}/workspace/github/import",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def import_github_repo(session_id: str, payload: dict = Body(...), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().import_github_repo(
@@ -253,12 +221,7 @@ async def import_github_repo(session_id: str, payload: dict = Body(...), current
     "/api/nexus/chats/{session_id}/workspace/status",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def get_workspace_status(session_id: str, current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().get_workspace_status(
@@ -271,12 +234,7 @@ async def get_workspace_status(session_id: str, current_user=Depends(get_current
     "/api/nexus/chats/{session_id}/workspace/tree",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def get_workspace_tree(session_id: str, path: str = Query("", min_length=0), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().get_workspace_tree(
@@ -290,12 +248,7 @@ async def get_workspace_tree(session_id: str, path: str = Query("", min_length=0
     "/api/nexus/chats/{session_id}/workspace/file",
     status_code=200,
     include_in_schema=False,
-    dependencies=[
-        Depends(ai_enabled_required),
-        Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])),
-        Depends(license_required("scanning")),
-        Depends(limiter_dependency),
-    ],
+    dependencies=_NEXUS_SCANNING_DEPENDENCIES,
 )
 async def read_workspace_file(session_id: str, path: str = Query(..., min_length=1), start_line: int = Query(1, ge=1), line_count: int = Query(1000, ge=1, le=1000), current_user=Depends(get_current_user)):
     return await nexus_chat_gateway.getInstance().read_workspace_file(

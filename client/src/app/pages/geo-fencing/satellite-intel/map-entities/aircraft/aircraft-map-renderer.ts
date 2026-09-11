@@ -4,7 +4,8 @@ import { SatelliteLiveAircraft } from '../../model/satellite-intel-api.models';
 import { SatelliteAircraftTrackingService } from './aircraft-tracking.service';
 import { AircraftMarkerIconComponent } from './components/aircraft-marker-icon/aircraft-marker-icon.component';
 import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-renderer';
-import { escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, normalizeEntityId, stableHash } from '../../map-utils/renderer-utils';
+import { MarkerAnimator } from '../../map-utils/marker-animator';
+import { escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, normalizeEntityId, orderDistributionCells, screenCellFor, stableHash } from '../../map-utils/renderer-utils';
 import { TrackingSidebarBridge } from '../../../models/geo-fencing.models';
 import type * as Leaflet from 'leaflet';
 import { asUnknownRecord, Augmented, getOwnProperty, isFiniteNumber, isUnknownRecord, Nullable } from '../../../../../shared/utils/type-guards.util';
@@ -24,12 +25,11 @@ export class AircraftMapRenderer {
   private markers = new Map<string, AircraftMarker>();
   private markerTargets = new Map<string, string>();
   private trackLine: Nullable<Leaflet.Polyline> = null;
-  private animationFrames = new Map<string, { marker: AircraftMarker; startLat: number; startLon: number; targetLat: number; targetLon: number; startedAt: number }>();
-  private animationFrame: number | null = null;
   private detailSub?: Subscription;
   private markerZoomBucket = 0;
   private renderedAircraftCount = 0;
   private readonly animationDurationMs = 8000;
+  private readonly animator = new MarkerAnimator<AircraftMarker>(this.animationDurationMs);
   private readonly sparseAircraftAreaThreshold = 15;
   private readonly crowdedAircraftAreaThreshold = 100;
   private readonly minimumSampledAircraftPerArea = 12;
@@ -71,7 +71,7 @@ export class AircraftMapRenderer {
     const aircraft = this.getRenderableAircraft().filter(item => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
     this.renderedAircraftCount = aircraft.length;
     if (aircraft.length > this.maxAnimatedAircraft) {
-      this.cancelAllAnimations();
+      this.animator.cancelAll();
     }
 
     const visibleIds = new Set(aircraft.map(item => this.getMarkerId(item)));
@@ -79,7 +79,7 @@ export class AircraftMapRenderer {
       if (visibleIds.has(markerId)) {
         continue;
       }
-      this.stopAnimation(markerId);
+      this.animator.stop(markerId);
       this.destroyMarkerIcon(marker);
       this.cluster.removeLayer(marker);
       this.markers.delete(markerId);
@@ -118,7 +118,7 @@ export class AircraftMapRenderer {
   destroy(): void {
     this.detailSub?.unsubscribe();
     this.cancelRender();
-    this.cancelAllAnimations();
+    this.animator.cancelAll();
     this.clearTrack();
     if (this.cluster) {
       this.map?.removeLayer(this.cluster);
@@ -229,7 +229,7 @@ export class AircraftMapRenderer {
     ].join(':');
 
     const isSameMotion = this.markerTargets.get(markerId) === motionKey;
-    if (isSameMotion && this.animationFrames.has(markerId)) {
+    if (isSameMotion && this.animator.has(markerId)) {
       return;
     }
     this.markerTargets.set(markerId, motionKey);
@@ -239,7 +239,7 @@ export class AircraftMapRenderer {
     const startLon = isSameMotion && Number.isFinite(current?.lng) ? current.lng : lon;
     const projectionSource = isSameMotion ? { ...aircraft, latitude: startLat, longitude: startLon } : aircraft;
 
-    this.stopAnimation(markerId);
+    this.animator.stop(markerId);
     if (!this.shouldAnimateMarker(aircraft)) {
       marker.setLatLng([lat, lon]);
       return;
@@ -251,7 +251,7 @@ export class AircraftMapRenderer {
       return;
     }
 
-    this.animateMarker(markerId, marker, projected.lat, projected.lon);
+    this.animator.animate(markerId, marker, projected.lat, projected.lon);
   }
 
   private projectPosition(aircraft: SatelliteLiveAircraft, seconds: number): { lat: number; lon: number } | null {
@@ -285,78 +285,6 @@ export class AircraftMapRenderer {
   private shouldAnimateMarker(aircraft: SatelliteLiveAircraft): boolean {
     const icaoId = normalizeEntityId(aircraft.icao24);
     return this.renderedAircraftCount <= this.maxAnimatedAircraft || this.isSelected(icaoId);
-  }
-
-  private animateMarker(markerId: string, marker: AircraftMarker, targetLat: number, targetLon: number): void {
-    if (typeof window === 'undefined') {
-      marker.setLatLng([targetLat, targetLon]);
-      return;
-    }
-
-    this.stopAnimation(markerId);
-
-    const current = marker.getLatLng();
-    const startLat = current.lat;
-    const startLon = current.lng;
-    const deltaLat = targetLat - startLat;
-    const deltaLon = targetLon - startLon;
-
-    if (Math.abs(deltaLat) < 0.000001 && Math.abs(deltaLon) < 0.000001) {
-      marker.setLatLng([targetLat, targetLon]);
-      return;
-    }
-
-    this.animationFrames.set(markerId, {
-      marker,
-      startLat,
-      startLon,
-      targetLat,
-      targetLon,
-      startedAt: window.performance.now(),
-    });
-
-    if (this.animationFrame !== null) {
-      return;
-    }
-
-    const step = (timestamp: number) => {
-      for (const [id, animation] of Array.from(this.animationFrames.entries())) {
-        const progress = Math.min(1, (timestamp - animation.startedAt) / this.animationDurationMs);
-        animation.marker.setLatLng([
-          animation.startLat + (animation.targetLat - animation.startLat) * progress,
-          animation.startLon + (animation.targetLon - animation.startLon) * progress,
-        ]);
-
-        if (progress >= 1) {
-          this.animationFrames.delete(id);
-        }
-      }
-
-      if (this.animationFrames.size > 0) {
-        this.animationFrame = window.requestAnimationFrame(step);
-        return;
-      }
-
-      this.animationFrame = null;
-    };
-
-    this.animationFrame = window.requestAnimationFrame(step);
-  }
-
-  private stopAnimation(markerId: string): void {
-    this.animationFrames.delete(markerId);
-    if (this.animationFrames.size === 0 && this.animationFrame !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = null;
-    }
-  }
-
-  private cancelAllAnimations(): void {
-    this.animationFrames.clear();
-    if (this.animationFrame !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = null;
-    }
   }
 
   private createMarker(aircraft: SatelliteLiveAircraft): Nullable<AircraftMarker> {
@@ -648,7 +576,7 @@ export class AircraftMapRenderer {
       cells.set(cellRef.key, cell);
     });
 
-    const orderedCells = this.orderDistributionCells(Array.from(cells.values()).map(cell => ({
+    const orderedCells = orderDistributionCells(Array.from(cells.values()).map(cell => ({
       ...cell,
       items: cell.items.slice().sort((left, right) => Math.abs(stableHash(this.getStableAircraftKey(left))) - Math.abs(stableHash(this.getStableAircraftKey(right)))),
     })), limit);
@@ -677,71 +605,6 @@ export class AircraftMapRenderer {
     return selected;
   }
 
-  private orderDistributionCells(cells: AircraftDistributionCell[], limit: number): AircraftDistributionCell[] {
-    if (cells.length <= limit) {
-      return cells.slice().sort((left, right) => left.row - right.row || left.col - right.col);
-    }
-
-    const rowGroups = new Map<number, AircraftDistributionCell[]>();
-    cells.forEach(cell => {
-      const rowCells = rowGroups.get(cell.row) ?? [];
-      rowCells.push(cell);
-      rowGroups.set(cell.row, rowCells);
-    });
-
-    const quotas = Array.from(rowGroups.entries())
-      .map(([row, rowCells]) => {
-        const sortedCells = rowCells.slice().sort((left, right) => left.col - right.col);
-        const rawQuota = (limit * sortedCells.length) / cells.length;
-        return {
-          row,
-          cells: sortedCells,
-          quota: Math.min(sortedCells.length, Math.floor(rawQuota)),
-          remainder: rawQuota % 1,
-        };
-      })
-      .sort((left, right) => left.row - right.row);
-    let used = quotas.reduce((total, quota) => total + quota.quota, 0);
-
-    quotas
-      .slice()
-      .sort((left, right) => right.remainder - left.remainder || right.cells.length - left.cells.length)
-      .forEach(quota => {
-        if (used >= limit || quota.quota >= quota.cells.length) {
-          return;
-        }
-        quota.quota += 1;
-        used += 1;
-      });
-
-    while (used < limit) {
-      const nextQuota = quotas.find(quota => quota.quota < quota.cells.length);
-      if (!nextQuota) {
-        break;
-      }
-      nextQuota.quota += 1;
-      used += 1;
-    }
-
-    return quotas.flatMap(quota => this.takeEvenlySpacedCells(quota.cells, quota.quota));
-  }
-
-  private takeEvenlySpacedCells(cells: AircraftDistributionCell[], count: number): AircraftDistributionCell[] {
-    if (count <= 0) {
-      return [];
-    }
-    if (count >= cells.length) {
-      return cells;
-    }
-
-    const selected: AircraftDistributionCell[] = [];
-    const step = cells.length / count;
-    for (let index = 0; index < count; index += 1) {
-      selected.push(cells[Math.min(cells.length - 1, Math.floor((index + 0.5) * step))]);
-    }
-    return selected;
-  }
-
   private getDistributionCell(aircraft: SatelliteLiveAircraft, zoom: number): { key: string; row: number; col: number } {
     const screenCell = this.getScreenDistributionCell(aircraft, this.getDistributionScreenGridSize(zoom));
     if (screenCell) {
@@ -761,31 +624,13 @@ export class AircraftMapRenderer {
   }
 
   private getScreenBucketKey(aircraft: SatelliteLiveAircraft, gridSize: number): string | null {
-    const cell = this.getScreenCell(aircraft, gridSize);
+    const cell = screenCellFor(this.map, aircraft.latitude, aircraft.longitude, gridSize);
     return cell ? `screen:${gridSize}:${cell.row}:${cell.col}` : null;
   }
 
   private getScreenDistributionCell(aircraft: SatelliteLiveAircraft, gridSize: number): { key: string; row: number; col: number } | null {
-    const cell = this.getScreenCell(aircraft, gridSize);
+    const cell = screenCellFor(this.map, aircraft.latitude, aircraft.longitude, gridSize);
     return cell ? { key: `screen-cell:${gridSize}:${cell.row}:${cell.col}`, row: cell.row, col: cell.col } : null;
-  }
-
-  private getScreenCell(aircraft: SatelliteLiveAircraft, gridSize: number): { row: number; col: number } | null {
-    const latitude = aircraft.latitude;
-    const longitude = aircraft.longitude;
-    if (!this.map?.latLngToContainerPoint || typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return null;
-    }
-
-    const point = this.map.latLngToContainerPoint([latitude, longitude]);
-    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
-      return null;
-    }
-
-    return {
-      row: Math.floor(point.y / gridSize),
-      col: Math.floor(point.x / gridSize),
-    };
   }
 
   private getSampleScreenGridSize(zoom: number): number {

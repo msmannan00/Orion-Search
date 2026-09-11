@@ -56,3 +56,84 @@ export function getResponseStatus(res: unknown): string | undefined {
 export function isPendingStatus(status: string | undefined): boolean {
   return status === 'pending' || status === 'busy';
 }
+
+export function screenCellFor(map: Pick<LeafletMap, 'latLngToContainerPoint'> | null | undefined, latitude: number | null | undefined, longitude: number | null | undefined, gridSize: number): { row: number; col: number } | null {
+  if (!map?.latLngToContainerPoint || typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  const point = map.latLngToContainerPoint([latitude, longitude]);
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
+    return null;
+  }
+
+  return {
+    row: Math.floor(point.y / gridSize),
+    col: Math.floor(point.x / gridSize),
+  };
+}
+
+export function takeEvenlySpacedCells<T>(cells: T[], count: number): T[] {
+  if (count <= 0) {
+    return [];
+  }
+  if (count >= cells.length) {
+    return cells;
+  }
+
+  const selected: T[] = [];
+  const step = cells.length / count;
+  for (let index = 0; index < count; index += 1) {
+    selected.push(cells[Math.min(cells.length - 1, Math.floor((index + 0.5) * step))]);
+  }
+  return selected;
+}
+
+export function orderDistributionCells<T extends { row: number; col: number }>(cells: T[], limit: number): T[] {
+  if (cells.length <= limit) {
+    return cells.slice().sort((left, right) => left.row - right.row || left.col - right.col);
+  }
+
+  const rowGroups = new Map<number, T[]>();
+  cells.forEach(cell => {
+    const rowCells = rowGroups.get(cell.row) ?? [];
+    rowCells.push(cell);
+    rowGroups.set(cell.row, rowCells);
+  });
+
+  const quotas = Array.from(rowGroups.entries())
+    .map(([row, rowCells]) => {
+      const sortedCells = rowCells.slice().sort((left, right) => left.col - right.col);
+      const rawQuota = (limit * sortedCells.length) / cells.length;
+      return {
+        row,
+        cells: sortedCells,
+        quota: Math.min(sortedCells.length, Math.floor(rawQuota)),
+        remainder: rawQuota % 1,
+      };
+    })
+    .sort((left, right) => left.row - right.row);
+  let used = quotas.reduce((total, quota) => total + quota.quota, 0);
+
+  quotas
+    .slice()
+    .sort((left, right) => right.remainder - left.remainder || right.cells.length - left.cells.length)
+    .forEach(quota => {
+      if (used >= limit || quota.quota >= quota.cells.length) {
+        return;
+      }
+      quota.quota += 1;
+      used += 1;
+    });
+
+  while (used < limit) {
+    const nextQuota = quotas.find(quota => quota.quota < quota.cells.length);
+    if (!nextQuota) {
+      break;
+    }
+    nextQuota.quota += 1;
+    used += 1;
+  }
+
+  return quotas.flatMap(quota => takeEvenlySpacedCells(quota.cells, quota.quota));
+}

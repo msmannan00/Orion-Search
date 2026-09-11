@@ -3,8 +3,9 @@ import { Subscription } from 'rxjs';
 import { SatelliteLiveShip } from '../../model/satellite-intel-api.models';
 import { SatelliteShipTrackingService } from './ship-tracking.service';
 import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-renderer';
+import { MarkerAnimator } from '../../map-utils/marker-animator';
 import { ShipMarkerIconComponent } from './components/ship-marker-icon/ship-marker-icon.component';
-import { escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, normalizeEntityId, stableHash } from '../../map-utils/renderer-utils';
+import { escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, normalizeEntityId, orderDistributionCells, screenCellFor, stableHash } from '../../map-utils/renderer-utils';
 import { TrackingSidebarBridge } from '../../../models/geo-fencing.models';
 import type * as Leaflet from 'leaflet';
 import { asUnknownRecord, Augmented, getOwnProperty, isFiniteNumber, Nullable } from '../../../../../shared/utils/type-guards.util';
@@ -23,11 +24,10 @@ export class ShipMapRenderer {
   private renderVersion = 0;
   private markers = new Map<string, ShipMarker>();
   private markerTargets = new Map<string, string>();
-  private animationFrames = new Map<string, { marker: ShipMarker; startLat: number; startLon: number; targetLat: number; targetLon: number; startedAt: number }>();
-  private animationFrame: number | null = null;
   private detailSub?: Subscription;
   private markerZoomBucket = 0;
   private readonly animationDurationMs = 8000;
+  private readonly animator = new MarkerAnimator<ShipMarker>(this.animationDurationMs);
   private readonly sparseShipAreaThreshold = 15;
   private readonly crowdedShipAreaThreshold = 100;
   private readonly minimumSampledShipsPerArea = 12;
@@ -68,14 +68,14 @@ export class ShipMapRenderer {
 
     const ships = this.getRenderableShips().filter(ship => Number.isFinite(ship.latitude) && Number.isFinite(ship.longitude));
     if (ships.length > this.maxAnimatedShips) {
-      this.cancelAllAnimations();
+      this.animator.cancelAll();
     }
     const visibleIds = new Set(ships.map(ship => this.getMarkerId(ship)));
     for (const [markerId, marker] of Array.from(this.markers.entries())) {
       if (visibleIds.has(markerId)) {
         continue;
       }
-      this.stopAnimation(markerId);
+      this.animator.stop(markerId);
       this.destroyMarkerIcon(marker);
       this.cluster.removeLayer(marker);
       this.markers.delete(markerId);
@@ -107,7 +107,7 @@ export class ShipMapRenderer {
   destroy(): void {
     this.detailSub?.unsubscribe();
     this.cancelRender();
-    this.cancelAllAnimations();
+    this.animator.cancelAll();
     if (this.cluster) {
       this.map?.removeLayer(this.cluster);
       this.cluster = null;
@@ -206,7 +206,7 @@ export class ShipMapRenderer {
     ].join(':');
 
     const isSameMotion = this.markerTargets.get(markerId) === motionKey;
-    if (isSameMotion && this.animationFrames.has(markerId)) {
+    if (isSameMotion && this.animator.has(markerId)) {
       return;
     }
     this.markerTargets.set(markerId, motionKey);
@@ -216,7 +216,7 @@ export class ShipMapRenderer {
     const startLon = isSameMotion && Number.isFinite(current?.lng) ? current.lng : lon;
     const projectionSource = isSameMotion ? { ...ship, latitude: startLat, longitude: startLon } : ship;
 
-    this.stopAnimation(markerId);
+    this.animator.stop(markerId);
     if (!this.shouldAnimateMarker(ship)) {
       marker.setLatLng([lat, lon]);
       return;
@@ -228,7 +228,7 @@ export class ShipMapRenderer {
       return;
     }
 
-    this.animateMarker(markerId, marker, projected.lat, projected.lon);
+    this.animator.animate(markerId, marker, projected.lat, projected.lon);
   }
 
   private projectPosition(ship: SatelliteLiveShip, seconds: number): { lat: number; lon: number } | null {
@@ -261,78 +261,6 @@ export class ShipMapRenderer {
   private shouldAnimateMarker(ship: SatelliteLiveShip): boolean {
     const shipId = normalizeEntityId(ship.mmsi);
     return this.markers.size <= this.maxAnimatedShips || this.isSelected(shipId);
-  }
-
-  private animateMarker(markerId: string, marker: ShipMarker, targetLat: number, targetLon: number): void {
-    if (typeof window === 'undefined') {
-      marker.setLatLng([targetLat, targetLon]);
-      return;
-    }
-
-    this.stopAnimation(markerId);
-
-    const current = marker.getLatLng();
-    const startLat = current.lat;
-    const startLon = current.lng;
-    const deltaLat = targetLat - startLat;
-    const deltaLon = targetLon - startLon;
-
-    if (Math.abs(deltaLat) < 0.000001 && Math.abs(deltaLon) < 0.000001) {
-      marker.setLatLng([targetLat, targetLon]);
-      return;
-    }
-
-    this.animationFrames.set(markerId, {
-      marker,
-      startLat,
-      startLon,
-      targetLat,
-      targetLon,
-      startedAt: window.performance.now(),
-    });
-
-    if (this.animationFrame !== null) {
-      return;
-    }
-
-    const step = (timestamp: number) => {
-      for (const [id, animation] of Array.from(this.animationFrames.entries())) {
-        const progress = Math.min(1, (timestamp - animation.startedAt) / this.animationDurationMs);
-        animation.marker.setLatLng([
-          animation.startLat + (animation.targetLat - animation.startLat) * progress,
-          animation.startLon + (animation.targetLon - animation.startLon) * progress,
-        ]);
-
-        if (progress >= 1) {
-          this.animationFrames.delete(id);
-        }
-      }
-
-      if (this.animationFrames.size > 0) {
-        this.animationFrame = window.requestAnimationFrame(step);
-        return;
-      }
-
-      this.animationFrame = null;
-    };
-
-    this.animationFrame = window.requestAnimationFrame(step);
-  }
-
-  private stopAnimation(markerId: string): void {
-    this.animationFrames.delete(markerId);
-    if (this.animationFrames.size === 0 && this.animationFrame !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = null;
-    }
-  }
-
-  private cancelAllAnimations(): void {
-    this.animationFrames.clear();
-    if (this.animationFrame !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = null;
-    }
   }
 
   private createMarker(ship: SatelliteLiveShip): Nullable<ShipMarker> {
@@ -611,7 +539,7 @@ export class ShipMapRenderer {
       cells.set(cellRef.key, cell);
     });
 
-    const orderedCells = this.orderDistributionCells(Array.from(cells.values()).map(cell => ({
+    const orderedCells = orderDistributionCells(Array.from(cells.values()).map(cell => ({
       ...cell,
       items: cell.items.slice().sort((left, right) => Math.abs(stableHash(this.getStableShipKey(left))) - Math.abs(stableHash(this.getStableShipKey(right)))),
     })), limit);
@@ -662,71 +590,6 @@ export class ShipMapRenderer {
     return 220;
   }
 
-  private orderDistributionCells(cells: ShipDistributionCell[], limit: number): ShipDistributionCell[] {
-    if (cells.length <= limit) {
-      return cells.slice().sort((left, right) => left.row - right.row || left.col - right.col);
-    }
-
-    const rowGroups = new Map<number, ShipDistributionCell[]>();
-    cells.forEach(cell => {
-      const rowCells = rowGroups.get(cell.row) ?? [];
-      rowCells.push(cell);
-      rowGroups.set(cell.row, rowCells);
-    });
-
-    const quotas = Array.from(rowGroups.entries())
-      .map(([row, rowCells]) => {
-        const sortedCells = rowCells.slice().sort((left, right) => left.col - right.col);
-        const rawQuota = (limit * sortedCells.length) / cells.length;
-        return {
-          row,
-          cells: sortedCells,
-          quota: Math.min(sortedCells.length, Math.floor(rawQuota)),
-          remainder: rawQuota % 1,
-        };
-      })
-      .sort((left, right) => left.row - right.row);
-    let used = quotas.reduce((total, quota) => total + quota.quota, 0);
-
-    quotas
-      .slice()
-      .sort((left, right) => right.remainder - left.remainder || right.cells.length - left.cells.length)
-      .forEach(quota => {
-        if (used >= limit || quota.quota >= quota.cells.length) {
-          return;
-        }
-        quota.quota += 1;
-        used += 1;
-      });
-
-    while (used < limit) {
-      const nextQuota = quotas.find(quota => quota.quota < quota.cells.length);
-      if (!nextQuota) {
-        break;
-      }
-      nextQuota.quota += 1;
-      used += 1;
-    }
-
-    return quotas.flatMap(quota => this.takeEvenlySpacedCells(quota.cells, quota.quota));
-  }
-
-  private takeEvenlySpacedCells(cells: ShipDistributionCell[], count: number): ShipDistributionCell[] {
-    if (count <= 0) {
-      return [];
-    }
-    if (count >= cells.length) {
-      return cells;
-    }
-
-    const selected: ShipDistributionCell[] = [];
-    const step = cells.length / count;
-    for (let index = 0; index < count; index += 1) {
-      selected.push(cells[Math.min(cells.length - 1, Math.floor((index + 0.5) * step))]);
-    }
-    return selected;
-  }
-
   private getDistributionCell(ship: SatelliteLiveShip, zoom: number): { key: string; row: number; col: number } {
     const screenCell = this.getScreenDistributionCell(ship, this.getDistributionScreenGridSize(zoom));
     if (screenCell) {
@@ -746,31 +609,13 @@ export class ShipMapRenderer {
   }
 
   private getScreenBucketKey(ship: SatelliteLiveShip, gridSize: number): string | null {
-    const cell = this.getScreenCell(ship, gridSize);
+    const cell = screenCellFor(this.map, ship.latitude, ship.longitude, gridSize);
     return cell ? `screen:${gridSize}:${cell.row}:${cell.col}` : null;
   }
 
   private getScreenDistributionCell(ship: SatelliteLiveShip, gridSize: number): { key: string; row: number; col: number } | null {
-    const cell = this.getScreenCell(ship, gridSize);
+    const cell = screenCellFor(this.map, ship.latitude, ship.longitude, gridSize);
     return cell ? { key: `screen-cell:${gridSize}:${cell.row}:${cell.col}`, row: cell.row, col: cell.col } : null;
-  }
-
-  private getScreenCell(ship: SatelliteLiveShip, gridSize: number): { row: number; col: number } | null {
-    const latitude = ship.latitude;
-    const longitude = ship.longitude;
-    if (!this.map?.latLngToContainerPoint || typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return null;
-    }
-
-    const point = this.map.latLngToContainerPoint([latitude, longitude]);
-    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
-      return null;
-    }
-
-    return {
-      row: Math.floor(point.y / gridSize),
-      col: Math.floor(point.x / gridSize),
-    };
   }
 
   private getSampleScreenGridSize(zoom: number): number {

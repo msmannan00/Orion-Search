@@ -11,6 +11,7 @@ import { LicenseService } from '../../../../services/licenses/licenses.service';
 import { isWithinDays as isWithinDaysUtil } from '../../../../shared/utils/intel-report.util';
 import { ProxyController } from '../../../../shared/services/proxy-controller';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { scrollToResultCard } from '../dashboard-result.util';
 
 @Component({
   selector: 'app-dashboard-results-general-grid',
@@ -135,13 +136,6 @@ export class DashboardResultsGeneralComponent implements AfterViewInit, OnInit {
   }
 
   private scrollToResultIndex(index: number): void {
-    if (index < 0) {
-      return;
-    }
-    setTimeout(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-result-index="${index}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
+    scrollToResultCard(this.elementRef.nativeElement, index);
   }
 }

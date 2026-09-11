@@ -8,6 +8,7 @@ import { NormalizeUnicodePipe } from '../../../../shared/pipes/normalize-unicode
 import { AuthService } from '../../../../services/authetication/auth.service';
 import { ProxyController } from '../../../../shared/services/proxy-controller';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { scrollToResultCard } from '../dashboard-result.util';
 
 @Component({
   selector: 'app-dashboard-result-chat',
@@ -82,13 +83,6 @@ export class DashboardResultChatComponent implements OnInit, AfterViewInit {
   }
 
   private scrollToResultIndex(index: number): void {
-    if (index < 0) {
-      return;
-    }
-    setTimeout(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-result-index="${index}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
+    scrollToResultCard(this.elementRef.nativeElement, index);
   }
 }

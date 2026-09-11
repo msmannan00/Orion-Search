@@ -44,6 +44,15 @@ export interface ShipDistributionCell {
   items: SatelliteLiveShip[];
 }
 
+export interface MarkerAnimationFrame<M> {
+  marker: M;
+  startLat: number;
+  startLon: number;
+  targetLat: number;
+  targetLon: number;
+  startedAt: number;
+}
+
 export interface EntityRendererConfig {
   L: typeof Leaflet;
   map: Leaflet.Map;
