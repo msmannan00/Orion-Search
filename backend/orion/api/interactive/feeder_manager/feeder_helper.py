@@ -11,6 +11,7 @@ from orion.api.interactive.feeder_manager.models.feeder_models import FeederScri
 from orion.constants import constant
 from orion.constants.constant import CONSTANTS
 from orion.services.mongo_manager.shared_model.db_auth_models import user_role
+from orion.services.permission_manager.permission_models import UserPermission
 from orion.services.mongo_manager.shared_model.db_feeder_script_model import db_feeder_script_model, osint_feeder
 
 
@@ -343,7 +344,7 @@ class FeederHelper:
     @staticmethod
     def script_query(current_user, rule_key: str | None = None):
         query = {}
-        if current_user.role != user_role.ADMIN:
+        if current_user.role != user_role.ADMIN and UserPermission.MONITORING not in (getattr(current_user, "permissions", None) or []):
             query["feeder.author_id"] = str(current_user.id)
         if rule_key:
             query["rule_key"] = rule_key
