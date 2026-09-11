@@ -39,6 +39,11 @@ exclude_paths:
   - "backend/orion/services/log_manager/log_controller.py"
   - "backend/orion/services/elastic_manager/elastic_request_generator.py"
   - "backend/routes/test_routes.py"
+  - "**/*.routes.ts"
+  - "**/*.defaults.ts"
+  - "**/*-theme.ts"
+  - "client/src/app/shared/constants/**"
+  - "**/social-icon/**"
 
 engines:
   metric:
