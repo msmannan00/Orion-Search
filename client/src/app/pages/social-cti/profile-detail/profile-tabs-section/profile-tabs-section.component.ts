@@ -261,17 +261,21 @@ export class SocialProfileTabsSectionComponent {
     return this.expandedCrawlProperties().has(this.crawlDescriptionKey(index, item));
   }
 
+  private toggledSet(current: Set<string>, key: string): Set<string> {
+    const next = new Set(current);
+    if (next.has(key)) {
+      next.delete(key);
+    }
+    else {
+      next.add(key);
+    }
+    return next;
+  }
+
   toggleCrawlProperties(index: number, item: unknown): void {
     const key = this.crawlDescriptionKey(index, item);
     this.expandedCrawlProperties.update(current => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      }
-      else {
-        next.add(key);
-      }
-      return next;
+      return this.toggledSet(current, key);
     });
   }
 
@@ -292,14 +296,7 @@ export class SocialProfileTabsSectionComponent {
   toggleCrawlDescription(index: number, item: unknown): void {
     const key = this.crawlDescriptionKey(index, item);
     this.expandedCrawlDescriptions.update(current => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      }
-      else {
-        next.add(key);
-      }
-      return next;
+      return this.toggledSet(current, key);
     });
   }
 

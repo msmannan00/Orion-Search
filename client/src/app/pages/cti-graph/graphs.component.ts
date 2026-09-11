@@ -897,7 +897,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   });
   }
 
-  private loadGraphByScopedPropertySearch(queryValue: string, clusterKey: string): void {
+  private beginGraphRequest(): number {
     if (this.expandEnabled) {
       queueMicrotask(() => {
         this.expandEnabled = false;
@@ -906,10 +906,14 @@ export class GraphComponent implements OnInit, OnDestroy {
     else {
       this.expandEnabled = false;
     }
-
     this.loading = false;
     const requestId = this.nextGraphRequestId();
     this.resetGraph();
+    return requestId;
+  }
+
+  private loadGraphByScopedPropertySearch(queryValue: string, clusterKey: string): void {
+    const requestId = this.beginGraphRequest();
     this.api.post<{ results: GraphResultItem[]; }>('graph', this.buildGraphPayload('property', 'all', queryValue, clusterKey)).subscribe({
       next: response => {
         if (!this.isCurrentGraphRequest(requestId)) {
@@ -945,17 +949,7 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   private loadGraphByRequests(requests: GraphSearchRequestModel[]): void {
-    if (this.expandEnabled) {
-      queueMicrotask(() => {
-        this.expandEnabled = false;
-      });
-    }
-    else {
-      this.expandEnabled = false;
-    }
-    this.loading = false;
-    const requestId = this.nextGraphRequestId();
-    this.resetGraph();
+    const requestId = this.beginGraphRequest();
     const payload = {
       requests: requests.map(request => ({
         data_point_type: request.dataPointType,

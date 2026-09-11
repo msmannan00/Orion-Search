@@ -33,11 +33,7 @@ def cookie_only_result(result: dict, cookie_auth: bool) -> dict:
     return {key: value for key, value in result.items() if key not in {"access_token", "token_type"}}
 
 
-@auth_router.post("/api/token")
-async def token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), response: Response = None, cookie_only: bool = False, redis_store: redis_controller = Depends(redis_controller.getInstance)):
-    client = "extension" if any(scope in {"extension", "orion_extension"} for scope in form_data.scopes) else "web"
-    result = await auth_rate_limit(redis_store, form_data.username, lambda: auth_manager.login(form_data.username, form_data.password, client=client, tenant_id=getattr(request.state, "tenant", None)))
-
+def _finalize_auth_response(result: dict, request: Request, response: Response, cookie_only: bool) -> dict:
     access_token = result.get("access_token")
     twofa_required = result.get("twofa_required")
     cookie_auth = uses_cookie_auth(request, cookie_only)
@@ -46,6 +42,14 @@ async def token(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         set_access_cookie(response, access_token)
 
     return cookie_only_result(result, cookie_auth)
+
+
+@auth_router.post("/api/token")
+async def token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), response: Response = None, cookie_only: bool = False, redis_store: redis_controller = Depends(redis_controller.getInstance)):
+    client = "extension" if any(scope in {"extension", "orion_extension"} for scope in form_data.scopes) else "web"
+    result = await auth_rate_limit(redis_store, form_data.username, lambda: auth_manager.login(form_data.username, form_data.password, client=client, tenant_id=getattr(request.state, "tenant", None)))
+
+    return _finalize_auth_response(result, request, response, cookie_only)
 
 
 @auth_router.post("/api/token/demo")
@@ -54,14 +58,7 @@ async def token_demo(request: Request, response: Response = None, cookie_only: b
     DEMO_PASSWORD = env_handler.get_instance().env("DEMO_PASSWORD")
 
     result = await auth_manager.login(DEMO_USERNAME, DEMO_PASSWORD, True, tenant_id=getattr(request.state, "tenant", None))
-    access_token = result.get("access_token")
-    twofa_required = result.get("twofa_required")
-    cookie_auth = uses_cookie_auth(request, cookie_only)
-
-    if access_token and not twofa_required and cookie_auth:
-        set_access_cookie(response, access_token)
-
-    return cookie_only_result(result, cookie_auth)
+    return _finalize_auth_response(result, request, response, cookie_only)
 
 
 @auth_router.post("/api/token/2fa/verify")

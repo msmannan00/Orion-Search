@@ -365,6 +365,15 @@ export class ThreatLensMapRendererComponent implements AfterViewInit, OnDestroy 
     });
   }
 
+  private get hitTestIncludeLayers() {
+    return [
+      this.ipScanGraphicsLayer,
+      this.animatedArcGraphicsLayer,
+      this.arcGraphicsLayer,
+      this.countryRenderer.layer,
+    ].filter(Boolean);
+  }
+
   private registerClickHandler(): void {
     if (!this.view || !this.countryRenderer.layer) {
       return;
@@ -376,12 +385,7 @@ export class ThreatLensMapRendererComponent implements AfterViewInit, OnDestroy 
       }
 
       const hit = await this.view.hitTest(event, {
-        include: [
-          this.ipScanGraphicsLayer,
-          this.animatedArcGraphicsLayer,
-          this.arcGraphicsLayer,
-          this.countryRenderer.layer,
-        ].filter(Boolean),
+        include: this.hitTestIncludeLayers,
       });
       const clusterGraphic = hit.results.find((result) => this.ipMarkerRenderer?.isClusterGraphic(result.graphic))?.graphic;
       if (clusterGraphic) {
@@ -472,12 +476,7 @@ export class ThreatLensMapRendererComponent implements AfterViewInit, OnDestroy 
       this.lastHoverHitTestAt = now;
 
       const hit = await this.view.hitTest(event, {
-        include: [
-          this.ipScanGraphicsLayer,
-          this.animatedArcGraphicsLayer,
-          this.arcGraphicsLayer,
-          this.countryRenderer.layer,
-        ].filter(Boolean),
+        include: this.hitTestIncludeLayers,
       }).finally(() => {
         this.hoverHitTestPending = false;
       });

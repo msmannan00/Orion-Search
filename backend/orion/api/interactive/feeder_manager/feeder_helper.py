@@ -265,17 +265,20 @@ class FeederHelper:
                 rule_key=rule_key,
                 entry_kind="values",
                 values=self.merge_value_entries([], normalized_urls),
-                feeder=osint_feeder(
-                    author_id=str(current_user.id),
-                    author_name=current_user.username,
-                    index_date=datetime.now(timezone.utc),
-                    index_status=True,
-                    last_failure_date=None,
-                    last_failure_message=None,
-                    last_success_date=None,
-                ),
+                feeder=self._default_osint_feeder(current_user),
             )
         await self._engine.save(record)
+
+    def _default_osint_feeder(self, current_user) -> osint_feeder:
+        return osint_feeder(
+            author_id=str(current_user.id),
+            author_name=current_user.username,
+            index_date=datetime.now(timezone.utc),
+            index_status=True,
+            last_failure_date=None,
+            last_failure_message=None,
+            last_success_date=None,
+        )
 
     def encrypt_script_content(self, content: str) -> str:
         return self._cipher.encrypt(content.encode("utf-8")).decode()
@@ -322,15 +325,7 @@ class FeederHelper:
                 url=url,
                 rule_key=rule_key,
                 entry_kind="script",
-                feeder=osint_feeder(
-                    author_id=str(current_user.id),
-                    author_name=current_user.username,
-                    index_date=datetime.now(timezone.utc),
-                    index_status=True,
-                    last_failure_date=None,
-                    last_failure_message=None,
-                    last_success_date=None,
-                ),
+                feeder=self._default_osint_feeder(current_user),
             )
 
         await self._engine.save(record)

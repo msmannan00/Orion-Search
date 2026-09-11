@@ -98,6 +98,14 @@ export class SearchFiltersComponent implements OnInit {
     return value ?? [];
   }
 
+  private toTagOptions(key: string) {
+    return this.getTags(key).map(val => ({
+      id: `${key}-${val}`,
+      value: val,
+      type: key
+    }));
+  }
+
   removeTag(event: MouseEvent, categoryId: string, tag: string): void {
     event.stopPropagation();
     event.preventDefault();
@@ -152,11 +160,7 @@ export class SearchFiltersComponent implements OnInit {
       this.filteredCategories = finalSortedKeys.map(key => ({
         id: key,
         name: key === 'm_search_all' ? 'Search All' : (getOwnProperty(search_filter_labels, key) || key),
-        tags: this.getTags(key).map(val => ({
-          id: `${key}-${val}`,
-          value: val,
-          type: key
-        }))
+        tags: this.toTagOptions(key)
       }));
     }
     else {
@@ -173,11 +177,7 @@ export class SearchFiltersComponent implements OnInit {
       this.filteredCategories = finalSortedKeys.map(key => ({
         id: key,
         name: getOwnProperty(search_filter_labels, key) || key,
-        tags: this.getTags(key).map(val => ({
-          id: `${key}-${val}`,
-          value: val,
-          type: key
-        }))
+        tags: this.toTagOptions(key)
       }));
     }
   }

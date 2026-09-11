@@ -973,21 +973,25 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     this.directoryImportRequest = null;
   }
 
+  private applySelectedSessionHistory(session: AiChatSession): void {
+    this.chatHistoryRequest?.unsubscribe();
+    this.chatHistoryRequest = undefined;
+    this.activeSessionId = session.sessionId;
+    this.syncDirectorySession(session.sessionId);
+    this.messages = [...session.messages];
+    this.isLoadingHistory.set(false);
+    this.cancelMessageEdit();
+    this.queueComposerResize();
+    this.scrollToBottom();
+  }
+
   selectChat(session: AiChatSession, openChat = false): void {
     if (openChat) {
       this.setWorkspaceViewMode('chat');
     }
 
     if (this.isSending() && session.sessionId === this.activeRequestSessionId) {
-      this.chatHistoryRequest?.unsubscribe();
-      this.chatHistoryRequest = undefined;
-      this.activeSessionId = session.sessionId;
-      this.syncDirectorySession(session.sessionId);
-      this.messages = [...session.messages];
-      this.isLoadingHistory.set(false);
-      this.cancelMessageEdit();
-      this.queueComposerResize();
-      this.scrollToBottom();
+      this.applySelectedSessionHistory(session);
       return;
     }
 
@@ -1003,15 +1007,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     }
 
     if (session.messages.length || session.messageCount === 0) {
-      this.chatHistoryRequest?.unsubscribe();
-      this.chatHistoryRequest = undefined;
-      this.activeSessionId = session.sessionId;
-      this.syncDirectorySession(session.sessionId);
-      this.messages = [...session.messages];
-      this.isLoadingHistory.set(false);
-      this.cancelMessageEdit();
-      this.queueComposerResize();
-      this.scrollToBottom();
+      this.applySelectedSessionHistory(session);
       return;
     }
 

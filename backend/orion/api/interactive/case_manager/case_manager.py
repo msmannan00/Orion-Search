@@ -289,6 +289,9 @@ class CaseManager:
             & (db_user_account.status == UserStatus.ACTIVE),
         )
         users = [user for user in users if self._has_case_management_permission(user)]
+        return self._serialize_case_users(users)
+    
+    def _serialize_case_users(self, users) -> list[dict]:
         return [
             {
                 "id": str(user.id),
@@ -299,7 +302,7 @@ class CaseManager:
             }
             for user in users
         ]
-    
+
     async def _get_assigned_case_analysts(self, record: db_case_model) -> list[dict]:
         assigned_ids = set(record.assignedAnalystIds or [])
 
@@ -318,16 +321,7 @@ class CaseManager:
             if str(user.id) in assigned_ids and self._has_case_management_permission(user)
         ]
 
-        return [
-            {
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "role": user.role.value if user.role else "",
-                "status": user.status.value if user.status else "",
-            }
-            for user in users
-        ]
+        return self._serialize_case_users(users)
 
     async def get_case_by_id(self, case_id: str, current_user) -> CaseResponse:
         record = await self._engine.find_one(

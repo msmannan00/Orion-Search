@@ -871,402 +871,420 @@ export class NetworkIntel implements OnInit, OnDestroy {
   private buildReportPayload(): GraphReportPayload | null {
     const dnsResult = this.dnsResult;
     if (this.activeTab === 'dns' && dnsResult) {
-      const now = new Date().toISOString();
-      const completedDetails = this.ipRows.flatMap(row => row.detail ? [row.detail] : []);
-      const scanStatuses = Array.from(new Set(completedDetails
-        .map(detail => this.normalizeReportValue(detail.scan_status ?? detail.status))
-        .filter(Boolean)));
-      const nodes = [
-        { id: `domain-${dnsResult.domain}`, label: dnsResult.domain, type: 'domain' },
-        ...dnsResult.ips.map(ip => ({ id: `ip-${ip}`, label: ip, type: 'ip' as const }))
-      ];
-      const edges = dnsResult.ips.map(ip => ({
-        id: `${dnsResult.domain}-${ip}`,
-        from: `domain-${dnsResult.domain}`,
-        to: `ip-${ip}`,
-        label: 'resolves_to'
-      }));
+      return this.buildDnsReportPayload(dnsResult);
+    }
 
+    if (this.activeTab === 'shodan' && this.shodanResult) {
+      return this.buildShodanReportPayload(this.shodanResult);
+    }
+
+    if (this.activeTab === 'geo' && [this.geoIpListResult, this.geoResult, this.geoLiveStats].some(Boolean)) {
+      return this.buildGeoReportPayload();
+    }
+
+    if (this.activeTab === 'vuln' && this.vulnerabilityResult) {
+      return this.buildVulnerabilityReportPayload(this.vulnerabilityResult);
+    }
+
+    if ((this.activeTab === 'seo' || this.activeTab === 'repo') && this.seoRepoScanMeta) {
+      return this.buildSeoRepoReportPayload(this.seoRepoScanMeta);
+    }
+
+    return null;
+  }
+
+  private buildDnsReportPayload(dnsResult: DnsResult): GraphReportPayload {
+    const now = new Date().toISOString();
+    const completedDetails = this.ipRows.flatMap(row => row.detail ? [row.detail] : []);
+    const scanStatuses = Array.from(new Set(completedDetails
+      .map(detail => this.normalizeReportValue(detail.scan_status ?? detail.status))
+      .filter(Boolean)));
+    const nodes = [
+      { id: `domain-${dnsResult.domain}`, label: dnsResult.domain, type: 'domain' },
+      ...dnsResult.ips.map(ip => ({ id: `ip-${ip}`, label: ip, type: 'ip' as const }))
+    ];
+    const edges = dnsResult.ips.map(ip => ({
+      id: `${dnsResult.domain}-${ip}`,
+      from: `domain-${dnsResult.domain}`,
+      to: `ip-${ip}`,
+      label: 'resolves_to'
+    }));
+
+    return {
+      graphKind: 'cti',
+      title: 'Host Recon Report',
+      sessionName: dnsResult.domain,
+      generatedAtIso: now,
+      nodes,
+      edges,
+      summary: {
+        domain: dnsResult.domain,
+        resolved_ips: dnsResult.ips.length,
+        enriched_ips: completedDetails.length,
+        open_ports: completedDetails.reduce((total, detail) => total + (detail.open_ports?.length ?? 0), 0),
+        scan_status: scanStatuses.length ? scanStatuses.join(', ') : 'Not reported',
+        exported_at: now
+      },
+      tables: [
+        {
+          title: 'Resolved IPs',
+          values: dnsResult.ips.reduce<Record<string, string>>((acc, ip, index) => {
+            acc[`IP ${index + 1}`] = ip;
+            return acc;
+          }, {})
+        },
+        ...this.buildRawJsonTables(dnsResult, 'DNS Raw Result'),
+        ...this.ipRows
+          .flatMap((row, index) => {
+            const detail = row.detail;
+            return detail ? [
+              ...this.buildIpDetailTables(detail, `IP ${index + 1}`),
+              ...this.buildRawJsonTables(detail, `IP ${index + 1} Raw Result`)
+            ] : [];
+          })
+      ]
+    };
+  }
+
+  private buildShodanReportPayload(detail: IpDetail): GraphReportPayload {
+    const now = new Date().toISOString();
+    const nodes = [{ id: `ip-${detail.ip}`, label: detail.ip, type: 'ip' }];
+    const edges: GraphReportPayload['edges'] = [];
+
+    const addNode = (id: string, label: string, type: string, edgeLabel: string) => {
+      if (!label) {
+        return;
+      }
+      nodes.push({ id, label, type });
+      edges.push({ id: `${nodes[0].id}-${id}`, from: nodes[0].id, to: id, label: edgeLabel });
+    };
+
+    addNode(`org-${detail.organization}`, detail.organization ?? '', 'organization', 'owned_by');
+    addNode(`country-${detail.country}`, detail.country ?? '', 'country', 'located_in');
+    addNode(`city-${detail.city}`, detail.city ?? '', 'city', 'city');
+
+    return {
+      graphKind: 'cti',
+      title: 'IP Scan Report',
+      sessionName: detail.ip,
+      generatedAtIso: now,
+      nodes,
+      edges,
+      summary: {
+        ip: detail.ip,
+        country: detail.country ?? '-',
+        city: detail.city ?? '-',
+        organization: detail.organization ?? '-',
+        open_ports: detail.open_ports?.length ?? 0,
+        vulnerabilities: detail.vulnerabilities?.length ?? 0,
+        cameras: detail.cameras?.length ?? 0,
+        exported_at: now
+      },
+      tables: [
+        ...this.buildIpDetailTables(detail),
+        ...this.buildRawJsonTables(detail, 'IP Raw Result')
+      ]
+    };
+  }
+
+  private buildGeoReportPayload(): GraphReportPayload {
+    const now = new Date().toISOString();
+    if (this.geoIpListResult) {
       return {
         graphKind: 'cti',
-        title: 'Host Recon Report',
-        sessionName: dnsResult.domain,
+        title: 'Geo IP Scan Report',
+        sessionName: this.geoIpListResult.domain || 'geo-results',
         generatedAtIso: now,
-        nodes,
-        edges,
+        nodes: this.geoIpRows.slice(0, 100).map((row) => ({
+          id: `ip-${row.ip}`,
+          label: row.ip,
+          type: 'ip'
+        })),
+        edges: [],
         summary: {
-          domain: dnsResult.domain,
-          resolved_ips: dnsResult.ips.length,
-          enriched_ips: completedDetails.length,
-          open_ports: completedDetails.reduce((total, detail) => total + (detail.open_ports?.length ?? 0), 0),
-          scan_status: scanStatuses.length ? scanStatuses.join(', ') : 'Not reported',
+          mode: this.geoMode === 'coords' ? 'coordinates' : 'ip_ranges',
+          query: this.geoMode === 'coords' ? (this.geoForm.coordinates.trim() || '-') : 'range_scan',
+          total_ips: this.geoIpRows.length,
           exported_at: now
         },
         tables: [
           {
             title: 'Resolved IPs',
-            values: dnsResult.ips.reduce<Record<string, string>>((acc, ip, index) => {
-              acc[`IP ${index + 1}`] = ip;
+            values: this.geoIpRows.slice(0, 25).reduce<Record<string, string>>((acc, row, index) => {
+              acc[`IP ${index + 1}`] = row.ip;
               return acc;
             }, {})
           },
-          ...this.buildRawJsonTables(dnsResult, 'DNS Raw Result'),
-          ...this.ipRows
-            .flatMap((row, index) => {
-              const detail = row.detail;
-              return detail ? [
-                ...this.buildIpDetailTables(detail, `IP ${index + 1}`),
-                ...this.buildRawJsonTables(detail, `IP ${index + 1} Raw Result`)
-              ] : [];
-            })
+          ...this.buildRawJsonTables(this.geoIpListResult, 'Geo IP Raw Result')
         ]
       };
     }
 
-    if (this.activeTab === 'shodan' && this.shodanResult) {
-      const now = new Date().toISOString();
-      const detail = this.shodanResult;
-      const nodes = [{ id: `ip-${detail.ip}`, label: detail.ip, type: 'ip' }];
-      const edges: GraphReportPayload['edges'] = [];
+    const result = this.geoResult;
+    const stats = this.geoLiveStats;
+    const ranges = this.geoForm.ip_ranges.split('\n').map(line => line.trim()).filter(Boolean);
+    const sessionName = this.geoMode === 'coords'
+      ? (this.geoForm.coordinates.trim() || 'geo-coordinates')
+      : (ranges[0] || 'geo-ranges');
+    const cameras = result?.cameras ?? [];
 
-      const addNode = (id: string, label: string, type: string, edgeLabel: string) => {
-        if (!label) {
-          return;
-        }
-        nodes.push({ id, label, type });
-        edges.push({ id: `${nodes[0].id}-${id}`, from: nodes[0].id, to: id, label: edgeLabel });
-      };
-
-      addNode(`org-${detail.organization}`, detail.organization ?? '', 'organization', 'owned_by');
-      addNode(`country-${detail.country}`, detail.country ?? '', 'country', 'located_in');
-      addNode(`city-${detail.city}`, detail.city ?? '', 'city', 'city');
-
-      return {
-        graphKind: 'cti',
-        title: 'IP Scan Report',
-        sessionName: detail.ip,
-        generatedAtIso: now,
-        nodes,
-        edges,
-        summary: {
-          ip: detail.ip,
-          country: detail.country ?? '-',
-          city: detail.city ?? '-',
-          organization: detail.organization ?? '-',
-          open_ports: detail.open_ports?.length ?? 0,
-          vulnerabilities: detail.vulnerabilities?.length ?? 0,
-          cameras: detail.cameras?.length ?? 0,
-          exported_at: now
+    return {
+      graphKind: 'cti',
+      title: 'Geo Cameras Report',
+      sessionName,
+      generatedAtIso: now,
+      nodes: cameras.slice(0, 100).map((camera, index) => ({
+        id: `camera-${camera.ip || index}-${camera.port ?? 0}`,
+        label: camera.ip || `Camera ${index + 1}`,
+        type: 'camera'
+      })),
+      edges: [],
+      summary: {
+        mode: this.geoMode === 'coords' ? 'coordinates' : 'ip_ranges',
+        query: this.geoMode === 'coords' ? (this.geoForm.coordinates.trim() || '-') : (ranges[0] || '-'),
+        radius_km: this.geoForm.radius_km,
+        max_ips: this.geoForm.max_ips,
+        ips_extracted: result?.ips_extracted ?? stats?.ips_extracted ?? 0,
+        ips_scanned: result?.ips_scanned ?? stats?.ips_scanned ?? 0,
+        cameras_found: result?.cameras_found ?? stats?.cameras_found ?? 0,
+        exported_at: now
+      },
+      tables: [
+        {
+          title: 'Query Configuration',
+          values: this.geoMode === 'coords'
+            ? {
+              Coordinates: this.geoForm.coordinates.trim() || '-',
+              'Radius (km)': String(this.geoForm.radius_km),
+              'Max IPs': String(this.geoForm.max_ips)
+            }
+            : {
+              'Range 1': ranges[0] || '-',
+              'Additional Ranges': String(Math.max(0, ranges.length - 1)),
+              'Max IPs': String(this.geoForm.max_ips)
+            }
         },
-        tables: [
-          ...this.buildIpDetailTables(detail),
-          ...this.buildRawJsonTables(detail, 'IP Raw Result')
-        ]
-      };
-    }
+        {
+          title: 'Detected Cameras',
+          values: cameras.slice(0, 25).reduce<Record<string, string>>((acc, camera, index) => {
+            acc[`Camera ${index + 1}`] = [
+              camera.ip || 'Unknown IP',
+              camera.port ? `:${camera.port}` : '',
+              camera.brand ?? camera.model ?? ''
+            ].join(' ').trim();
+            return acc;
+          }, {})
+        },
+        ...this.buildRawJsonTables(result, 'Geo Cameras Raw Result'),
+        ...this.buildRawJsonTables(stats, 'Geo Cameras Live Stats')
+      ]
+    };
+  }
 
-    if (this.activeTab === 'geo' && [this.geoIpListResult, this.geoResult, this.geoLiveStats].some(Boolean)) {
-      const now = new Date().toISOString();
-      if (this.geoIpListResult) {
-        return {
-          graphKind: 'cti',
-          title: 'Geo IP Scan Report',
-          sessionName: this.geoIpListResult.domain || 'geo-results',
-          generatedAtIso: now,
-          nodes: this.geoIpRows.slice(0, 100).map((row) => ({
-            id: `ip-${row.ip}`,
-            label: row.ip,
-            type: 'ip'
-          })),
-          edges: [],
-          summary: {
-            mode: this.geoMode === 'coords' ? 'coordinates' : 'ip_ranges',
-            query: this.geoMode === 'coords' ? (this.geoForm.coordinates.trim() || '-') : 'range_scan',
-            total_ips: this.geoIpRows.length,
-            exported_at: now
-          },
-          tables: [
-            {
-              title: 'Resolved IPs',
-              values: this.geoIpRows.slice(0, 25).reduce<Record<string, string>>((acc, row, index) => {
-                acc[`IP ${index + 1}`] = row.ip;
-                return acc;
-              }, {})
-            },
-            ...this.buildRawJsonTables(this.geoIpListResult, 'Geo IP Raw Result')
-          ]
-        };
-      }
+  private buildVulnerabilityReportPayload(result: UrlVulnerabilityScanResult): GraphReportPayload {
+    const now = new Date().toISOString();
+    const host = result.host ?? result.url ?? 'url-vulnerability-scan';
+    const scannedUrls = Array.isArray(result.scanned_urls) ? result.scanned_urls : [];
+    const findings = Array.isArray(result.findings)
+      ? result.findings
+      : Array.isArray(result.top_findings)
+        ? result.top_findings
+        : [];
 
-      const result = this.geoResult;
-      const stats = this.geoLiveStats;
-      const ranges = this.geoForm.ip_ranges.split('\n').map(line => line.trim()).filter(Boolean);
-      const sessionName = this.geoMode === 'coords'
-        ? (this.geoForm.coordinates.trim() || 'geo-coordinates')
-        : (ranges[0] || 'geo-ranges');
-      const cameras = result?.cameras ?? [];
+    const nodes = [
+      { id: `host-${host}`, label: host, type: 'domain' as const },
+      ...scannedUrls.slice(0, 25).map((url: string, index: number) => ({
+        id: `url-${index}`,
+        label: url,
+        type: 'url' as const
+      }))
+    ];
+    const edges = scannedUrls.slice(0, 25).map((_: string, index: number) => ({
+      id: `host-${host}-url-${index}`,
+      from: `host-${host}`,
+      to: `url-${index}`,
+      label: 'scanned'
+    }));
 
-      return {
-        graphKind: 'cti',
-        title: 'Geo Cameras Report',
-        sessionName,
-        generatedAtIso: now,
-        nodes: cameras.slice(0, 100).map((camera, index) => ({
-          id: `camera-${camera.ip || index}-${camera.port ?? 0}`,
-          label: camera.ip || `Camera ${index + 1}`,
-          type: 'camera'
+    return {
+      graphKind: 'cti',
+      title: 'URL Vulnerability Report',
+      sessionName: host,
+      generatedAtIso: now,
+      nodes,
+      edges,
+      summary: {
+        host: result.host ?? '-',
+        url: result.url ?? '-',
+        final_url: result.final_url ?? '-',
+        request_mode: result.request_mode ?? '-',
+        elapsed_seconds: typeof result.elapsed_seconds === 'number' ? result.elapsed_seconds.toFixed(1) : '-',
+        total_findings: result.summary?.total ?? findings.length,
+        critical: result.summary?.critical ?? 0,
+        high: result.summary?.high ?? 0,
+        medium: result.summary?.medium ?? 0,
+        low: result.summary?.low ?? 0,
+        informational: result.summary?.informational ?? 0,
+        exported_at: now
+      },
+      tables: [
+        {
+          title: 'Request Information',
+          values: {
+            Host: result.host ?? '-',
+            URL: result.url ?? '-',
+            'Final URL': result.final_url ?? '-',
+            'Request Mode': result.request_mode ?? '-',
+            Elapsed: typeof result.elapsed_seconds === 'number' ? `${result.elapsed_seconds.toFixed(1)}s` : '-',
+            'Max Minutes': this.normalizeReportValue(result.max_minutes)
+          }
+        },
+        {
+          title: 'Severity Summary',
+          values: {
+            Critical: String(result.summary?.critical ?? 0),
+            High: String(result.summary?.high ?? 0),
+            Medium: String(result.summary?.medium ?? 0),
+            Low: String(result.summary?.low ?? 0),
+            Informational: String(result.summary?.informational ?? 0),
+            Total: String(result.summary?.total ?? findings.length)
+          }
+        },
+        {
+          title: 'Response Details',
+          values: {
+            'Status Code': this.normalizeReportValue(result.extracted?.status_code),
+            Server: this.normalizeReportValue(result.extracted?.server),
+            'Content Type': this.normalizeReportValue(result.extracted?.content_type),
+            'Content Length': this.normalizeReportValue(result.extracted?.content_length),
+            Redirect: this.normalizeReportValue(result.extracted?.redirect_location),
+            Title: this.normalizeReportValue(result.extracted?.title)
+          }
+        },
+        {
+          title: 'Security Headers',
+          values: this.toStringRecord(result.extracted?.security_headers)
+        },
+        {
+          title: 'Interesting Headers',
+          values: this.toStringRecord(result.extracted?.interesting_headers)
+        },
+        {
+          title: 'Scanned URLs',
+          values: scannedUrls.slice(0, 25).reduce((acc: Record<string, string>, url: string, index: number) => {
+            acc[`URL ${index + 1}`] = url;
+            return acc;
+          }, {})
+        },
+        ...findings.slice(0, 20).map((finding, index: number) => ({
+          title: `Finding ${index + 1}`,
+          values: {
+            Title: this.normalizeReportValue(finding?.title ?? finding?.header),
+            Category: this.normalizeReportValue(finding?.category),
+            Risk: this.normalizeReportValue(finding?.risk),
+            Confidence: this.normalizeReportValue(finding?.confidence),
+            Description: this.truncateReportText(finding?.description, 1000),
+            URL: this.normalizeReportValue(finding?.url),
+            Source: this.normalizeReportValue(finding?.source),
+            Evidence: this.truncateReportText(finding?.evidence, 1000)
+          }
         })),
-        edges: [],
-        summary: {
-          mode: this.geoMode === 'coords' ? 'coordinates' : 'ip_ranges',
-          query: this.geoMode === 'coords' ? (this.geoForm.coordinates.trim() || '-') : (ranges[0] || '-'),
-          radius_km: this.geoForm.radius_km,
-          max_ips: this.geoForm.max_ips,
-          ips_extracted: result?.ips_extracted ?? stats?.ips_extracted ?? 0,
-          ips_scanned: result?.ips_scanned ?? stats?.ips_scanned ?? 0,
-          cameras_found: result?.cameras_found ?? stats?.cameras_found ?? 0,
-          exported_at: now
+        ...this.buildRawJsonTables(result, 'Vulnerability Raw Result')
+      ].filter(table => Object.values(table.values).some((value) => {
+        const normalized = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+        return Boolean(normalized) && normalized !== '-';
+      }))
+    };
+  }
+
+  private buildSeoRepoReportPayload(meta: UrlScanMeta): GraphReportPayload {
+    const now = new Date().toISOString();
+    const host = meta.Host || this.extractSeoRepoScanHost(meta.URL) || 'scan-target';
+    const scanLabel = this.activeTab === 'repo' ? 'Repository Scan' : 'SEO Scan';
+    const findings = this.seoRepoScanCategories.flatMap((category) => category.items.map((item) => ({ category: category.name, item })));
+    const nodes = [
+      { id: `host-${host}`, label: host, type: 'domain' as const },
+      ...this.seoRepoScanCategories.slice(0, 30).map((category) => ({
+        id: `category-${category.name}`,
+        label: category.name,
+        type: 'category' as const
+      })),
+      ...findings.slice(0, 60).map(({ item }, index) => ({
+        id: `finding-${index + 1}`,
+        label: item.header || `Finding ${index + 1}`,
+        type: 'finding' as const
+      }))
+    ];
+    const categoryEdges = this.seoRepoScanCategories.slice(0, 30).map((category) => ({
+      id: `host-${host}-category-${category.name}`,
+      from: `host-${host}`,
+      to: `category-${category.name}`,
+      label: 'has'
+    }));
+    const findingEdges = findings.slice(0, 60).map(({ category }, index) => ({
+      id: `category-${category}-finding-${index + 1}`,
+      from: `category-${category}`,
+      to: `finding-${index + 1}`,
+      label: 'contains'
+    }));
+
+    return {
+      graphKind: 'cti',
+      title: `${scanLabel} Report`,
+      sessionName: host,
+      generatedAtIso: now,
+      nodes,
+      edges: [...categoryEdges, ...findingEdges],
+      summary: {
+        target_url: meta.URL || '-',
+        host,
+        scan_type: this.activeTab,
+        grade: this.seoRepoScanGrade || '-',
+        high: this.seoRepoScanGradeCounts.high ?? 0,
+        medium: this.seoRepoScanGradeCounts.medium ?? 0,
+        low: this.seoRepoScanGradeCounts.low ?? 0,
+        informational: this.seoRepoScanGradeCounts.informational ?? 0,
+        total_findings: findings.length,
+        exported_at: now
+      },
+      tables: [
+        {
+          title: 'Scan Summary',
+          values: {
+            URL: meta.URL || '-',
+            Host: host,
+            Port: this.normalizeReportValue(meta.Port),
+            TLS: /ssl/i.test(meta.Port || '') ? 'Enabled' : 'Not detected',
+            'Scanned On': this.normalizeReportValue(meta.Scanned_on_date),
+            Grade: this.seoRepoScanGrade || '-'
+          }
         },
-        tables: [
-          {
-            title: 'Query Configuration',
-            values: this.geoMode === 'coords'
-              ? {
-                Coordinates: this.geoForm.coordinates.trim() || '-',
-                'Radius (km)': String(this.geoForm.radius_km),
-                'Max IPs': String(this.geoForm.max_ips)
-              }
-              : {
-                'Range 1': ranges[0] || '-',
-                'Additional Ranges': String(Math.max(0, ranges.length - 1)),
-                'Max IPs': String(this.geoForm.max_ips)
-              }
-          },
-          {
-            title: 'Detected Cameras',
-            values: cameras.slice(0, 25).reduce<Record<string, string>>((acc, camera, index) => {
-              acc[`Camera ${index + 1}`] = [
-                camera.ip || 'Unknown IP',
-                camera.port ? `:${camera.port}` : '',
-                camera.brand ?? camera.model ?? ''
-              ].join(' ').trim();
-              return acc;
-            }, {})
-          },
-          ...this.buildRawJsonTables(result, 'Geo Cameras Raw Result'),
-          ...this.buildRawJsonTables(stats, 'Geo Cameras Live Stats')
-        ]
-      };
-    }
-
-    if (this.activeTab === 'vuln' && this.vulnerabilityResult) {
-      const now = new Date().toISOString();
-      const result = this.vulnerabilityResult;
-      const host = result.host ?? result.url ?? 'url-vulnerability-scan';
-      const scannedUrls = Array.isArray(result.scanned_urls) ? result.scanned_urls : [];
-      const findings = Array.isArray(result.findings)
-        ? result.findings
-        : Array.isArray(result.top_findings)
-          ? result.top_findings
-          : [];
-
-      const nodes = [
-        { id: `host-${host}`, label: host, type: 'domain' as const },
-        ...scannedUrls.slice(0, 25).map((url: string, index: number) => ({
-          id: `url-${index}`,
-          label: url,
-          type: 'url' as const
-        }))
-      ];
-      const edges = scannedUrls.slice(0, 25).map((_: string, index: number) => ({
-        id: `host-${host}-url-${index}`,
-        from: `host-${host}`,
-        to: `url-${index}`,
-        label: 'scanned'
-      }));
-
-      return {
-        graphKind: 'cti',
-        title: 'URL Vulnerability Report',
-        sessionName: host,
-        generatedAtIso: now,
-        nodes,
-        edges,
-        summary: {
-          host: result.host ?? '-',
-          url: result.url ?? '-',
-          final_url: result.final_url ?? '-',
-          request_mode: result.request_mode ?? '-',
-          elapsed_seconds: typeof result.elapsed_seconds === 'number' ? result.elapsed_seconds.toFixed(1) : '-',
-          total_findings: result.summary?.total ?? findings.length,
-          critical: result.summary?.critical ?? 0,
-          high: result.summary?.high ?? 0,
-          medium: result.summary?.medium ?? 0,
-          low: result.summary?.low ?? 0,
-          informational: result.summary?.informational ?? 0,
-          exported_at: now
+        {
+          title: 'Severity Summary',
+          values: {
+            High: String(this.seoRepoScanGradeCounts.high ?? 0),
+            Medium: String(this.seoRepoScanGradeCounts.medium ?? 0),
+            Low: String(this.seoRepoScanGradeCounts.low ?? 0),
+            Informational: String(this.seoRepoScanGradeCounts.informational ?? 0),
+            Total: String(findings.length)
+          }
         },
-        tables: [
-          {
-            title: 'Request Information',
-            values: {
-              Host: result.host ?? '-',
-              URL: result.url ?? '-',
-              'Final URL': result.final_url ?? '-',
-              'Request Mode': result.request_mode ?? '-',
-              Elapsed: typeof result.elapsed_seconds === 'number' ? `${result.elapsed_seconds.toFixed(1)}s` : '-',
-              'Max Minutes': this.normalizeReportValue(result.max_minutes)
-            }
-          },
-          {
-            title: 'Severity Summary',
-            values: {
-              Critical: String(result.summary?.critical ?? 0),
-              High: String(result.summary?.high ?? 0),
-              Medium: String(result.summary?.medium ?? 0),
-              Low: String(result.summary?.low ?? 0),
-              Informational: String(result.summary?.informational ?? 0),
-              Total: String(result.summary?.total ?? findings.length)
-            }
-          },
-          {
-            title: 'Response Details',
-            values: {
-              'Status Code': this.normalizeReportValue(result.extracted?.status_code),
-              Server: this.normalizeReportValue(result.extracted?.server),
-              'Content Type': this.normalizeReportValue(result.extracted?.content_type),
-              'Content Length': this.normalizeReportValue(result.extracted?.content_length),
-              Redirect: this.normalizeReportValue(result.extracted?.redirect_location),
-              Title: this.normalizeReportValue(result.extracted?.title)
-            }
-          },
-          {
-            title: 'Security Headers',
-            values: this.toStringRecord(result.extracted?.security_headers)
-          },
-          {
-            title: 'Interesting Headers',
-            values: this.toStringRecord(result.extracted?.interesting_headers)
-          },
-          {
-            title: 'Scanned URLs',
-            values: scannedUrls.slice(0, 25).reduce((acc: Record<string, string>, url: string, index: number) => {
-              acc[`URL ${index + 1}`] = url;
-              return acc;
-            }, {})
-          },
-          ...findings.slice(0, 20).map((finding, index: number) => ({
-            title: `Finding ${index + 1}`,
-            values: {
-              Title: this.normalizeReportValue(finding?.title ?? finding?.header),
-              Category: this.normalizeReportValue(finding?.category),
-              Risk: this.normalizeReportValue(finding?.risk),
-              Confidence: this.normalizeReportValue(finding?.confidence),
-              Description: this.truncateReportText(finding?.description, 1000),
-              URL: this.normalizeReportValue(finding?.url),
-              Source: this.normalizeReportValue(finding?.source),
-              Evidence: this.truncateReportText(finding?.evidence, 1000)
-            }
-          })),
-          ...this.buildRawJsonTables(result, 'Vulnerability Raw Result')
-        ].filter(table => Object.values(table.values).some((value) => {
-          const normalized = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-          return Boolean(normalized) && normalized !== '-';
-        }))
-      };
-    }
-
-    if ((this.activeTab === 'seo' || this.activeTab === 'repo') && this.seoRepoScanMeta) {
-      const now = new Date().toISOString();
-      const host = this.seoRepoScanMeta.Host || this.extractSeoRepoScanHost(this.seoRepoScanMeta.URL) || 'scan-target';
-      const scanLabel = this.activeTab === 'repo' ? 'Repository Scan' : 'SEO Scan';
-      const findings = this.seoRepoScanCategories.flatMap((category) => category.items.map((item) => ({ category: category.name, item })));
-      const nodes = [
-        { id: `host-${host}`, label: host, type: 'domain' as const },
-        ...this.seoRepoScanCategories.slice(0, 30).map((category) => ({
-          id: `category-${category.name}`,
-          label: category.name,
-          type: 'category' as const
-        })),
-        ...findings.slice(0, 60).map(({ item }, index) => ({
-          id: `finding-${index + 1}`,
-          label: item.header || `Finding ${index + 1}`,
-          type: 'finding' as const
-        }))
-      ];
-      const categoryEdges = this.seoRepoScanCategories.slice(0, 30).map((category) => ({
-        id: `host-${host}-category-${category.name}`,
-        from: `host-${host}`,
-        to: `category-${category.name}`,
-        label: 'has'
-      }));
-      const findingEdges = findings.slice(0, 60).map(({ category }, index) => ({
-        id: `category-${category}-finding-${index + 1}`,
-        from: `category-${category}`,
-        to: `finding-${index + 1}`,
-        label: 'contains'
-      }));
-
-      return {
-        graphKind: 'cti',
-        title: `${scanLabel} Report`,
-        sessionName: host,
-        generatedAtIso: now,
-        nodes,
-        edges: [...categoryEdges, ...findingEdges],
-        summary: {
-          target_url: this.seoRepoScanMeta.URL || '-',
-          host,
-          scan_type: this.activeTab,
-          grade: this.seoRepoScanGrade || '-',
-          high: this.seoRepoScanGradeCounts.high ?? 0,
-          medium: this.seoRepoScanGradeCounts.medium ?? 0,
-          low: this.seoRepoScanGradeCounts.low ?? 0,
-          informational: this.seoRepoScanGradeCounts.informational ?? 0,
-          total_findings: findings.length,
-          exported_at: now
-        },
-        tables: [
-          {
-            title: 'Scan Summary',
-            values: {
-              URL: this.seoRepoScanMeta.URL || '-',
-              Host: host,
-              Port: this.normalizeReportValue(this.seoRepoScanMeta.Port),
-              TLS: /ssl/i.test(this.seoRepoScanMeta.Port || '') ? 'Enabled' : 'Not detected',
-              'Scanned On': this.normalizeReportValue(this.seoRepoScanMeta.Scanned_on_date),
-              Grade: this.seoRepoScanGrade || '-'
-            }
-          },
-          {
-            title: 'Severity Summary',
-            values: {
-              High: String(this.seoRepoScanGradeCounts.high ?? 0),
-              Medium: String(this.seoRepoScanGradeCounts.medium ?? 0),
-              Low: String(this.seoRepoScanGradeCounts.low ?? 0),
-              Informational: String(this.seoRepoScanGradeCounts.informational ?? 0),
-              Total: String(findings.length)
-            }
-          },
-          ...this.seoRepoScanCategories.slice(0, 20).map((category) => {
-            const values = category.items.slice(0, 25).reduce<Record<string, string>>((acc, item, index) => {
-              acc[`${index + 1}. ${item.header}`] = [
-                item.risk ? `${item.risk} risk` : '',
-                item.confidence ? `${item.confidence} confidence` : '',
-                this.truncateReportText(item.description, 700)
-              ].filter(Boolean).join(' | ');
-              return acc;
-            }, {});
-            return { title: `${category.name} Findings`, values };
-          })
-        ].filter(table => Object.values(table.values).some((value) => {
-          const normalized = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-          return Boolean(normalized) && normalized !== '-';
-        }))
-      };
-    }
-
-    return null;
+        ...this.seoRepoScanCategories.slice(0, 20).map((category) => {
+          const values = category.items.slice(0, 25).reduce<Record<string, string>>((acc, item, index) => {
+            acc[`${index + 1}. ${item.header}`] = [
+              item.risk ? `${item.risk} risk` : '',
+              item.confidence ? `${item.confidence} confidence` : '',
+              this.truncateReportText(item.description, 700)
+            ].filter(Boolean).join(' | ');
+            return acc;
+          }, {});
+          return { title: `${category.name} Findings`, values };
+        })
+      ].filter(table => Object.values(table.values).some((value) => {
+        const normalized = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+        return Boolean(normalized) && normalized !== '-';
+      }))
+    };
   }
 
   private async loadAllDnsIpDetailsForExport(): Promise<void> {
