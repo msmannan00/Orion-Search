@@ -87,7 +87,7 @@
                         </span>
                       }
                       @if (sessionCount(entry.platform) > 0) {
-                        <i class="bi bi-chevron-down shrink-0 text-[10px] leading-none text-[var(--color-text4)] transition-transform duration-200" [class.rotate-180]="isExpanded(entry.platform)" aria-hidden="true"></i>
+                        <i data-testid="manage-profiles-session-toggle" class="bi bi-chevron-down shrink-0 text-[10px] leading-none text-[var(--color-text4)] transition-transform duration-200" [class.rotate-180]="isExpanded(entry.platform)" aria-hidden="true"></i>
                       }
                     </div>
                     <a [href]="entry.base" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" class="mt-0.5 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[var(--color-blue-640)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-sky-400/35">

@@ -68,11 +68,6 @@ jobs:
               print(f"  {path}")
           PY
 
-      - name: Disable Codacy ErrorProne and UnusedCode categories
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: python3 .github/scripts/codacy_disable_categories.py --apply
-
       - name: Run Codacy Analysis for GitHub Code Scanning
         uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08
         with:
@@ -83,12 +78,6 @@ jobs:
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
           skip-uncommitted-files-check: true
-
-      - name: Reanalyze with the updated Codacy categories
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          CODACY_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python3 .github/scripts/codacy_disable_categories.py --apply --reanalyze-commit "$CODACY_COMMIT_SHA"
 
       - name: Split SARIF runs into unique categories
         run: |
@@ -102,21 +91,6 @@ jobs:
           sarif = json.loads(source.read_text())
           runs = sarif.get("runs") or []
           batch_size = 20
-          suppressed_rules = {
-              "no-unused-vars",
-              "@typescript-eslint/no-unused-vars",
-              "@typescript-eslint/no-unnecessary-condition",
-              "ESLint8_no-unused-vars",
-              "ESLint8_@typescript-eslint_no-unused-vars",
-              "ESLint8_@typescript-eslint_no-unnecessary-condition",
-          }
-
-          for run in runs:
-              results = run.get("results") or []
-              kept = [r for r in results if r.get("ruleId") not in suppressed_rules]
-              if len(kept) != len(results):
-                  print(f"Dropped {len(results) - len(kept)} suppressed results")
-              run["results"] = kept
 
           if not runs:
               raise SystemExit("results.sarif does not contain any SARIF runs")
