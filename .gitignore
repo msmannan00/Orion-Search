@@ -77,3 +77,12 @@ backend/workspace/resource/**
 
 nginx/nginx.conf
 .pytest_cache/
+
+# cypress run artifacts
+client/cypress/screenshots/
+client/cypress/videos/
+client/cypress/downloads/
+client/cypress/error/
+
+# generated audit report
+duplication-audit.txt
