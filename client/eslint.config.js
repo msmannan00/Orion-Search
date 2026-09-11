@@ -1029,8 +1029,8 @@ module.exports = [
         }
       ],
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unnecessary-condition': 'error',
       '@typescript-eslint/dot-notation': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': [
         'error',
@@ -1133,12 +1133,6 @@ module.exports = [
       'local/template-asset-src-root': 'error',
       'local/template-asset-src-no-parent': 'error',
       '@angular-eslint/template/no-inline-styles': 'error',
-    },
-  },
-  {
-    files: ['src/app/**/*guard*.ts'],
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ];

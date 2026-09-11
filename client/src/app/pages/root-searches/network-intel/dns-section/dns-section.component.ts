@@ -3,10 +3,11 @@ import { Component, OnDestroy, SimpleChanges, effect, input, output, signal, Cha
 import { Router } from '@angular/router';
 import { fadeInDashboardItem } from '../../../../shared/animations/dashboard.item.animation';
 import { vulnerabilityContentMotion } from '../../../../shared/animations/vulnerability.content.motion.animation';
-import { DnsResult, IpRowState } from '../../../../shared/model/network-intel/network-intel.model';
+import { DnsEmailSecurity, DnsResult, IpRowState } from '../../../../shared/model/network-intel/network-intel.model';
 import { IpDetailComponent } from '../ip-detail/ip-detail.component';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { getOwnProperty } from '../../../../shared/utils/type-guards.util';
 
 @Component({
   selector: 'app-network-intel-dns-section',
@@ -23,6 +24,7 @@ export class DnsSectionComponent implements OnDestroy {
       this.elapsedNowMs.set(Date.now());
     }
   }, 1000);
+  private readonly dnsRecordOrder = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];
 
   readonly errorMessageInput = input<string | null>(null, { alias: 'errorMessage' });
   readonly ipRowsInput = input<IpRowState[]>([], { alias: 'ipRows' });
@@ -48,6 +50,22 @@ export class DnsSectionComponent implements OnDestroy {
 
   get isEmbeddedInConsolidated(): boolean {
     return this.ui.isEmbeddedInConsolidated(this.router.url);
+  }
+
+  get dnsRecordGroups(): { type: string; values: string[] }[] {
+    const records = this.dnsResult()?.records ?? {};
+    return this.dnsRecordOrder
+      .filter((type) => Array.isArray(getOwnProperty(records, type)) && (getOwnProperty(records, type) as string[]).length > 0)
+      .map((type) => ({ type, values: getOwnProperty(records, type) as string[] }));
+  }
+
+  get emailSecurity(): DnsEmailSecurity | null {
+    return this.dnsResult()?.email_security ?? null;
+  }
+
+  get hasDnsRecords(): boolean {
+    const email = this.emailSecurity;
+    return this.dnsRecordGroups.length > 0 || !!email?.spf || !!email?.dmarc;
   }
 
   get progressValue(): number {

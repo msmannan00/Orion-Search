@@ -8,10 +8,8 @@ from orion.constants import constant
 from orion.helper_manager.env_handler import env_handler
 from orion.services.elastic_manager.elastic_enums import (ELASTIC_CONNECTIONS, MANAGE_ELASTIC_MESSAGES, ELASTIC_KEYS, ELASTIC_INDEX, ELASTIC_ENUMS)
 from orion.services.log_manager.log_controller import log
-
-
-ELASTIC_SEARCH_REQUEST_TIMEOUT = 120
-ELASTIC_WRITE_REQUEST_TIMEOUT = 220
+ELASTIC_SEARCH_REQUEST_TIMEOUT = constant.CONSTANTS.ELASTIC_SEARCH_REQUEST_TIMEOUT
+ELASTIC_WRITE_REQUEST_TIMEOUT = constant.CONSTANTS.ELASTIC_WRITE_REQUEST_TIMEOUT
 
 
 def _with_timeout(conn, timeout: int):
@@ -87,6 +85,23 @@ class elastic_controller:
             log.g().w(f"Skipping mapping update for Elasticsearch index {index}: {str(ex)}")
 
     @staticmethod
+    async def __ensure_field_safe(conn, index: str, field: str, add_type=None, fielddata_if_text=False):
+        try:
+            timed_conn = _with_timeout(conn, ELASTIC_WRITE_REQUEST_TIMEOUT)
+            current = await timed_conn.indices.get_mapping(index=index)
+            for entry in current.body.values():
+                existing = entry.get("mappings", {}).get("properties", {}).get(field)
+                if existing is None:
+                    if add_type is not None:
+                        await timed_conn.indices.put_mapping(
+                            index=index, body={"properties": {field: {"type": add_type}}})
+                elif fielddata_if_text and existing.get("type") == "text" and not existing.get("fielddata"):
+                    await timed_conn.indices.put_mapping(
+                        index=index, body={"properties": {field: {"type": "text", "fielddata": True}}})
+        except Exception as ex:
+            log.g().w(f"ELASTIC : ensure field {index}.{field} skipped : {str(ex)}")
+
+    @staticmethod
     async def __refresh_touched_indices(touched_indices: dict[int, tuple[AsyncElasticsearch, set[str]]]):
         for conn, indices in touched_indices.values():
             if not indices:
@@ -122,10 +137,11 @@ class elastic_controller:
                     body={"index.blocks.read_only_allow_delete": False},
                     request_timeout=220)
 
-            await self.__put_mapping_safe(
+            await self.__ensure_field_safe(
                 self.__m_core_connection,
                 ELASTIC_INDEX.S_LEAK_INDEX,
-                {"m_domain": {"type": "keyword"}},
+                "m_domain",
+                add_type="keyword",
             )
 
             if not await self.__m_core_connection.indices.exists(index=ELASTIC_INDEX.S_OPENSANCTIONS_INDEX, request_timeout=220):
@@ -145,6 +161,13 @@ class elastic_controller:
                     index=ELASTIC_INDEX.S_GENERIC_INDEX,
                     body={"index.blocks.read_only_allow_delete": False},
                     request_timeout=220)
+
+            await self.__ensure_field_safe(
+                self.__m_core_connection,
+                ELASTIC_INDEX.S_GENERIC_INDEX,
+                "m_content_type",
+                fielddata_if_text=True,
+            )
 
             if not await self.__m_core_connection.indices.exists(
                     index=ELASTIC_INDEX.S_DEFACEMENT_INDEX,

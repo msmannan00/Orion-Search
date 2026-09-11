@@ -272,7 +272,7 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            redirectTo: 'email-breach',
+            redirectTo: 'social-scanner',
             pathMatch: 'full'
           },
           {

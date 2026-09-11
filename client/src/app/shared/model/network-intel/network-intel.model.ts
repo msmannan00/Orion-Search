@@ -95,9 +95,28 @@ export interface CameraInfo {
   vulnerabilities?: string[];
 }
 
+export interface DnsRecords {
+  A?:     string[];
+  AAAA?:  string[];
+  MX?:    string[];
+  TXT?:   string[];
+  NS?:    string[];
+  CNAME?: string[];
+  SOA?:   string[];
+  CAA?:   string[];
+  [key: string]: string[] | undefined;
+}
+
+export interface DnsEmailSecurity {
+  spf?:   string | null;
+  dmarc?: string | null;
+}
+
 export interface DnsResult {
-  domain: string;
-  ips:    string[];
+  domain:          string;
+  ips:             string[];
+  records?:        DnsRecords;
+  email_security?: DnsEmailSecurity;
 }
 
 export interface IpDetail {
@@ -221,11 +240,29 @@ export interface VulnerabilityFinding {
   [key: string]: unknown;
 }
 
+export interface TechnologyEntry {
+  name: string;
+  version?: string | null;
+  cpe?: string | null;
+  categories?: string[];
+  sources?: string[];
+}
+
+export interface VulnerabilityCveEntry {
+  cve?: string;
+  cvss?: number | null;
+  cvss_severity?: string | null;
+  matched_cpe?: string | null;
+  technology?: string | null;
+  [key: string]: unknown;
+}
+
 export interface UrlVulnerabilityScanResult {
   status?: string;
   step?: string;
   progress?: number;
   scan_created_at?: string | number | Date;
+  scanned_at?: string | null;
   host?: string;
   url?: string;
   final_url?: string;
@@ -234,6 +271,9 @@ export interface UrlVulnerabilityScanResult {
   max_minutes?: number;
   summary?: VulnerabilitySummary;
   extracted?: VulnerabilityExtractedData;
+  technologies?: TechnologyEntry[];
+  cves?: VulnerabilityCveEntry[];
+  scan_policy?: Record<string, unknown>;
   scanned_urls?: string[];
   findings?: VulnerabilityFinding[];
   top_findings?: VulnerabilityFinding[];
@@ -246,6 +286,8 @@ export interface ScanTaskResponse extends UrlVulnerabilityScanResult {
   error?: string;
   domain?: string;
   ips?: string[];
+  records?: DnsRecords;
+  email_security?: DnsEmailSecurity;
   ip?: string;
   count?: number;
   subdomains?: string[];

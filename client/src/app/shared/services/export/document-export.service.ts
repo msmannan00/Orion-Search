@@ -334,7 +334,8 @@ export class DocumentExportService extends GraphExportService {
       sections: [
         'Executive Summary',
         tableSections[0] || 'Detailed Intelligence',
-        tableSections[1] || ((payload.edges || []).length ? 'Connection Matrix' : 'Supporting Evidence')
+        tableSections[1] || ((payload.edges || []).length ? 'Connection Matrix' : 'Supporting Evidence'),
+        ...tableSections.slice(2)
       ]
     });
     doc.addPage();

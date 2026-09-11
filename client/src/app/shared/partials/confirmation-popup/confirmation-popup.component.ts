@@ -19,6 +19,7 @@ export class ConfirmationPopupComponent {
   readonly confirmLabel = input('confirmation.yesConfirm');
   readonly warning = input(false, { transform: booleanAttribute });
   readonly showCancel = input(true, { transform: booleanAttribute });
+  readonly cancelLabel = input('common.actions.cancel');
   readonly confirmed = output<boolean>();
 
   onBackdrop(event: MouseEvent) {

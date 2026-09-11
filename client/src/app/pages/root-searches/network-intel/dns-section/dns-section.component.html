@@ -6,6 +6,41 @@
     </div>
   }
 
+  @if (hasSearched() && hasDnsRecords) {
+    <div class="mb-4 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
+      <div class="border-b border-[var(--color-divider)] bg-[var(--color-blue-700)] px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text4)] [.light-theme_&]:!border-b-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#3a4f6a]">{{ 'DNS Records' | translate }}</div>
+      <div class="flex flex-col gap-2 px-4 py-3">
+        @for (group of dnsRecordGroups; track group.type) {
+          <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+            <span class="shrink-0 rounded-md border border-[var(--ui-table-row-border)] bg-[var(--color-blue-790)] px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-[var(--color-text3)] sm:w-16 sm:text-center">{{ group.type }}</span>
+            <div class="flex min-w-0 flex-col gap-1">
+              @for (value of group.values; track value) {
+                <span class="break-all font-mono text-[13px] leading-5 text-[var(--color-text1)]">{{ value }}</span>
+              }
+            </div>
+          </div>
+        }
+        @if (emailSecurity?.spf || emailSecurity?.dmarc) {
+          <div class="mt-1 flex flex-col gap-2 border-t border-[var(--color-divider)] pt-3">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text4)]">{{ 'Email Authentication' | translate }}</span>
+            @if (emailSecurity?.spf) {
+              <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+                <span class="shrink-0 rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-400 [.light-theme_&]:text-emerald-700 sm:w-16 sm:text-center">SPF</span>
+                <span class="min-w-0 break-all font-mono text-[13px] leading-5 text-[var(--color-text2)]">{{ emailSecurity?.spf }}</span>
+              </div>
+            }
+            @if (emailSecurity?.dmarc) {
+              <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+                <span class="shrink-0 rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-400 [.light-theme_&]:text-emerald-700 sm:w-16 sm:text-center">DMARC</span>
+                <span class="min-w-0 break-all font-mono text-[13px] leading-5 text-[var(--color-text2)]">{{ emailSecurity?.dmarc }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   @if (hasSearched()) {
     <div class="ui-ioc-table-shell overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-blue-700)] [.light-theme_&]:!border-[#d4dfeb] [.light-theme_&]:!bg-white [.light-theme_&]:!shadow-[0_5px_16px_rgba(15,23,42,0.065)]">
       <div class="ui-ioc-table-head flex items-center justify-between border-b border-[var(--color-divider)] bg-[var(--color-blue-700)] px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text4)] [.light-theme_&]:!border-b-[#d7e2ef] [.light-theme_&]:!bg-white [.light-theme_&]:!text-[#3a4f6a]">

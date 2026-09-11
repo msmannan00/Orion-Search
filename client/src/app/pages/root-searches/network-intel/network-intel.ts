@@ -482,7 +482,7 @@ export class NetworkIntel implements OnInit, OnDestroy {
     const payload = done.result ?? done;
     if (payload?.domain != null && Array.isArray(payload.ips)) {
       const existingRows = new Map(this.ipRows.map((row) => [row.ip, row]));
-      this.dnsResult = { domain: payload.domain, ips: payload.ips };
+      this.dnsResult = { domain: payload.domain, ips: payload.ips, records: payload.records, email_security: payload.email_security };
       this.ipRows = payload.ips.map((ip: string) => existingRows.get(ip) ?? {
         ip, expanded: false, loading: false, progress: 0, step: null, detail: null, error: null,
       });

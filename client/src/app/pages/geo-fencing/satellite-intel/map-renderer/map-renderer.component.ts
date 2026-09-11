@@ -206,7 +206,7 @@ export class MapRendererComponent implements AfterViewInit, OnChanges, OnDestroy
         import('leaflet'),
         import('@maplibre/maplibre-gl-leaflet'),
       ]);
-      this.L = L;
+      this.L = (L as unknown as { default?: typeof Leaflet }).default ?? L;
       if (!this.mapContainer?.nativeElement) {
         return;
       }

@@ -257,7 +257,7 @@
   </div>
 }
 
-@if (securityFlags.length || detail.cdn || detail.waf || detail.hsts || detail.load_balancer) {
+@if (securityFlags.length || detail.cdn || detail.waf || detail.hsts || detail.load_balancer || detail.paas || detail.amazon_s3 || detail.favicon_hash) {
   <div class="ui-ip-detail-section">
     <div class="ui-ip-detail-heading text-[11px] font-bold uppercase tracking-[1.3px] text-[var(--color-text1)]">{{ 'Security & CDN' | translate }}</div>
     <div class="flex flex-wrap gap-2">
@@ -277,6 +277,24 @@
         <div class="flex min-h-10 w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[var(--ui-table-row-border)] bg-[linear-gradient(135deg,rgba(148,163,184,0.08),rgba(71,85,105,0.025))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:min-w-[210px] sm:flex-1">
           <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--color-text4)]">{{ 'Load Balancer' | translate }}</span>
           <span class="min-w-0 break-words text-right text-[13px] font-semibold leading-5 text-[var(--color-text1)]">{{ detail.load_balancer }}</span>
+        </div>
+      }
+      @if (detail.paas) {
+        <div class="flex min-h-10 w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[var(--ui-table-row-border)] bg-[linear-gradient(135deg,rgba(148,163,184,0.08),rgba(71,85,105,0.025))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:min-w-[170px] sm:flex-1">
+          <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--color-text4)]">PaaS</span>
+          <span class="min-w-0 break-words text-right text-[13px] font-semibold leading-5 text-[var(--color-text1)]">{{ detail.paas }}</span>
+        </div>
+      }
+      @if (detail.favicon_hash) {
+        <div class="flex min-h-10 w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[var(--ui-table-row-border)] bg-[linear-gradient(135deg,rgba(148,163,184,0.08),rgba(71,85,105,0.025))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:min-w-[200px] sm:flex-1">
+          <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--color-text4)]">{{ 'Favicon' | translate }}</span>
+          <span class="min-w-0 break-all text-right font-mono text-[12px] font-semibold leading-5 text-[var(--color-text1)]">{{ detail.favicon_hash }}</span>
+        </div>
+      }
+      @if (detail.amazon_s3) {
+        <div class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-[var(--ui-table-row-border)] bg-[linear-gradient(135deg,rgba(148,163,184,0.08),rgba(71,85,105,0.025))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-[130px] sm:flex-none">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--color-text4)]">{{ 'S3' | translate }}</span>
+          <span class="rounded-md border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[11px] font-bold text-amber-400 [.light-theme_&]:text-amber-700">{{ '✓ Yes' | translate }}</span>
         </div>
       }
       <div class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-[var(--ui-table-row-border)] bg-[linear-gradient(135deg,rgba(148,163,184,0.08),rgba(71,85,105,0.025))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-[130px] sm:flex-none">
