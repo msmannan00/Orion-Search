@@ -261,8 +261,12 @@ export class ManageProfileComponent implements OnInit {
       user.licenses = user.licenses.filter((l) => l !== license);
       return;
     }
+    if (license === LicenseName.FEEDER) {
+      user.licenses.push(LicenseName.FEEDER);
+      return;
+    }
     if (license === LicenseName.FREE || license === LicenseName.ENTERPRISE) {
-      user.licenses = [license];
+      user.licenses = user.licenses.includes(LicenseName.FEEDER) ? [license, LicenseName.FEEDER] : [license];
       return;
     }
     user.licenses = user.licenses.filter((l) => l !== LicenseName.FREE && l !== LicenseName.ENTERPRISE);

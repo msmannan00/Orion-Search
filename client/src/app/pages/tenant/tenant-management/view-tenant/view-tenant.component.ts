@@ -39,7 +39,7 @@ export class ViewTenantComponent implements OnInit {
 
   tenants: ManagedTenant[] = [];
   tenantSearch = '';
-  licenseList = Object.values(LicenseName).filter((license) => license !== LicenseName.FEEDER);
+  licenseList = Object.values(LicenseName);
   isLoading = true;
   selectedTenantId: string | null = null;
   TenantStatus = TenantStatusValues;
@@ -95,7 +95,7 @@ export class ViewTenantComponent implements OnInit {
             ? tenant.status
             : TenantStatusValues.ACTIVE,
           licenses: tenant.licenses?.length
-            ? tenant.licenses.filter((license) => license !== LicenseName.FEEDER)
+            ? tenant.licenses
             : [LicenseName.FREE],
         }));
         this.isLoading = false;
