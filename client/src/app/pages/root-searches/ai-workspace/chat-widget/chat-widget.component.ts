@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { countMessageTokens, getComposerLineCount } from '../composer-metrics.util';
+import { countMessageTokens } from '../composer-metrics.util';
+import { ComposerLayoutHost } from '../composer-layout-host';
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef, NgZone, input, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router } from '@angular/router';
@@ -24,7 +25,7 @@ import { TranslationService } from '../../../../shared/services/translation.serv
   changeDetection: ChangeDetectionStrategy.Eager,
   animations: [chatBotAnimation, overlayFadeAnimation]
 })
-export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ChatWidgetComponent extends ComposerLayoutHost implements OnInit, AfterViewInit, OnDestroy {
   private activeChatRequest?: Subscription;
   private chatRequestId = 0;
   private stoppedRequestIds = new Set<number>();
@@ -43,9 +44,6 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   newMessage = '';
   chatOpen = false;
   isFullScreen = false;
-  composerExpanded = false;
-  composerRows = 1;
-  composerScrollable = false;
   readonly maxComposerTokens = 300;
   readonly reportText = input<string>();
   readonly report = input<string>();
@@ -54,7 +52,9 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly type = input('default');
   readonly welcomeMessage = input('Hi there! How can I help you today?');
 
-  constructor(public appService: AppService, private dashboardService: DashboardService, private cdr: ChangeDetectorRef, private zone: NgZone, private subscriptionService: SubscriptionService, private nexusChatService: NexusChatService, private router: Router, private readonly translationService: TranslationService) { }
+  constructor(public appService: AppService, private dashboardService: DashboardService, private cdr: ChangeDetectorRef, private zone: NgZone, private subscriptionService: SubscriptionService, private nexusChatService: NexusChatService, private router: Router, private readonly translationService: TranslationService) {
+    super(); 
+  }
 
   ngOnInit(): void {
     this.activeTempSessionId = this.temporarySessionId();
@@ -333,15 +333,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   resizeComposer(): void {
-    const textarea = this.composerInput?.nativeElement;
-    if (!textarea) {
-      return;
-    }
-
-    const lineCount = getComposerLineCount(textarea);
-    this.composerRows = Math.min(5, lineCount);
-    this.composerScrollable = lineCount > 5;
-    this.composerExpanded = this.composerRows > 1;
+    this.applyComposerResize(this.composerInput?.nativeElement);
   }
 
   get newMessageTokenCount(): number {

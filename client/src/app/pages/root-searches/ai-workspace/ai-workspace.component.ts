@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { countMessageTokens, getComposerLineCount } from './composer-metrics.util';
+import { countMessageTokens } from './composer-metrics.util';
+import { ComposerLayoutHost } from './composer-layout-host';
 import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,7 +35,7 @@ type AiWorkspaceViewMode = 'chat' | 'directory' | 'split';
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './ai-workspace.component.html',
 })
-export class AiWorkspaceComponent implements OnInit, OnDestroy {
+export class AiWorkspaceComponent extends ComposerLayoutHost implements OnInit, OnDestroy {
   private readonly pendingStreamStorageKey = 'orion.nexus.pending-stream';
   private activeChatRequest?: Subscription;
   private chatHistoryRequest?: Subscription;
@@ -65,13 +66,12 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   editingMessageId: string | null = null;
   editDraft = '';
   messages: AiWorkspaceMessage[] = [];
-  composerExpanded = false;
-  composerRows = 1;
-  composerScrollable = false;
   activeSessionId: string | null = null;
   chatSessions: AiChatSession[] = [];
 
-  constructor(protected readonly appService: AppService, private readonly router: Router, private readonly route: ActivatedRoute, private readonly nexusChatService: NexusChatService, private readonly resultRowHelper: ResultRowHelperService, private readonly cdr: ChangeDetectorRef, private readonly translationService: TranslationService) { }
+  constructor(protected readonly appService: AppService, private readonly router: Router, private readonly route: ActivatedRoute, private readonly nexusChatService: NexusChatService, private readonly resultRowHelper: ResultRowHelperService, private readonly cdr: ChangeDetectorRef, private readonly translationService: TranslationService) {
+    super(); 
+  }
 
   ngOnInit(): void {
     const requestedView = this.route.snapshot.queryParamMap.get('view');
@@ -312,15 +312,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   resizeComposer(): void {
-    const textarea = this.composerInput?.nativeElement;
-    if (!textarea) {
-      return;
-    }
-
-    const lineCount = getComposerLineCount(textarea);
-    this.composerRows = Math.min(5, lineCount);
-    this.composerScrollable = lineCount > 5;
-    this.composerExpanded = this.composerRows > 1;
+    this.applyComposerResize(this.composerInput?.nativeElement);
   }
 
   private navigateUserMessageHistory(direction: 'older' | 'newer'): boolean {
