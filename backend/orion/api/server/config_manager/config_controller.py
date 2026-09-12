@@ -222,8 +222,6 @@ class config_controller:
         file_name = f"{base}_custom.png"
         resource_path = ResourceManager.get_instance().system_resource_path(file_name, tenant)
         asset_url = f"/api/s/static/system/{resource_path.name}"
-        if base != "auth_dashboard_icon":
-            return asset_url
         try:
             return f"{asset_url}?v={resource_path.stat().st_mtime_ns}"
         except OSError:

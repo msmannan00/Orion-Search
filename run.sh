@@ -438,6 +438,9 @@ chmod -R a+rwX backend/workspace/parser/parser_files 2>/dev/null || true
 mkdir -p backend/workspace/logs
 chmod a+rwX backend/workspace/logs 2>/dev/null || true
 
+mkdir -p backend/workspace/resource
+chmod -R a+rwX backend/workspace/resource 2>/dev/null || true
+
 docker network create --driver bridge shared_bridge 2>/dev/null || true
 docker network create --driver bridge orion_nexus_backend 2>/dev/null || true
 compose_up_services=()
