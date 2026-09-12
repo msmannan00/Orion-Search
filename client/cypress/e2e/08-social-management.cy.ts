@@ -101,7 +101,7 @@ describe('Orion Intelligence - Social Intel Management Flow', () => {
     cy.get('[data-testid="social-dashboard-stealer-download"]').click();
     cy.get('[data-testid="social-dashboard-stealer-export-overlay"]').should('exist');
     cy.get('[data-testid="social-dashboard-stealer-export-modal"]').should('be.visible');
-    cy.get('[data-testid="social-dashboard-stealer-export-close"]').click();
+    cy.get('[data-testid="social-dashboard-stealer-export-report"]').should('be.visible').click();
     cy.get('[data-testid="social-dashboard-stealer-export-modal"]').should('not.exist');
 
     cy.get('[data-testid="social-wanted-list-section"]', { timeout: FETCH_TIMEOUT }).within(() => {
@@ -313,7 +313,7 @@ describe('Orion Intelligence - Social Intel Management Flow', () => {
     cy.get('[data-testid="social-stealerlog-download"]').click();
     cy.get('[data-testid="social-stealerlog-export-overlay"]').should('exist');
     cy.get('[data-testid="social-stealerlog-export-modal"]').should('be.visible');
-    cy.get('[data-testid="social-stealerlog-export-close"]').click();
+    cy.get('[data-testid="social-stealerlog-export-csv"]').should('be.visible').click();
     cy.get('[data-testid="social-stealerlog-export-modal"]').should('not.exist');
   });
 

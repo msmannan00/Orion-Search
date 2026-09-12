@@ -515,6 +515,10 @@ describe('Tenant Management - End-to-End Provisioning Flows', () => {
     ensureTenantAlertReportsPresent();
     cy.get('[data-testid="tenant-home-print-alerts"]').scrollIntoView().should('be.visible').click();
     exportFromModal('home-alert-export-modal', 'home-alert-export-option-report');
+    cy.get('[data-testid="tenant-home-print-alerts"]').scrollIntoView().should('be.visible').click();
+    exportFromModal('home-alert-export-modal', 'home-alert-export-option-json');
+    cy.get('[data-testid="tenant-home-print-alerts"]').scrollIntoView().should('be.visible').click();
+    exportFromModal('home-alert-export-modal', 'home-alert-export-option-csv');
 
     cy.get('[data-testid="profile-notification-bell"]').scrollIntoView().should('be.visible').click();
     cy.get('[data-testid="tenant-notification-sidebar"]').should('be.visible');

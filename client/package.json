@@ -149,7 +149,11 @@
   },
   "nyc": {
     "exclude": [
-      "eslint.config.js"
+      "eslint.config.js",
+      "**/model/**",
+      "**/models/**",
+      "**/*.model.ts",
+      "**/*.models.ts"
     ]
   }
 }

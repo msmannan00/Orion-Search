@@ -96,6 +96,9 @@ describe('Scans Management - Entity Lookup Flow', () => {
     cy.get('[data-testid="scan-success-badge"]').filter(':visible').first().should('be.visible');
     cy.docsScreenshot('file-scanner-report');
     cy.get('[data-testid="scan-download-report"]').filter(':visible').first().should('be.visible').and('be.enabled').scrollIntoView().click();
+    cy.get('[data-testid="file-scan-export-modal"]').filter(':visible').first().should('be.visible');
+    cy.get('[data-testid="file-scan-export-json"]').filter(':visible').first().should('be.visible').click();
+    cy.get('[data-testid="file-scan-export-modal"]').should('not.exist');
     cy.get('[data-testid="scan-another-file"]').filter(':visible').first().should('be.visible').and('be.enabled').scrollIntoView().click();
     makeFileInputInteractable();
     cy.get('[data-testid="scan-file-input"]').first().selectFile({

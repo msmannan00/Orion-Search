@@ -90,6 +90,9 @@ describe('Orion Intelligence - CTI Graph Management Flows', () => {
     cy.get('[data-testid="graph-report-export-report"]').filter(':visible').first().click();
     cy.get('[data-testid="graph-report-export-modal"]').should('not.exist');
     cy.readFile(`${exportBase}-graph-report.pdf`, 'binary', { timeout: 30000 }).should('contain', '%PDF');
+    openAndAssertReportModal('Export CTI Report');
+    cy.get('[data-testid="graph-report-export-csv"]').filter(':visible').first().click();
+    cy.get('[data-testid="graph-report-export-modal"]').should('not.exist');
   });
 
   it('attempts CTI graph context menu actions (data-dependent)', () => {
