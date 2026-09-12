@@ -66,6 +66,16 @@ class ProfileManager:
         items = (reply.get("items") if reply.get("implemented") else []) or []
         return {"result": {"items": items}}
 
+    @staticmethod
+    def extract_session_file(reply: dict):
+        if reply.get("error"):
+            return None, {"error": reply.get("error")}
+        items = (reply.get("items") if reply.get("implemented") else []) or []
+        session_file = items[0] if items else None
+        if not isinstance(session_file, dict) or not session_file.get("zip_base64"):
+            return None, {"error": "no_session_data"}
+        return session_file, None
+
     async def capture_session(self, current_user, platform: str, url: str, session_id: str = ""):
         user_key = self._user_key(current_user)
         if not user_key:
@@ -97,12 +107,9 @@ class ProfileManager:
             await manager.fire(user_key, command)
             return {"status": "pending"}
 
-        if reply.get("error"):
-            return {"error": reply.get("error")}
-        items = (reply.get("items") if reply.get("implemented") else []) or []
-        session_file = items[0] if items else None
-        if not isinstance(session_file, dict) or not session_file.get("zip_base64"):
-            return {"error": "no_session_data"}
+        session_file, error = self.extract_session_file(reply)
+        if error:
+            return error
 
         try:
             raw = base64.b64decode(session_file["zip_base64"])

@@ -51,6 +51,15 @@ class CaseManager:
             & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
         )
 
+    async def _persist_case(self, record: db_case_model, enc, current_user, audit_message: str) -> None:
+        CaseHelperMethods.apply_sensitive_case_values(record, lambda value: CaseHelperMethods.encrypt_value(enc, value))
+        await self._engine.save(record)
+        await AuditLogManager.get_instance().register(
+            str(current_user.tenant_uuid),
+            str(current_user.id),
+            audit_message,
+        )
+
     async def _to_response(self, record: db_case_model, current_user) -> CaseResponse:
         enc = await CaseHelperMethods.get_case_cipher(current_user)
         CaseHelperMethods.apply_sensitive_case_values(record, lambda value: CaseHelperMethods.decrypt_value(enc, value))
@@ -277,12 +286,8 @@ class CaseManager:
             closedAt=server_now if data.closure else None,
         )
         enc = await CaseHelperMethods.get_case_cipher(current_user)
-        CaseHelperMethods.apply_sensitive_case_values(record, lambda value: CaseHelperMethods.encrypt_value(enc, value))
-        await self._engine.save(record)
-
-        await AuditLogManager.get_instance().register(
-            str(current_user.tenant_uuid),
-            str(current_user.id),
+        await self._persist_case(
+            record, enc, current_user,
             f"Case created: caseId={record.caseId}, title={data.title}, caseType={record.caseType}, status={record.status}, priority={record.priority}, severity={record.severity}, intakeSource={record.intakeSource}, entities_count={len(record.entities)}",
         )
 
@@ -640,14 +645,7 @@ class CaseManager:
             record.closedAt = None
         record.updatedAt = utc_now()
 
-        CaseHelperMethods.apply_sensitive_case_values(record, lambda value: CaseHelperMethods.encrypt_value(enc, value))
-        await self._engine.save(record)
-
-        await AuditLogManager.get_instance().register(
-            str(current_user.tenant_uuid),
-            str(current_user.id),
-            f"Case updated: caseId={case_id}",
-        )
+        await self._persist_case(record, enc, current_user, f"Case updated: caseId={case_id}")
 
         return await self._to_response(record, current_user)
 

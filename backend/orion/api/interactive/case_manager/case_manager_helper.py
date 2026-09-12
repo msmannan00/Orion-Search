@@ -3,6 +3,7 @@ from datetime import timezone
 import hashlib
 
 from cryptography.fernet import Fernet
+from fastapi import HTTPException
 
 from orion.constants.constant import CONSTANTS
 from orion.services.encryption_manager.key_manager import KeyManager
@@ -17,6 +18,17 @@ class CaseHelperMethods:
     @staticmethod
     def actor_id(current_user) -> str:
         return str(current_user.id)
+
+    @staticmethod
+    async def find_case_or_404(engine, case_id: str, current_user) -> db_case_model:
+        record = await engine.find_one(
+            db_case_model,
+            (db_case_model.caseId == case_id)
+            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
+        )
+        if not record:
+            raise HTTPException(status_code=404, detail="Case not found")
+        return record
 
     @staticmethod
     def is_admin(current_user) -> bool:

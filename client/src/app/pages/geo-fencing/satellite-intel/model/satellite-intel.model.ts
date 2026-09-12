@@ -3,9 +3,10 @@ import { SatelliteAircraftTrackingService } from '../map-entities/aircraft/aircr
 import { SatelliteFacilitiesService } from '../map-entities/facilities/facilities.service';
 import { SatelliteShipTrackingService } from '../map-entities/ships/ship-tracking.service';
 import { SatelliteLiveAircraft, SatelliteLiveShip } from './satellite-intel-api.models';
-import { EnvironmentInjector } from '@angular/core';
+import { ComponentRef, EnvironmentInjector } from '@angular/core';
 import { LeafletComponentRenderer } from '../map-utils/leaflet-component-renderer';
 import type * as Leaflet from 'leaflet';
+import { Augmented, Nullable } from '../../../../shared/utils/type-guards.util';
 
 export interface SatelliteImageType {
   key:   string;
@@ -74,4 +75,28 @@ export interface OrionFacilitiesMapRendererConfig {
   getData: () => OrionSatelliteFeature[];
   getFocusedFeature: () => OrionSatelliteFeature | null;
   onFeatureSelected: (feature: OrionSatelliteFeature) => void;
+}
+
+export interface RenderedMarkerIcon {
+  icon: Leaflet.DivIcon;
+  componentRef: ComponentRef<{ rotationDegrees: number }>;
+}
+
+export type EntityMarker = Augmented<Leaflet.Marker, {
+  __orionIconRef?: Nullable<ComponentRef<{ rotationDegrees: number }>>;
+  __orionIconState?: string;
+}>;
+
+export interface EntityRendererBaseConfig {
+  L: typeof Leaflet;
+  map: Leaflet.Map;
+  sidebar: TrackingSidebarBridge;
+  componentRenderer: LeafletComponentRenderer;
+}
+
+export interface DistributionCellItems<T> {
+  key: string;
+  row: number;
+  col: number;
+  items: T[];
 }

@@ -42,6 +42,11 @@ exclude_paths:
   - "client/src/**/models/**"
   - "client/src/**/*.model.ts"
   - "client/src/**/*.models.ts"
+  - "backend/**/*model/**"
+  - "backend/**/*models/**"
+  - "backend/**/*_callback_model.py"
+  - "backend/**/*_param_model.py"
+  - "backend/**/*_models.py"
 
 engines:
   metric:
@@ -84,3 +89,8 @@ engines:
       - "client/src/**/models/**"
       - "client/src/**/*.model.ts"
       - "client/src/**/*.models.ts"
+      - "backend/**/*model/**"
+      - "backend/**/*models/**"
+      - "backend/**/*_callback_model.py"
+      - "backend/**/*_param_model.py"
+      - "backend/**/*_models.py"

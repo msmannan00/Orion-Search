@@ -31,13 +31,7 @@ class CaseShareManager:
         return CaseShareManager.__instance
 
     async def create_case_share(self, case_id: str, data: CreateCaseShareRequest, current_user) -> CaseShareResponse:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
-        if not record:
-            raise HTTPException(status_code=404, detail="Case not found")
+        record = await CaseHelperMethods.find_case_or_404(self._engine, case_id, current_user)
         if not CaseHelperMethods.can_share_case(record, current_user):
             raise HTTPException(status_code=403, detail="Only admins, maintainers, or the case creator can share cases")
 
@@ -77,13 +71,7 @@ class CaseShareManager:
         )
 
     async def revoke_case_shares(self, case_id: str, current_user) -> dict:
-        record = await self._engine.find_one(
-            db_case_model,
-            (db_case_model.caseId == case_id)
-            & (db_case_model.tenant_uuid == str(current_user.tenant_uuid)),
-        )
-        if not record:
-            raise HTTPException(status_code=404, detail="Case not found")
+        record = await CaseHelperMethods.find_case_or_404(self._engine, case_id, current_user)
         if not CaseHelperMethods.can_share_case(record, current_user):
             raise HTTPException(status_code=403, detail="Only admins, maintainers, or the case creator can revoke case shares")
 
