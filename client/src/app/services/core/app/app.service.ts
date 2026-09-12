@@ -181,8 +181,12 @@ export class AppService {
   }
 
   public updateFavicon(url = '/api/s/static/system/logo.png'): void {
-    (document.querySelector<HTMLLinkElement>('link[rel="icon"]') ??
-            document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'icon' }))).href = url;
+    document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach((el) => el.remove());
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/png';
+    link.href = url;
+    document.head.appendChild(link);
   }
 
   private preloadImage(url?: string): void {
