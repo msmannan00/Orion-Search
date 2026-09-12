@@ -1082,12 +1082,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       }
       this.nodeSet.update({
         id: nodeId,
-        color: {
-          border: this.nodeFocusColor,
-          background: this.nodeFillColor,
-          highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-          hover: { border: this.nodeFocusColor, background: this.nodeFillColor }
-        }
+        color: this.buildNodeColor(this.nodeFocusColor)
       });
     }
   }
@@ -2074,12 +2069,7 @@ export class GraphComponent implements OnInit, OnDestroy {
         docId: vertex?.doc_id ?? vertex?.m_document_id ?? vertex?._key,
         propertyKey: this.extractPropertyKey(vertex),
         hiddenByDefault: !!vertex?.hidden_by_default,
-        color: {
-          border: color,
-          background: this.nodeFillColor,
-          highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-          hover: { border: '#a5b4fc', background: this.nodeFillColor }
-        },
+        color: this.buildNodeColor(color, '#a5b4fc'),
         shape: 'dot',
         font: { size: 14, color: this.getNodeLabelColor() },
         size: 18
@@ -2169,25 +2159,24 @@ export class GraphComponent implements OnInit, OnDestroy {
     return nodes;
   }
 
+  private buildNodeColor(border: string, hoverBorder: string = border): { border: string; background: string; highlight: { border: string; background: string }; hover: { border: string; background: string } } {
+    return {
+      border,
+      background: this.nodeFillColor,
+      highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
+      hover: { border: hoverBorder, background: this.nodeFillColor }
+    };
+  }
+
   private applyNonGroupNodeColor(node: ExtendedNode, isClusterNode: boolean, edgeMap: Record<string, number>): void {
     const visualType = this.getVisualNodeCategory(node);
     const accentColor = this.getNodeAccentColor(node, visualType);
     if (this.isFocusedDocumentNode(node)) {
-      node.color = {
-        border: this.nodeFocusColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: this.nodeFocusColor, background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(this.nodeFocusColor);
       return;
     }
     if (isClusterNode) {
-      node.color = {
-        border: accentColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: accentColor, background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(accentColor);
       return;
     }
     const hasOutgoing = edgeMap[node.id as string];
@@ -2195,36 +2184,16 @@ export class GraphComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.selectedType == 'cluster') {
-      node.color = {
-        border: accentColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: accentColor, background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(accentColor);
     }
     else if (this.selectedType == 'document') {
-      node.color = {
-        border: this.nodeDocumentBorder,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: '#fdba74', background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(this.nodeDocumentBorder, '#fdba74');
     }
     else if (this.propertyValue && String(node.id).includes(this.propertyValue)) {
-      node.color = {
-        border: this.nodeFocusColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: this.nodeFocusColor, background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(this.nodeFocusColor);
     }
     else {
-      node.color = {
-        border: accentColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: accentColor, background: this.nodeFillColor }
-      };
+      node.color = this.buildNodeColor(accentColor);
     }
   }
 
@@ -2618,12 +2587,7 @@ export class GraphComponent implements OnInit, OnDestroy {
     const accentColor = this.getNodeAccentColor(node, visualType);
     this.nodeSet.update({
       id: nodeId,
-      color: {
-        border: this.nodeFocusColor,
-        background: this.nodeFillColor,
-        highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-        hover: { border: accentColor, background: this.nodeFillColor }
-      },
+      color: this.buildNodeColor(this.nodeFocusColor, accentColor),
       borderWidth: 2,
       borderWidthSelected: 3
     });
@@ -2772,12 +2736,7 @@ export class GraphComponent implements OnInit, OnDestroy {
       matchedNodeIds.push(node.id as string);
       this.nodeSet.update({
         id: node.id,
-        color: {
-          border: this.nodeFocusColor,
-          background: this.nodeFillColor,
-          highlight: { border: this.nodeFocusColor, background: this.nodeFillColor },
-          hover: { border: this.nodeFocusColor, background: this.nodeFillColor }
-        }
+        color: this.buildNodeColor(this.nodeFocusColor)
       });
     });
     const matchedEdges = this.edgeSet.get({
