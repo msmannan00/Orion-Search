@@ -858,18 +858,8 @@ export class GraphComponent implements OnInit, OnDestroy {
   }
 
   loadGraphByNode(data_point_type: string, type: string, value: string, maxEdge: string, maxDepth: string): void {
-    if (this.expandEnabled) {
-      queueMicrotask(() => {
-        this.expandEnabled = false;
-      });
-    }
-    else {
-      this.expandEnabled = false;
-    }
-    this.loading = false;
-    const requestId = this.nextGraphRequestId();
+    const requestId = this.beginGraphRequest();
     const payload = this.buildGraphPayload(data_point_type, type, value, '', maxEdge, maxDepth);
-    this.resetGraph();
     this.api.post<{
       results: GraphResultItem[];
   }>('graph', payload).subscribe({
@@ -1353,36 +1343,36 @@ export class GraphComponent implements OnInit, OnDestroy {
     this.hideContextMenu();
   }
 
-  canContextExpand(): boolean {
+  private contextGroupState(): { clusterRoot: boolean; expanded: boolean } | null {
     const node = this.contextMenuNode;
     if (!node) {
-      return false;
+      return null;
     }
     const nodeId = String(node.id);
     if (this.isClusterRootNode(nodeId)) {
-      return true;
+      return { clusterRoot: true, expanded: false };
     }
     const subNodes = this.getContextSubNodes(nodeId, node);
     if (subNodes.length === 0) {
+      return null;
+    }
+    return { clusterRoot: false, expanded: this.groupExpandedState.get(nodeId) ?? false };
+  }
+
+  canContextExpand(): boolean {
+    const state = this.contextGroupState();
+    if (!state) {
       return false;
     }
-    return !this.groupExpandedState.get(nodeId);
+    return state.clusterRoot || !state.expanded;
   }
 
   canContextCollapse(): boolean {
-    const node = this.contextMenuNode;
-    if (!node) {
+    const state = this.contextGroupState();
+    if (!state) {
       return false;
     }
-    const nodeId = String(node.id);
-    if (this.isClusterRootNode(nodeId)) {
-      return true;
-    }
-    const subNodes = this.getContextSubNodes(nodeId, node);
-    if (subNodes.length === 0) {
-      return false;
-    }
-    return this.groupExpandedState.get(nodeId) ?? false;
+    return state.clusterRoot || state.expanded;
   }
 
   showContextOpenCti(): boolean {
@@ -1623,12 +1613,6 @@ export class GraphComponent implements OnInit, OnDestroy {
   private renderGraph(data: GraphResultItem[]): void {
     this.resetGraph();
     this.isEmpty = data.length === 0;
-    this.rawNodes = [];
-    this.rawEdges = [];
-    this.groupInfo.clear();
-    this.groupedSubNodesByParent.clear();
-    this.groupParentByGroupId.clear();
-    this.groupExpandedState.clear();
     const edgeMap = this.buildEdgesAndEdgeMap(data);
     const rawNodeMap = this.buildRawNodeMap(data);
     const nodeTypeMap = this.buildNodeTypeMap(data);

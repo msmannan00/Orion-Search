@@ -252,7 +252,7 @@ export class SocialLiveSyncService {
     }
   }
 
-  setSectionStatus(platformData: social_profile, section: string, status: string): void {
+  private applyProfileUpdate(platformData: social_profile, mapPlatform: (platform: social_profile) => social_profile): void {
     let updatedProfiles: social_profile[] | null = null;
     const groupKey = getProfileGroupKey(this.storageService.state.scanResults(), platformData);
     this.storageService.state.scanResults.update(results => {
@@ -262,11 +262,11 @@ export class SocialLiveSyncService {
       }
       let changed = false;
       const nextProfiles = currentProfiles.map(platform => {
-        if (!isSamePlatform(platform, platformData) || getOwnProperty(platform.section_status, section) === status) {
-          return platform;
+        const next = mapPlatform(platform);
+        if (next !== platform) {
+          changed = true;
         }
-        changed = true;
-        return { ...platform, section_status: { ...platform.section_status, [section]: status } };
+        return next;
       });
       if (!changed) {
         return results;
@@ -279,37 +279,30 @@ export class SocialLiveSyncService {
     }
   }
 
-  clearFetchingStatus(platformData: social_profile): void {
-    let updatedProfiles: social_profile[] | null = null;
-    const groupKey = getProfileGroupKey(this.storageService.state.scanResults(), platformData);
-    this.storageService.state.scanResults.update(results => {
-      const currentProfiles = results.get(groupKey);
-      if (!currentProfiles) {
-        return results;
+  setSectionStatus(platformData: social_profile, section: string, status: string): void {
+    this.applyProfileUpdate(platformData, platform => {
+      if (!isSamePlatform(platform, platformData) || getOwnProperty(platform.section_status, section) === status) {
+        return platform;
       }
-      let changed = false;
-      const nextProfiles = currentProfiles.map(platform => {
-        if (!isSamePlatform(platform, platformData)) {
-          return platform;
-        }
-        const status = { ...(platform.section_status ?? {}) };
-        for (const section of Object.keys(status)) {
-          if (getOwnProperty(status, section) === 'fetching') {
-            Reflect.deleteProperty(status, section);
-            changed = true;
-          }
-        }
-        return changed ? { ...platform, section_status: status } : platform;
-      });
-      if (!changed) {
-        return results;
-      }
-      updatedProfiles = nextProfiles;
-      return new Map(results).set(groupKey, nextProfiles);
+      return { ...platform, section_status: { ...platform.section_status, [section]: status } };
     });
-    if (updatedProfiles) {
-      this.storageService.saveProfiles(groupKey, updatedProfiles, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-    }
+  }
+
+  clearFetchingStatus(platformData: social_profile): void {
+    this.applyProfileUpdate(platformData, platform => {
+      if (!isSamePlatform(platform, platformData)) {
+        return platform;
+      }
+      const status = { ...(platform.section_status ?? {}) };
+      let changed = false;
+      for (const section of Object.keys(status)) {
+        if (getOwnProperty(status, section) === 'fetching') {
+          Reflect.deleteProperty(status, section);
+          changed = true;
+        }
+      }
+      return changed ? { ...platform, section_status: status } : platform;
+    });
   }
 
   private updateProfileResources(platformData: social_profile, type: FetchTabKey, build: (previous: social_resource_collection | undefined) => social_resource_collection): void {
