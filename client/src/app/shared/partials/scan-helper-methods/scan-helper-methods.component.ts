@@ -7,6 +7,7 @@ import { ScanHelperMethodsService } from './scan-helper-methods-service.service'
 import { AppService } from '../../../services/core/app/app.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { isDomainName, isIpv4Address, isIpv6Address } from '../../utils/network-validation.util';
+import { resolveRequestedUrl } from '../../utils/request-url.util';
 
 @Component({
   selector: 'app-scan-helper',
@@ -262,7 +263,7 @@ export class ScanHelperMethods implements OnDestroy {
       this.errorMessage = this.activeTab === 'dns' ? 'Invalid IP address format' : 'Please enter a valid domain (e.g., example.com)';
       return;
     }
-    const resolved = this.resolveRequestedUrl(input);
+    const resolved = resolveRequestedUrl(input);
     this.isLoading = true;
     this.cancelRequested = false;
     this.statusMessage = this.activeTab === 'dns' ? 'Queued...' : 'Initiating scan...';
@@ -277,17 +278,4 @@ export class ScanHelperMethods implements OnDestroy {
     }
   }
 
-  private resolveRequestedUrl(input: string): string {
-    const v = decodeURIComponent(input || '').trim();
-    if (!v) {
-      return '';
-    }
-    try {
-      const u = new URL((/^https?:\/\//i.exec(v)) ? v : `https://${v.replace(/^\/+/, '')}`);
-      return u.toString();
-    }
-    catch {
-      return `https://${v.replace(/^https?:\/\//i, '').replace(/^\/+/, '')}`;
-    }
-  }
 }

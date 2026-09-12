@@ -10,6 +10,7 @@ import { ResultListComponent } from '../../../../shared/partials/result-componen
 import { TooltipDirective } from '../../../../shared/directive/tooltip-directive.directive';
 import { formatKeyLabel as formatKeyLabelUtil, formatTitleUrl as formatTitleUrlUtil, isHiddenReportMetadataKey, normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../../../shared/utils/intel-report.util';
 import { ScrollService } from '../../../../shared/services/scroll.service';
+import { scrollReportElementToTop } from '../../../../shared/utils/report-scroll.util';
 import { ReportInteractionHostComponent } from '../../../../shared/partials/report-interactions/report-interaction-host/report-interaction-host.component';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TakedownActionComponent } from '../../../../shared/partials/takedown-action/takedown-action.component';
@@ -60,8 +61,7 @@ export class ReportDefacementComponent implements OnInit, AfterViewInit {
   }
 
   private scrollToTop(): void {
-    this.scrollService.scrollReportToTop();
-    this.elementRef.nativeElement.scrollIntoView({ block: 'start', behavior: 'auto' });
+    scrollReportElementToTop(this.scrollService, this.elementRef.nativeElement);
   }
 
   get filteredArrayKeys(): string[] {

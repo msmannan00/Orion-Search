@@ -11,6 +11,7 @@ import { EmptyQueryComponent } from '../../../../shared/partials/empty-query/emp
 import { UrlScanMeta, UrlScanThreatItem, } from '../../../../shared/model/security-scan/security.scan.results.model';
 import { ScannerService } from './scanner-service.service';
 import { ReportExportService } from '../../../../shared/services/report-export.service';
+import { resolveRequestedUrl } from '../../../../shared/utils/request-url.util';
 import { GraphReportPayload } from '../../../../shared/model/report/report-export.model';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
@@ -70,7 +71,7 @@ export class SecurityScanComponent implements OnInit {
     if (!rawParam) {
       return;
     }
-    const resolved = this.resolveRequestedUrl(rawParam);
+    const resolved = resolveRequestedUrl(rawParam);
     try {
       const u = new URL(resolved);
       const host = u.hostname;
@@ -274,20 +275,6 @@ export class SecurityScanComponent implements OnInit {
     this.graphReportExport.exportByType(payload, type === 'report' ? 'doc_pdf' : type as 'json' | 'csv');
   }
 
-  private resolveRequestedUrl(input: string): string {
-    const v = decodeURIComponent(input || '').trim();
-    if (!v) {
-      return '';
-    }
-    try {
-      const u = new URL((/^https?:\/\//i.exec(v)) ? v : `https://${v.replace(/^\/+/, '')}`);
-      return u.toString();
-    }
-    catch {
-      return `https://${v.replace(/^https?:\/\//i, '').replace(/^\/+/, '')}`;
-    }
-  }
-
   private extractHost(url?: string): string {
     try {
       return url ? new URL(url).hostname : '';
@@ -328,7 +315,7 @@ export class SecurityScanComponent implements OnInit {
     if (!raw) {
       return;
     }
-    const domain = this.resolveRequestedUrl(raw);
+    const domain = resolveRequestedUrl(raw);
     this.router
       .navigate([], {
         relativeTo: this.route,

@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../services/authetication/auth.service';
 import { NgForm, FormsModule } from '@angular/forms';
 import { HeaderComponent } from "../header/login-header/header.component";
-import { PasswordChecks, PasswordStrength, areAllPasswordRequirementsMet, createEmptyPasswordChecks, evaluatePasswordInput } from "../../utils/auth-form.util";
+import { PasswordMeterHost } from '../../utils/password-meter-host';
 import { AppService } from '../../../services/core/app/app.service';
 import { PasswordToggleDirective } from '../../directive/password-toggle.directive';
 import { TranslatePipe } from '../../pipes/translate.pipe';
@@ -15,7 +15,7 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, HeaderComponent, CommonModule, PasswordToggleDirective, TranslatePipe]
 })
-export class ResetPasswordComponent implements OnInit {
+export class ResetPasswordComponent extends PasswordMeterHost implements OnInit {
   @ViewChild('forgotForm') form?: NgForm;
   email = '';
   recoveryKey = '';
@@ -27,24 +27,9 @@ export class ResetPasswordComponent implements OnInit {
   token = '';
   confirmPassword = 'asdsadasd';
   forcedPasswordReset = false;
-  passwordStrength: PasswordStrength = null;
-  showPasswordMeter = false;
-  passwordChecks: PasswordChecks = createEmptyPasswordChecks();
-  currentUnmetCheck: string | null = null;
 
   constructor(private router: Router, private route: ActivatedRoute, public auth_service: AuthService, private appService: AppService) {
-  }
-
-  onPasswordInput(password: string) {
-    const evaluation = evaluatePasswordInput(password);
-    this.showPasswordMeter = evaluation.showPasswordMeter;
-    this.passwordChecks = evaluation.passwordChecks;
-    this.currentUnmetCheck = evaluation.currentUnmetCheck;
-    this.passwordStrength = evaluation.passwordStrength;
-  }
-
-  get allPasswordRequirementsMet(): boolean {
-    return areAllPasswordRequirementsMet(this.passwordChecks);
+    super();
   }
 
   setRecoveryMode(recoveryMode: boolean) {

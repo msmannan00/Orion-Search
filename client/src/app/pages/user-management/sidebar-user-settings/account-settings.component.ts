@@ -13,7 +13,7 @@ import { RecoveryKeyPopupComponent } from '../../../shared/partials/recovery-key
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { ApiService } from '../../../shared/services/api.service';
 import { TranslationService } from '../../../shared/services/translation.service';
-import { areAllPasswordRequirementsMet, createEmptyPasswordChecks, evaluatePasswordInput, PasswordChecks, PasswordStrength } from '../../../shared/utils/auth-form.util';
+import { PasswordMeterHost } from '../../../shared/utils/password-meter-host';
 import { getTenantLocationDisplay } from './sidebar-settings.util';
 import { UserImagePickerComponent } from "./user-image-picker/user-image-picker.component";
 
@@ -26,7 +26,7 @@ type SensitiveAction = 'twofa' | 'password' | 'recovery';
   templateUrl: './account-settings.component.html',
   styleUrls: ['./account-settings.component.css']
 })
-export class AccountSettingsComponent implements OnInit {
+export class AccountSettingsComponent extends PasswordMeterHost implements OnInit {
   userSessionData: userSessionData;
   twoFactorEnabled = true;
   isDarkMode = true;
@@ -38,15 +38,12 @@ export class AccountSettingsComponent implements OnInit {
   isPasswordSectionOpen = false;
   newPassword = '';
   confirmPassword = '';
-  passwordStrength: PasswordStrength = null;
-  showPasswordMeter = false;
-  passwordChecks: PasswordChecks = createEmptyPasswordChecks();
-  currentUnmetCheck: string | null = null;
   recoveryKey: string | null = null;
   sensitiveAction: SensitiveAction | null = null;
   confirmationError: string | null = null;
 
   constructor(protected apiService: ApiService, protected appService: AppService, protected licenseService: LicenseService, private messageNotificationService: MessageNotificationService, private translationService: TranslationService) {
+    super();
     this.userSessionData = this.appService.userSessionData();
   }
 
@@ -197,18 +194,6 @@ export class AccountSettingsComponent implements OnInit {
     }
   }
 
-  onPasswordInput(password: string) {
-    const evaluation = evaluatePasswordInput(password);
-    this.showPasswordMeter = evaluation.showPasswordMeter;
-    this.passwordChecks = evaluation.passwordChecks;
-    this.currentUnmetCheck = evaluation.currentUnmetCheck;
-    this.passwordStrength = evaluation.passwordStrength;
-  }
-
-  get allPasswordRequirementsMet(): boolean {
-    return areAllPasswordRequirementsMet(this.passwordChecks);
-  }
-
   confirmSensitiveAction(currentPassword: string) {
     if (this.sensitiveAction === 'recovery') {
       this.apiService.post<{ recovery_key: string }>('recovery-key', { current_password: currentPassword }).subscribe({
@@ -252,10 +237,7 @@ export class AccountSettingsComponent implements OnInit {
   private resetPasswordForm() {
     this.newPassword = '';
     this.confirmPassword = '';
-    this.passwordStrength = null;
-    this.showPasswordMeter = false;
-    this.passwordChecks = createEmptyPasswordChecks();
-    this.currentUnmetCheck = null;
+    this.resetPasswordMeter();
   }
 
   updateUserResource(file: File) {

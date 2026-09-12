@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, effect, input, signal, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ScrollService } from '../../../../shared/services/scroll.service';
@@ -7,10 +7,7 @@ import { TooltipDirective } from '../../../../shared/directive/tooltip-directive
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { RecordSidebarComponent } from '../../../../shared/partials/record-sidebar/record-sidebar.component';
 import { RecordSidebarItem } from '../../../../shared/partials/record-sidebar/model/record-sidebar.model';
-
-const STAGGER_RENDER_BATCH_SIZE = 10;
-const STAGGER_RENDER_DELAY_MS = 16;
-const RECORD_SIDEBAR_CLOSE_MS = 300;
+import { DashboardResultGroupBase } from '../dashboard-result-group-base';
 
 @Component({
   selector: 'app-dashboard-result-defacement',
@@ -19,24 +16,17 @@ const RECORD_SIDEBAR_CLOSE_MS = 300;
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./dashboard-result-defacement.component.css'],
 })
-export class DashboardResultDefacementComponent implements OnInit, AfterViewInit, OnDestroy {
-  private renderTimer: ReturnType<typeof setTimeout> | null = null;
-  private recordSidebarCloseTimer: ReturnType<typeof setTimeout> | null = null;
-  private renderKey = '';
-  private renderTargetCount = 0;
-
+export class DashboardResultDefacementComponent extends DashboardResultGroupBase implements OnInit, AfterViewInit, OnDestroy {
   readonly searchResultsInput = input<DefacementResultItem[]>([], { alias: 'searchResults' });
   readonly groupedResultsInput = input<DefacementGroupCallbackItem[]>([], { alias: 'groupedResults' });
   readonly searchQueryInput = input<string>('', { alias: 'searchQuery' });
   currentUrl = '';
   queryParams: { ci: string; } | undefined;
-  expandedGroupKey: string | null = null;
-  isRecordSidebarVisible = false;
-  visibleGroupCount = signal(0);
   searchResults: DefacementResultItem[] = [];
   groupedResults: DefacementGroupCallbackItem[] = [];
 
   constructor(private router: Router, private route: ActivatedRoute, protected scrollService: ScrollService) {
+    super();
     effect(() => {
       this.searchResults = this.searchResultsInput();
       this.groupedResults = this.groupedResultsInput();
@@ -137,40 +127,6 @@ export class DashboardResultDefacementComponent implements OnInit, AfterViewInit
     return groups.slice(0, this.visibleGroupCount());
   }
 
-  toggleGroup(key: string): void {
-    if (this.expandedGroupKey === key && this.isRecordSidebarOpen()) {
-      this.closeRecordSidebar();
-      return;
-    }
-
-    this.expandedGroupKey = key;
-    this.openRecordSidebar();
-  }
-
-  isGroupExpanded(key: string): boolean {
-    return this.expandedGroupKey === key && this.isRecordSidebarOpen();
-  }
-
-  isRecordSidebarOpen(): boolean {
-    return this.isRecordSidebarVisible;
-  }
-
-  openRecordSidebar(): void {
-    this.clearRecordSidebarCloseTimer();
-    this.isRecordSidebarVisible = true;
-  }
-
-  closeRecordSidebar(): void {
-    this.isRecordSidebarVisible = false;
-    this.clearRecordSidebarCloseTimer();
-    this.recordSidebarCloseTimer = setTimeout(() => {
-      if (!this.isRecordSidebarVisible) {
-        this.expandedGroupKey = null;
-      }
-      this.recordSidebarCloseTimer = null;
-    }, RECORD_SIDEBAR_CLOSE_MS);
-  }
-
   getSelectedGroup(): DefacementGroup | null {
     if (!this.expandedGroupKey) {
       return null;
@@ -266,45 +222,6 @@ export class DashboardResultDefacementComponent implements OnInit, AfterViewInit
     return String(value || 'unknown').trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
-  private buildRenderKey(groups: DefacementGroup[]): string {
-    return groups.map(group => `${group.key}:${group.records.length}:${group.latestSeen ?? ''}`).join('|');
-  }
-
-  private startStaggeredRender(targetCount: number, key: string): void {
-    if (this.renderKey === key && this.renderTargetCount === targetCount) {
-      return;
-    }
-    this.clearRenderTimer();
-    this.renderKey = key;
-    this.renderTargetCount = targetCount;
-    this.visibleGroupCount.set(Math.min(targetCount, STAGGER_RENDER_BATCH_SIZE));
-    this.revealNextGroupBatch();
-  }
-
-  private revealNextGroupBatch(): void {
-    if (this.visibleGroupCount() >= this.renderTargetCount) {
-      return;
-    }
-    this.renderTimer = setTimeout(() => {
-      this.visibleGroupCount.update(count => Math.min(count + STAGGER_RENDER_BATCH_SIZE, this.renderTargetCount));
-      this.revealNextGroupBatch();
-    }, STAGGER_RENDER_DELAY_MS);
-  }
-
-  private clearRenderTimer(): void {
-    if (this.renderTimer) {
-      clearTimeout(this.renderTimer);
-      this.renderTimer = null;
-    }
-  }
-
-  private clearRecordSidebarCloseTimer(): void {
-    if (this.recordSidebarCloseTimer) {
-      clearTimeout(this.recordSidebarCloseTimer);
-      this.recordSidebarCloseTimer = null;
-    }
-  }
-
   private uniqueValues(values: string[]): string[] {
     return Array.from(new Set(values.filter(value => !!String(value || '').trim())));
   }
@@ -323,24 +240,6 @@ export class DashboardResultDefacementComponent implements OnInit, AfterViewInit
       ...(item.m_source_url || []),
       ...(item.m_ioc_type || []),
     ].filter(Boolean).join(' ').toLowerCase();
-  }
-
-  private getLatestDate(current: string | null, next: string | null): string | null {
-    if (!current) {
-      return next;
-    }
-    if (!next) {
-      return current;
-    }
-    return this.dateTime(next) > this.dateTime(current) ? next : current;
-  }
-
-  private dateTime(value: string | null): number {
-    if (!value) {
-      return 0;
-    }
-    const parsed = new Date(value).getTime();
-    return Number.isNaN(parsed) ? 0 : parsed;
   }
 
   private riskWeight(risk: DefacementRisk): number {

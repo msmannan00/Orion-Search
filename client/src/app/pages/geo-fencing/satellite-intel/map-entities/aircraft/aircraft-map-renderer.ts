@@ -162,15 +162,7 @@ export class AircraftMapRenderer extends BaseEntityMapRenderer<SatelliteLiveAirc
       isSelected,
     });
 
-    return {
-      icon: this.L.divIcon({
-        html: this.componentRenderer.elementAsHtml(rendered.element),
-        className: 'bg-transparent border-0',
-        iconSize: [size, size],
-        iconAnchor: [half, half],
-      }),
-      componentRef: rendered.componentRef,
-    };
+    return this.buildMarkerIcon(rendered.element, rendered.componentRef, size, half);
   }
 
   protected pollDetails(seed: SatelliteLiveAircraft): Observable<unknown> {

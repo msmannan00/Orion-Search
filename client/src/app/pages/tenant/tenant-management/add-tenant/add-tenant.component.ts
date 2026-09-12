@@ -6,11 +6,13 @@ import { AlertAllowedTenantOption, TenantTeamModel } from '../../../../shared/mo
 import { ApiService } from '../../../../shared/services/api.service';
 import { AppService } from '../../../../services/core/app/app.service';
 import { LicenseService } from '../../../../services/licenses/licenses.service';
-import { areAllPasswordRequirementsMet, buildUsernameSuggestions, buildUsernameSuggestionText, createEmptyPasswordChecks, evaluatePasswordInput, PasswordChecks, PasswordStrength } from '../../../../shared/utils/auth-form.util';
+import { buildUsernameSuggestions, buildUsernameSuggestionText } from '../../../../shared/utils/auth-form.util';
+import { PasswordMeterHost } from '../../../../shared/utils/password-meter-host';
 import { PasswordToggleDirective } from '../../../../shared/directive/password-toggle.directive';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../shared/services/translation.service';
 import { UiDropdownComponent, UiDropdownOption } from '../../../../shared/partials/ui-dropdown/ui-dropdown.component';
+import { buildAlertAllowedOptions, loadAlertTenantOptions } from '../../../../shared/utils/alert-allowed-tenants.util';
 
 @Component({
   selector: 'app-add-tenant',
@@ -18,7 +20,7 @@ import { UiDropdownComponent, UiDropdownOption } from '../../../../shared/partia
   templateUrl: './add-tenant.component.html',
   changeDetection: ChangeDetectionStrategy.Eager
 })
-export class AddTenantComponent implements OnInit {
+export class AddTenantComponent extends PasswordMeterHost implements OnInit {
   private readonly allAlertsOption = 'all';
   private isClosing = false;
 
@@ -30,16 +32,13 @@ export class AddTenantComponent implements OnInit {
   errorText = "";
   usernamePattern = /^[A-Za-z][A-Za-z0-9_-]{7,19}$/;
   usernameSuggestion = "";
-  showPasswordMeter = false;
-  passwordStrength: PasswordStrength = null;
-  passwordChecks: PasswordChecks = createEmptyPasswordChecks();
-  currentUnmetCheck: string | null = null;
   confirmPassword = '';
   isOpen = false;
   readonly closs = output<undefined>();
   readonly accountAdded = output<undefined>();
 
   constructor(public apiService: ApiService, private appService: AppService, protected licenseService: LicenseService, private translationService: TranslationService, private cdr: ChangeDetectorRef) {
+    super();
   }
 
   get permissionOptions(): UiDropdownOption[] {
@@ -66,7 +65,7 @@ export class AddTenantComponent implements OnInit {
     this.isAdmin = this.appService.userSessionData().user.role === 'admin';
     this.model.role = this.isAdmin ? 'analyst' : 'member';
     if (this.isAdmin) {
-      this.loadAlertTenantOptions();
+      loadAlertTenantOptions(this.apiService, options => this.alertTenantOptions = options);
     }
     setTimeout(() => {
       this.isOpen = true;
@@ -182,13 +181,7 @@ export class AddTenantComponent implements OnInit {
 
   get alertAllowedOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [
-      { key: this.allAlertsOption, label: this.translationService.translate('All') },
-      ...this.alertTenantOptions.map(tenant => ({
-        key: tenant.id,
-        label: tenant.name || tenant.email || tenant.id
-      }))
-    ];
+    return buildAlertAllowedOptions(this.allAlertsOption, this.translationService.translate('All'), this.alertTenantOptions);
   }
 
   get selectedAlertAllowedValues(): string[] {
@@ -214,17 +207,6 @@ export class AddTenantComponent implements OnInit {
     const allowedTenantIds = new Set(this.alertTenantOptions.map(tenant => tenant.id));
     this.model.alerts_allowed_all = false;
     this.model.alerts_allowed_tenant_ids = values.filter(value => allowedTenantIds.has(value));
-  }
-
-  private loadAlertTenantOptions(): void {
-    this.apiService.get<AlertAllowedTenantOption[]>('tenants/alerts/allowed-options').subscribe({
-      next: (options) => {
-        this.alertTenantOptions = options || [];
-      },
-      error: () => {
-        this.alertTenantOptions = [];
-      }
-    });
   }
 
   private clearAlertAccess(): void {
@@ -288,15 +270,4 @@ export class AddTenantComponent implements OnInit {
     tenant.licenses.push(license);
   }
 
-  onPasswordInput(password: string) {
-    const evaluation = evaluatePasswordInput(password);
-    this.showPasswordMeter = evaluation.showPasswordMeter;
-    this.passwordChecks = evaluation.passwordChecks;
-    this.currentUnmetCheck = evaluation.currentUnmetCheck;
-    this.passwordStrength = evaluation.passwordStrength;
-  }
-
-  get allPasswordRequirementsMet(): boolean {
-    return areAllPasswordRequirementsMet(this.passwordChecks);
-  }
 }

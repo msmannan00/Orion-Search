@@ -1,4 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
+import { countMessageTokens, getComposerLineCount } from './composer-metrics.util';
 import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -182,7 +183,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
 
     const text = this.messageDraft.trim();
 
-    if (!text || this.countMessageTokens(text) > this.maxComposerTokens) {
+    if (!text || countMessageTokens(text) > this.maxComposerTokens) {
       return;
     }
 
@@ -316,7 +317,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const lineCount = this.getComposerLineCount(textarea);
+    const lineCount = getComposerLineCount(textarea);
     this.composerRows = Math.min(5, lineCount);
     this.composerScrollable = lineCount > 5;
     this.composerExpanded = this.composerRows > 1;
@@ -592,7 +593,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   saveMessageEdit(message: AiWorkspaceMessage): void {
     const text = this.editDraft.trim();
     const index = this.messages.findIndex(item => item.id === message.id);
-    if (!text || index === -1 || this.countMessageTokens(text) > this.maxComposerTokens) {
+    if (!text || index === -1 || countMessageTokens(text) > this.maxComposerTokens) {
       return;
     }
 
@@ -619,7 +620,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   protected get messageDraftTokenCount(): number {
-    return this.countMessageTokens(this.messageDraft);
+    return countMessageTokens(this.messageDraft);
   }
 
   protected get messageDraftTokenOverflow(): number {
@@ -639,7 +640,7 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   protected get editDraftTokenCount(): number {
-    return this.countMessageTokens(this.editDraft);
+    return countMessageTokens(this.editDraft);
   }
 
   protected get editDraftTokenOverflow(): number {
@@ -802,20 +803,6 @@ export class AiWorkspaceComponent implements OnInit, OnDestroy {
     requestAnimationFrame(() => {
       this.resizeComposer();
     });
-  }
-
-  private getComposerLineCount(textarea: HTMLTextAreaElement): number {
-    const horizontalPadding = 24;
-    const averageCharWidth = 7;
-    const availableWidth = Math.max(averageCharWidth, textarea.clientWidth - horizontalPadding);
-    const charsPerLine = Math.max(1, Math.floor(availableWidth / averageCharWidth));
-    const lines = (textarea.value || '').split('\n');
-
-    return Math.max(1, lines.reduce((total, line) => total + Math.max(1, Math.ceil(line.length / charsPerLine)), 0));
-  }
-
-  private countMessageTokens(value: string): number {
-    return value.trim().match(/[A-Za-z0-9_]+|[^\sA-Za-z0-9_]/g)?.length ?? 0;
   }
 
   private setDirectorySplitPercent(value: number): void {

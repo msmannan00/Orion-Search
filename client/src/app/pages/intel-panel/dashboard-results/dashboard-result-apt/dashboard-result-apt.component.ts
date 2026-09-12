@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, effect, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, effect, inject, input, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ScrollService } from '../../../../shared/services/scroll.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
@@ -7,10 +7,7 @@ import { RecordSidebarComponent } from '../../../../shared/partials/record-sideb
 import { AptIntelGroup, AptIntelRecord, AptIntelResultItem, AptIntelSummary } from '../../../../shared/model/results/apt-intel/apt-intel.callback.model';
 import { RecordSidebarItem } from '../../../../shared/partials/record-sidebar/model/record-sidebar.model';
 import { scrollToResultCard } from '../dashboard-result.util';
-
-const STAGGER_RENDER_BATCH_SIZE = 10;
-const STAGGER_RENDER_DELAY_MS = 16;
-const RECORD_SIDEBAR_CLOSE_MS = 300;
+import { DashboardResultGroupBase } from '../dashboard-result-group-base';
 
 @Component({
   selector: 'app-dashboard-result-apt',
@@ -20,25 +17,19 @@ const RECORD_SIDEBAR_CLOSE_MS = 300;
   styleUrls: ['./dashboard-result-apt.component.css'],
   changeDetection: ChangeDetectionStrategy.Eager,
 })
-export class DashboardResultAptComponent implements OnInit, AfterViewInit, OnDestroy {
+export class DashboardResultAptComponent extends DashboardResultGroupBase implements OnInit, AfterViewInit, OnDestroy {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
-  private renderTimer: ReturnType<typeof setTimeout> | null = null;
-  private recordSidebarCloseTimer: ReturnType<typeof setTimeout> | null = null;
-  private renderKey = '';
-  private renderTargetCount = 0;
 
   currentUrl = '';
   queryParams: Record<string, string> = {};
   isCollapsed = true;
   isConsolidatedView = false;
-  expandedGroupKey: string | null = null;
-  isRecordSidebarVisible = false;
-  visibleGroupCount = signal(0);
   readonly searchResults = input<AptIntelResultItem[]>([]);
   readonly isExpandAble = input<boolean>(false);
   readonly directResults = input<boolean>(false);
 
   constructor(private router: Router, private route: ActivatedRoute, protected scrollService: ScrollService) {
+    super();
     effect(() => {
       if (this.directResults()) {
         const results = this.getVisibleResults();
@@ -130,39 +121,6 @@ export class DashboardResultAptComponent implements OnInit, AfterViewInit, OnDes
       const dateDelta = this.dateTime(b.latestSeen) - this.dateTime(a.latestSeen);
       return dateDelta !== 0 ? dateDelta : b.records.length - a.records.length;
     });
-  }
-
-  toggleGroup(key: string): void {
-    if (this.expandedGroupKey === key && this.isRecordSidebarOpen()) {
-      this.closeRecordSidebar();
-      return;
-    }
-    this.expandedGroupKey = key;
-    this.openRecordSidebar();
-  }
-
-  isGroupExpanded(key: string): boolean {
-    return this.expandedGroupKey === key && this.isRecordSidebarOpen();
-  }
-
-  isRecordSidebarOpen(): boolean {
-    return this.isRecordSidebarVisible;
-  }
-
-  openRecordSidebar(): void {
-    this.clearRecordSidebarCloseTimer();
-    this.isRecordSidebarVisible = true;
-  }
-
-  closeRecordSidebar(): void {
-    this.isRecordSidebarVisible = false;
-    this.clearRecordSidebarCloseTimer();
-    this.recordSidebarCloseTimer = setTimeout(() => {
-      if (!this.isRecordSidebarVisible) {
-        this.expandedGroupKey = null;
-      }
-      this.recordSidebarCloseTimer = null;
-    }, RECORD_SIDEBAR_CLOSE_MS);
   }
 
   toggleCollapsed(): void {
@@ -410,47 +368,8 @@ export class DashboardResultAptComponent implements OnInit, AfterViewInit, OnDes
     return this.isExpandAble() && this.isCollapsed ? 2 : 100;
   }
 
-  private buildRenderKey(groups: AptIntelGroup[]): string {
-    return groups.map(group => `${group.key}:${group.records.length}:${group.latestSeen ?? ''}`).join('|');
-  }
-
   private buildDirectRenderKey(results: AptIntelResultItem[]): string {
     return results.map((item, index) => this.getItemKey(item, index)).join('|');
-  }
-
-  private startStaggeredRender(targetCount: number, key: string): void {
-    if (this.renderKey === key && this.renderTargetCount === targetCount) {
-      return;
-    }
-    this.clearRenderTimer();
-    this.renderKey = key;
-    this.renderTargetCount = targetCount;
-    this.visibleGroupCount.set(Math.min(targetCount, STAGGER_RENDER_BATCH_SIZE));
-    this.revealNextGroupBatch();
-  }
-
-  private revealNextGroupBatch(): void {
-    if (this.visibleGroupCount() >= this.renderTargetCount) {
-      return;
-    }
-    this.renderTimer = setTimeout(() => {
-      this.visibleGroupCount.update(count => Math.min(count + STAGGER_RENDER_BATCH_SIZE, this.renderTargetCount));
-      this.revealNextGroupBatch();
-    }, STAGGER_RENDER_DELAY_MS);
-  }
-
-  private clearRenderTimer(): void {
-    if (this.renderTimer) {
-      clearTimeout(this.renderTimer);
-      this.renderTimer = null;
-    }
-  }
-
-  private clearRecordSidebarCloseTimer(): void {
-    if (this.recordSidebarCloseTimer) {
-      clearTimeout(this.recordSidebarCloseTimer);
-      this.recordSidebarCloseTimer = null;
-    }
   }
 
   private scrollToResultIndex(index: number): void {
@@ -459,24 +378,6 @@ export class DashboardResultAptComponent implements OnInit, AfterViewInit, OnDes
 
   private uniqueValues(values: string[]): string[] {
     return Array.from(new Set(values.map(value => String(value || '').trim()).filter(Boolean)));
-  }
-
-  private getLatestDate(current: string | null, next: string | null): string | null {
-    if (!current) {
-      return next;
-    }
-    if (!next) {
-      return current;
-    }
-    return this.dateTime(next) > this.dateTime(current) ? next : current;
-  }
-
-  private dateTime(value: string | null): number {
-    if (!value) {
-      return 0;
-    }
-    const parsed = new Date(value).getTime();
-    return Number.isNaN(parsed) ? 0 : parsed;
   }
 
   private toList(value?: string | string[] | null): string[] {

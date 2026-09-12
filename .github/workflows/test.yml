@@ -7,6 +7,10 @@ on:
 
 permissions: read-all
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   client-tests:
     runs-on: ubuntu-latest
@@ -169,12 +173,17 @@ jobs:
           test -s coverage/lcov.info
 
       - name: Make client coverage paths repository relative
+        if: always()
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import pathlib
+          import sys
 
           report = pathlib.Path("client/coverage/lcov.info")
+          if not report.exists() or report.stat().st_size == 0:
+              print("client coverage report missing; nothing to rewrite")
+              sys.exit(0)
           lines = report.read_text(encoding="utf-8", errors="ignore").splitlines()
           rewritten = []
 
@@ -399,11 +408,12 @@ jobs:
             set -e
             cd /app
             COVERAGE_FILE=/tmp/.coverage TESTING_ENABLED=1 PYTHONPATH=/app python -m pytest -q tests \
-              --cov=orion --maxfail=1 --disable-warnings \
+              --cov=orion --disable-warnings \
               --cov-report=xml:/tmp/backend-coverage.xml
           '
 
       - name: Generate backend coverage report
+        if: always()
         run: |
           set -euo pipefail
           docker cp trusted-web-main:/tmp/backend-coverage.xml backend/coverage.xml

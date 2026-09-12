@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { countMessageTokens, getComposerLineCount } from '../composer-metrics.util';
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef, NgZone, input, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router } from '@angular/router';
@@ -105,7 +106,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     const text = this.newMessage.trim();
-    if (!text || this.countMessageTokens(text) > this.maxComposerTokens) {
+    if (!text || countMessageTokens(text) > this.maxComposerTokens) {
       return;
     }
     this.chatMessages.push({ id: crypto.randomUUID(), sender: 'user', text, time: new Date() });
@@ -337,14 +338,14 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const lineCount = this.getComposerLineCount(textarea);
+    const lineCount = getComposerLineCount(textarea);
     this.composerRows = Math.min(5, lineCount);
     this.composerScrollable = lineCount > 5;
     this.composerExpanded = this.composerRows > 1;
   }
 
   get newMessageTokenCount(): number {
-    return this.countMessageTokens(this.newMessage);
+    return countMessageTokens(this.newMessage);
   }
 
   get newMessageTokenOverflow(): number {
@@ -395,20 +396,6 @@ export class ChatWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
     this.composerScrollable = false;
     this.queueComposerResize();
     this.scrollToBottom(true);
-  }
-
-  private getComposerLineCount(textarea: HTMLTextAreaElement): number {
-    const horizontalPadding = 24;
-    const averageCharWidth = 7;
-    const availableWidth = Math.max(averageCharWidth, textarea.clientWidth - horizontalPadding);
-    const charsPerLine = Math.max(1, Math.floor(availableWidth / averageCharWidth));
-    const lines = (textarea.value || '').split('\n');
-
-    return Math.max(1, lines.reduce((total, line) => total + Math.max(1, Math.ceil(line.length / charsPerLine)), 0));
-  }
-
-  private countMessageTokens(value: string): number {
-    return value.trim().match(/[A-Za-z0-9_]+|[^\sA-Za-z0-9_]/g)?.length ?? 0;
   }
 
   private defaultWelcomeMessage(): string {

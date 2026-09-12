@@ -15,6 +15,7 @@ import { ActivatedRoute } from '@angular/router';
 import { LicenseService } from '../../../services/licenses/licenses.service';
 import { TenantBrandingSettingsComponent } from './tenant-branding-settings/tenant-branding-settings.component';
 import { AlertConnectorSettingsResponse, AlertWebhookSettingsForm } from '../../../shared/partials/alert-webhook-settings-block/model/alert-webhook-settings.model';
+import { createWebhookForm, mapAlertConnectorSettings } from '../../../shared/partials/alert-webhook-settings-block/alert-webhook-settings.util';
 import type { SystemSettingsResponse } from './model/sidebar-user-system-settings.model';
 import { getOwnProperty, setOwnProperty } from '../../../shared/utils/type-guards.util';
 
@@ -47,7 +48,7 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
   webhookErrorState = false;
   scheduledBackup = false;
   form = { language: '', version: '', app_name: '0', ai_endpoint_enabled: true, admin_root_allowed: false, s_onion: '', data_sources_url: '', adversaries_url: '', pricing_url: '', documentation_allowed: false, whistle_blowing_allowed: false, accounts_mail_password: '', accounts_mail: '', accounts_smtp_server: '', accounts_smtp_port: '' };
-  webhookForm: AlertWebhookSettingsForm = this.createWebhookForm();
+  webhookForm: AlertWebhookSettingsForm = createWebhookForm();
   languageOptions: LanguageOption[] = LANGUAGE_OPTIONS;
   onionPattern = /^(?:https:\/\/|http:\/\/)?[a-z2-7]{56}\.onion\/?$/i;
   urlPattern = /^https?:\/\/.+/i;
@@ -334,20 +335,7 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
   }
 
   private applyAlertConnectorSettings(response: AlertConnectorSettingsResponse) {
-    this.webhookForm = {
-      slack_client_id: response?.app?.slack_client_id || '',
-      slack_client_secret: '',
-      slack_configured: response?.app?.slack_configured,
-      jira_client_id: response?.app?.jira_client_id || '',
-      jira_client_secret: '',
-      jira_configured: response?.app?.jira_configured,
-      alert_slack_connected: response?.tenant?.slack_connected,
-      alert_slack_channel: response?.tenant?.slack_channel || '',
-      alert_slack_team: response?.tenant?.slack_team || '',
-      alert_jira_connected: response?.tenant?.jira_connected,
-      alert_jira_site_url: response?.tenant?.jira_site_url || '',
-      alert_jira_site_name: response?.tenant?.jira_site_name || ''
-    };
+    this.webhookForm = mapAlertConnectorSettings(response);
     this.webhookErrorState = false;
     this.webhookSnapshot = this.webhookState();
   }
@@ -403,23 +391,6 @@ export class SidebarProfileSystemSettingsComponent implements OnInit {
       this.webhookForm.jira_client_id,
       this.webhookForm.jira_client_secret
     ]);
-  }
-
-  private createWebhookForm(): AlertWebhookSettingsForm {
-    return {
-      slack_client_id: '',
-      slack_client_secret: '',
-      slack_configured: false,
-      jira_client_id: '',
-      jira_client_secret: '',
-      jira_configured: false,
-      alert_slack_connected: false,
-      alert_slack_channel: '',
-      alert_slack_team: '',
-      alert_jira_connected: false,
-      alert_jira_site_url: '',
-      alert_jira_site_name: ''
-    };
   }
 
   get displayVersion(): string {

@@ -59,6 +59,18 @@ export abstract class BaseEntityMapRenderer<T extends { latitude?: number | null
 
   protected abstract renderIcon(entity: T, isSelected: boolean, isLoading: boolean, rotationDegrees?: number): RenderedMarkerIcon;
 
+  protected buildMarkerIcon(element: HTMLElement, componentRef: RenderedMarkerIcon['componentRef'], size: number, half: number): RenderedMarkerIcon {
+    return {
+      icon: this.L.divIcon({
+        html: this.componentRenderer.elementAsHtml(element),
+        className: 'bg-transparent border-0',
+        iconSize: [size, size],
+        iconAnchor: [half, half],
+      }),
+      componentRef,
+    };
+  }
+
   protected abstract shouldAnimateMarker(entity: T): boolean;
 
   protected abstract pollDetails(seed: T): Observable<unknown>;

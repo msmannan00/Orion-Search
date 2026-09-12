@@ -11,6 +11,7 @@ import { getTenantLocationDisplay } from '../sidebar-settings.util';
 import { MessageNotificationService } from '../../../../services/message_notification/message-notification.service';
 import { AlertWebhookSettingsBlockComponent } from '../../../../shared/partials/alert-webhook-settings-block/alert-webhook-settings-block.component';
 import { AlertConnectorSettingsResponse, AlertWebhookSettingsForm } from '../../../../shared/partials/alert-webhook-settings-block/model/alert-webhook-settings.model';
+import { createWebhookForm, mapAlertConnectorSettings } from '../../../../shared/partials/alert-webhook-settings-block/alert-webhook-settings.util';
 import { SmtpSettingsBlockComponent } from '../../../../shared/partials/smtp-settings-block/smtp-settings-block.component';
 import { SmtpSettingsForm } from '../../../../shared/partials/smtp-settings-block/model/smtp-settings.model';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
@@ -34,7 +35,7 @@ export class TenantSettingsComponent implements OnInit {
   userSessionData: userSessionData;
   userId = '';
   mailForm: SmtpSettingsForm = { accounts_mail_password: '', accounts_mail: '', accounts_smtp_server: '', accounts_smtp_port: '' };
-  webhookForm: AlertWebhookSettingsForm = this.createWebhookForm();
+  webhookForm: AlertWebhookSettingsForm = createWebhookForm();
 
   constructor(protected apiService: ApiService, protected appService: AppService, protected licenseService: LicenseService, private messageNotificationService: MessageNotificationService, private translationService: TranslationService) {
     this.userSessionData = this.appService.userSessionData();
@@ -188,38 +189,8 @@ export class TenantSettingsComponent implements OnInit {
   }
 
   private applyAlertConnectorSettings(response: AlertConnectorSettingsResponse) {
-    this.webhookForm = {
-      slack_client_id: response?.app?.slack_client_id || '',
-      slack_client_secret: '',
-      slack_configured: response?.app?.slack_configured,
-      jira_client_id: response?.app?.jira_client_id || '',
-      jira_client_secret: '',
-      jira_configured: response?.app?.jira_configured,
-      alert_slack_connected: response?.tenant?.slack_connected,
-      alert_slack_channel: response?.tenant?.slack_channel || '',
-      alert_slack_team: response?.tenant?.slack_team || '',
-      alert_jira_connected: response?.tenant?.jira_connected,
-      alert_jira_site_url: response?.tenant?.jira_site_url || '',
-      alert_jira_site_name: response?.tenant?.jira_site_name || ''
-    };
+    this.webhookForm = mapAlertConnectorSettings(response);
     this.webhookErrorState = false;
-  }
-
-  private createWebhookForm(): AlertWebhookSettingsForm {
-    return {
-      slack_client_id: '',
-      slack_client_secret: '',
-      slack_configured: false,
-      jira_client_id: '',
-      jira_client_secret: '',
-      jira_configured: false,
-      alert_slack_connected: false,
-      alert_slack_channel: '',
-      alert_slack_team: '',
-      alert_jira_connected: false,
-      alert_jira_site_url: '',
-      alert_jira_site_name: ''
-    };
   }
 
   private captureEditableSettings(): void {

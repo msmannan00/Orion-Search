@@ -16,6 +16,7 @@ import { ResultSectionComponent } from '../../../../shared/partials/result-compo
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { HelperService } from '../../../../shared/services/helper.service';
 import { ScrollService } from '../../../../shared/services/scroll.service';
+import { scrollReportElementToTop } from '../../../../shared/utils/report-scroll.util';
 import { formatKeyLabel as formatKeyLabelUtil, getDisplayTitle as getDisplayTitleUtil, getStatusText as getStatusTextUtil, isHiddenReportMetadataKey, isWithinDays as isWithinDaysUtil, normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../../../shared/utils/intel-report.util';
 import { ChatWidgetComponent } from '../../../root-searches/ai-workspace/chat-widget/chat-widget.component';
 import type { GeneralReportItem } from './model/report.model';
@@ -95,8 +96,7 @@ export class ReportComponent implements OnInit, AfterViewInit {
   }
 
   private scrollToTop(): void {
-    this.scrollService.scrollReportToTop();
-    this.elementRef.nativeElement.scrollIntoView({ block: 'start', behavior: 'auto' });
+    scrollReportElementToTop(this.scrollService, this.elementRef.nativeElement);
   }
 
   langUpdate(result: unknown) {

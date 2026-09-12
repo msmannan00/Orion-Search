@@ -13,6 +13,7 @@ import { DashboardService } from '../../../../services/dashboard/dashboard.servi
 import { ChatWidgetComponent } from '../../../root-searches/ai-workspace/chat-widget/chat-widget.component';
 import { AppService } from '../../../../services/core/app/app.service';
 import { ScrollService } from '../../../../shared/services/scroll.service';
+import { scrollReportElementToTop } from '../../../../shared/utils/report-scroll.util';
 import { formatKeyLabel as formatKeyLabelUtil, getDisplayTitle as getDisplayTitleUtil, isHiddenReportMetadataKey, normalizeDisplayUrl as normalizeDisplayUrlUtil } from '../../../../shared/utils/intel-report.util';
 import { NetworkIntelScanService } from '../../../../shared/services/network-intel/network-intel-scan.service';
 import { ReportInteractionHostComponent } from '../../../../shared/partials/report-interactions/report-interaction-host/report-interaction-host.component';
@@ -67,8 +68,7 @@ export class ReportChatComponent implements OnInit, AfterViewInit {
   }
 
   private scrollToTop(): void {
-    this.scrollService.scrollReportToTop();
-    this.elementRef.nativeElement.scrollIntoView({ block: 'start', behavior: 'auto' });
+    scrollReportElementToTop(this.scrollService, this.elementRef.nativeElement);
   }
 
   langUpdate(result: unknown) {

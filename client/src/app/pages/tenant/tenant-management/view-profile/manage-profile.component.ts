@@ -16,6 +16,7 @@ import { LicenseService } from '../../../../services/licenses/licenses.service';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../../shared/services/translation.service';
 import { UiDropdownComponent, UiDropdownOption } from '../../../../shared/partials/ui-dropdown/ui-dropdown.component';
+import { buildAlertAllowedOptions, loadAlertTenantOptions } from '../../../../shared/utils/alert-allowed-tenants.util';
 
 @Component({
   selector: 'app-view-profile',
@@ -78,7 +79,7 @@ export class ManageProfileComponent implements OnInit {
   ngOnInit(): void {
     const headers = new HttpHeaders({});
     if (this.appService.userSessionData().user.role === 'admin') {
-      this.loadAlertTenantOptions();
+      loadAlertTenantOptions(this.apiService, options => this.alertTenantOptions = options);
     }
     this.apiService.post<User[]>('users', headers).subscribe({
       next: (data) => {
@@ -137,13 +138,7 @@ export class ManageProfileComponent implements OnInit {
 
   get alertAllowedOptions(): UiDropdownOption[] {
     this.translationService.version();
-    return [
-      { key: this.allAlertsOption, label: this.translationService.translate('All') },
-      ...this.alertTenantOptions.map(tenant => ({
-        key: tenant.id,
-        label: tenant.name || tenant.email || tenant.id
-      }))
-    ];
+    return buildAlertAllowedOptions(this.allAlertsOption, this.translationService.translate('All'), this.alertTenantOptions);
   }
 
   get filteredUsers(): User[] {
@@ -213,17 +208,6 @@ export class ManageProfileComponent implements OnInit {
     const allowedTenantIds = new Set(this.alertTenantOptions.map(tenant => tenant.id));
     user.alerts_allowed_all = false;
     user.alerts_allowed_tenant_ids = values.filter(value => allowedTenantIds.has(value));
-  }
-
-  private loadAlertTenantOptions(): void {
-    this.apiService.get<AlertAllowedTenantOption[]>('tenants/alerts/allowed-options').subscribe({
-      next: (options) => {
-        this.alertTenantOptions = options || [];
-      },
-      error: () => {
-        this.alertTenantOptions = [];
-      }
-    });
   }
 
   private clearAlertAccess(user: User): void {
