@@ -407,9 +407,13 @@ class config_controller:
         )
 
         prefix = "/api/s/static/system/"
+        try:
+            asset_url = f"{prefix}{file_name}?v={(system_dir / file_name).stat().st_mtime_ns}"
+        except OSError:
+            asset_url = prefix + file_name
         return {
-            AllowedKeys.LOGO_URL: prefix + file_name if allowed_key == AllowedKeys.LOGO_URL else None,
-            AllowedKeys.LOGO_WIDE_LIGHT: prefix + file_name if allowed_key == AllowedKeys.LOGO_WIDE_LIGHT else None,
-            AllowedKeys.LOGO_WIDE_DARK: prefix + file_name if allowed_key == AllowedKeys.LOGO_WIDE_DARK else None,
-            AllowedKeys.AUTH_DASHBOARD_ICON: prefix + file_name if allowed_key == AllowedKeys.AUTH_DASHBOARD_ICON else None,
+            AllowedKeys.LOGO_URL: asset_url if allowed_key == AllowedKeys.LOGO_URL else None,
+            AllowedKeys.LOGO_WIDE_LIGHT: asset_url if allowed_key == AllowedKeys.LOGO_WIDE_LIGHT else None,
+            AllowedKeys.LOGO_WIDE_DARK: asset_url if allowed_key == AllowedKeys.LOGO_WIDE_DARK else None,
+            AllowedKeys.AUTH_DASHBOARD_ICON: asset_url if allowed_key == AllowedKeys.AUTH_DASHBOARD_ICON else None,
         }
