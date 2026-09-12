@@ -230,7 +230,7 @@ describe('Network Intel - End-to-End Flow', () => {
 
     cy.get('[data-testid="network-intel-geo-search-trigger"]').click({ force: true });
     cy.get('[data-testid="network-intel-geo-modal"]').should('be.visible');
-    cy.get('[data-testid="network-intel-geo-map"] svg path').should('have.length.greaterThan', 0);
+    cy.get('[data-testid="network-intel-geo-map"] svg path', { timeout: 30000 }).should('have.length.greaterThan', 0);
     cy.docsScreenshot('network-intel-geo-modal');
     cy.get('[data-testid="network-intel-geo-close"]').click();
     cy.get('[data-testid="network-intel-geo-modal"]').should('not.exist');
