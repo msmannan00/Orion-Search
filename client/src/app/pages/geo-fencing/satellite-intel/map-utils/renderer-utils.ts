@@ -1,6 +1,6 @@
 import { TrackingEntityType } from '../../models/geo-fencing.models';
 import type { Map as LeafletMap } from 'leaflet';
-import { asUnknownRecord, getOwnProperty } from '../../../../shared/utils/type-guards.util';
+import { asUnknownRecord, getOwnProperty, isFiniteNumber } from '../../../../shared/utils/type-guards.util';
 
 export function normalizeEntityId(value: unknown): string | null {
   if (value === null || value === undefined) {
@@ -136,4 +136,104 @@ export function orderDistributionCells<T extends { row: number; col: number }>(c
   }
 
   return quotas.flatMap(quota => takeEvenlySpacedCells(quota.cells, quota.quota));
+}
+
+export function sampleScreenGridSize(zoom: number): number {
+  if (zoom >= 7) {
+    return 96;
+  }
+  if (zoom >= 6) {
+    return 104;
+  }
+  if (zoom >= 5) {
+    return 112;
+  }
+  if (zoom >= 4) {
+    return 120;
+  }
+  return 128;
+}
+
+export function distributionScreenGridSize(zoom: number): number {
+  return Math.max(32, Math.round(sampleScreenGridSize(zoom) / 3));
+}
+
+export function sampleGridSize(zoom: number): number {
+  if (zoom >= 7) {
+    return 1;
+  }
+  if (zoom >= 6) {
+    return 1.5;
+  }
+  if (zoom >= 5) {
+    return 2;
+  }
+  if (zoom >= 4) {
+    return 2.5;
+  }
+  return 3;
+}
+
+export function distributionGridSize(zoom: number): number {
+  return Math.max(0.25, sampleGridSize(zoom) / 4);
+}
+
+export function viewportSampleRatio(zoom: number): number {
+  if (zoom >= 8) {
+    return 0.456;
+  }
+  if (zoom >= 7) {
+    return 0.396;
+  }
+  if (zoom >= 6) {
+    return 0.324;
+  }
+  if (zoom >= 5) {
+    return 0.408;
+  }
+  if (zoom >= 4) {
+    return 0.24;
+  }
+  if (zoom >= 3) {
+    return 0.168;
+  }
+  return 0.168;
+}
+
+export function moderateSampleRatio(sampleRatio: number): number {
+  return Math.max(sampleRatio, 0.264);
+}
+
+export function sampleBucketKey(map: Pick<LeafletMap, 'latLngToContainerPoint'> | null | undefined, latitude: number | null | undefined, longitude: number | null | undefined, zoom: number): string {
+  const screenGridSize = sampleScreenGridSize(zoom);
+  const screenCell = screenCellFor(map, latitude, longitude, screenGridSize);
+  if (screenCell) {
+    return `screen:${screenGridSize}:${screenCell.row}:${screenCell.col}`;
+  }
+
+  if (isFiniteNumber(latitude) && isFiniteNumber(longitude)) {
+    const gridSize = sampleGridSize(zoom);
+    const latBucket = Math.floor((latitude + 90) / gridSize);
+    const lonBucket = Math.floor((longitude + 180) / gridSize);
+    return `grid:${gridSize}:${latBucket}:${lonBucket}`;
+  }
+
+  return 'grid:unknown';
+}
+
+export function distributionCell(map: Pick<LeafletMap, 'latLngToContainerPoint'> | null | undefined, latitude: number | null | undefined, longitude: number | null | undefined, zoom: number): { key: string; row: number; col: number } {
+  const screenGridSize = distributionScreenGridSize(zoom);
+  const screenCell = screenCellFor(map, latitude, longitude, screenGridSize);
+  if (screenCell) {
+    return { key: `screen-cell:${screenGridSize}:${screenCell.row}:${screenCell.col}`, row: screenCell.row, col: screenCell.col };
+  }
+
+  if (isFiniteNumber(latitude) && isFiniteNumber(longitude)) {
+    const gridSize = distributionGridSize(zoom);
+    const row = Math.floor((latitude + 90) / gridSize);
+    const col = Math.floor((longitude + 180) / gridSize);
+    return { key: `cell:${gridSize}:${row}:${col}`, row, col };
+  }
+
+  return { key: 'cell:unknown', row: 0, col: 0 };
 }

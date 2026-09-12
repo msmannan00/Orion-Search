@@ -5,7 +5,7 @@ import { SatelliteShipTrackingService } from './ship-tracking.service';
 import { LeafletComponentRenderer } from '../../map-utils/leaflet-component-renderer';
 import { MarkerAnimator } from '../../map-utils/marker-animator';
 import { ShipMarkerIconComponent } from './components/ship-marker-icon/ship-marker-icon.component';
-import { escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, normalizeEntityId, orderDistributionCells, screenCellFor, stableHash } from '../../map-utils/renderer-utils';
+import { distributionCell, escapeTooltipText, getBearingDegrees, getMarkerBaseSize, getResponseStatus, isPendingStatus, moderateSampleRatio, normalizeEntityId, orderDistributionCells, sampleBucketKey, stableHash, viewportSampleRatio } from '../../map-utils/renderer-utils';
 import { TrackingSidebarBridge } from '../../../models/geo-fencing.models';
 import type * as Leaflet from 'leaflet';
 import { asUnknownRecord, Augmented, getOwnProperty, isFiniteNumber, Nullable } from '../../../../../shared/utils/type-guards.util';
@@ -428,10 +428,10 @@ export class ShipMapRenderer {
   }
 
   private sampleCrowdedShipAreas(ships: SatelliteLiveShip[], zoom: number): SatelliteLiveShip[] {
-    const sampleRatio = this.getSampleRatio(zoom);
+    const sampleRatio = viewportSampleRatio(zoom);
     const buckets = new Map<string, SatelliteLiveShip[]>();
     ships.forEach(ship => {
-      const bucketKey = this.getSampleBucketKey(ship, zoom);
+      const bucketKey = sampleBucketKey(this.map, ship.latitude, ship.longitude, zoom);
       const bucketItems = buckets.get(bucketKey) ?? [];
       bucketItems.push(ship);
       buckets.set(bucketKey, bucketItems);
@@ -458,14 +458,10 @@ export class ShipMapRenderer {
 
   private getShipAreaKeepCount(count: number, sampleRatio: number): number {
     if (count <= this.crowdedShipAreaThreshold) {
-      return Math.max(this.minimumSampledShipsPerArea, Math.ceil(count * this.getModerateShipSampleRatio(sampleRatio)));
+      return Math.max(this.minimumSampledShipsPerArea, Math.ceil(count * moderateSampleRatio(sampleRatio)));
     }
 
     return Math.max(this.minimumSampledShipsPerArea, Math.ceil(count * sampleRatio));
-  }
-
-  private getModerateShipSampleRatio(sampleRatio: number): number {
-    return Math.max(sampleRatio, 0.264);
   }
 
   private limitShipsForViewport(ships: SatelliteLiveShip[], sourceShips: SatelliteLiveShip[], zoom: number): SatelliteLiveShip[] {
@@ -497,7 +493,7 @@ export class ShipMapRenderer {
         return;
       }
 
-      const bucketKey = this.getSampleBucketKey(ship, zoom);
+      const bucketKey = sampleBucketKey(this.map, ship.latitude, ship.longitude, zoom);
       const sourceBucketCount = sourceBucketCounts.get(bucketKey) ?? 0;
       if (sourceBucketCount <= this.sparseShipAreaThreshold) {
         preserved.push(ship);
@@ -517,7 +513,7 @@ export class ShipMapRenderer {
   private getShipBucketCounts(ships: SatelliteLiveShip[], zoom: number): Map<string, number> {
     const counts = new Map<string, number>();
     ships.forEach(ship => {
-      const bucketKey = this.getSampleBucketKey(ship, zoom);
+      const bucketKey = sampleBucketKey(this.map, ship.latitude, ship.longitude, zoom);
       counts.set(bucketKey, (counts.get(bucketKey) ?? 0) + 1);
     });
     return counts;
@@ -533,7 +529,7 @@ export class ShipMapRenderer {
 
     const cells = new Map<string, ShipDistributionCell>();
     ships.forEach(ship => {
-      const cellRef = this.getDistributionCell(ship, zoom);
+      const cellRef = distributionCell(this.map, ship.latitude, ship.longitude, zoom);
       const cell = cells.get(cellRef.key) ?? { ...cellRef, items: [] };
       cell.items.push(ship);
       cells.set(cellRef.key, cell);
@@ -588,114 +584,6 @@ export class ShipMapRenderer {
       return 300;
     }
     return 220;
-  }
-
-  private getDistributionCell(ship: SatelliteLiveShip, zoom: number): { key: string; row: number; col: number } {
-    const screenCell = this.getScreenDistributionCell(ship, this.getDistributionScreenGridSize(zoom));
-    if (screenCell) {
-      return screenCell;
-    }
-
-    const latitude = ship.latitude;
-    const longitude = ship.longitude;
-    if (isFiniteNumber(latitude) && isFiniteNumber(longitude)) {
-      const gridSize = this.getDistributionGridSize(zoom);
-      const row = Math.floor((latitude + 90) / gridSize);
-      const col = Math.floor((longitude + 180) / gridSize);
-      return { key: `cell:${gridSize}:${row}:${col}`, row, col };
-    }
-
-    return { key: 'cell:unknown', row: 0, col: 0 };
-  }
-
-  private getScreenBucketKey(ship: SatelliteLiveShip, gridSize: number): string | null {
-    const cell = screenCellFor(this.map, ship.latitude, ship.longitude, gridSize);
-    return cell ? `screen:${gridSize}:${cell.row}:${cell.col}` : null;
-  }
-
-  private getScreenDistributionCell(ship: SatelliteLiveShip, gridSize: number): { key: string; row: number; col: number } | null {
-    const cell = screenCellFor(this.map, ship.latitude, ship.longitude, gridSize);
-    return cell ? { key: `screen-cell:${gridSize}:${cell.row}:${cell.col}`, row: cell.row, col: cell.col } : null;
-  }
-
-  private getSampleScreenGridSize(zoom: number): number {
-    if (zoom >= 7) {
-      return 96;
-    }
-    if (zoom >= 6) {
-      return 104;
-    }
-    if (zoom >= 5) {
-      return 112;
-    }
-    if (zoom >= 4) {
-      return 120;
-    }
-    return 128;
-  }
-
-  private getDistributionScreenGridSize(zoom: number): number {
-    return Math.max(32, Math.round(this.getSampleScreenGridSize(zoom) / 3));
-  }
-
-  private getDistributionGridSize(zoom: number): number {
-    return Math.max(0.25, this.getSampleGridSize(zoom) / 4);
-  }
-
-  private getSampleRatio(zoom: number): number {
-    if (zoom >= 8) {
-      return 0.456;
-    }
-    if (zoom >= 7) {
-      return 0.396;
-    }
-    if (zoom >= 6) {
-      return 0.324;
-    }
-    if (zoom >= 5) {
-      return 0.408;
-    }
-    if (zoom >= 4) {
-      return 0.24;
-    }
-    if (zoom >= 3) {
-      return 0.168;
-    }
-    return 0.168;
-  }
-
-  private getSampleBucketKey(ship: SatelliteLiveShip, zoom: number): string {
-    const screenBucketKey = this.getScreenBucketKey(ship, this.getSampleScreenGridSize(zoom));
-    if (screenBucketKey) {
-      return screenBucketKey;
-    }
-
-    const latitude = ship.latitude;
-    const longitude = ship.longitude;
-    if (isFiniteNumber(latitude) && isFiniteNumber(longitude)) {
-      const gridSize = this.getSampleGridSize(zoom);
-      const latBucket = Math.floor((latitude + 90) / gridSize);
-      const lonBucket = Math.floor((longitude + 180) / gridSize);
-      return `grid:${gridSize}:${latBucket}:${lonBucket}`;
-    }
-
-    return 'grid:unknown';
-  }
-
-  private getSampleGridSize(zoom: number): number {
-    if (zoom >= 7) {
-      return 1;
-    }
-    if (zoom >= 6) {
-      return 1.5;
-    }
-    if (zoom >= 5) {
-      return 2;
-    }
-    if (zoom >= 4) {
-      return 2.5;
-    }
-    return 3;
   }
 
   private getStableShipKey(ship: SatelliteLiveShip): string {
