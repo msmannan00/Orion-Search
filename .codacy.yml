@@ -47,6 +47,7 @@ engines:
         - "typescript"
         - "javascript"
   duplication:
+    minTokenMatch: 100
     exclude_paths:
       - "client/build/**"
       - "client/coverage/**"
