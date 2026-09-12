@@ -9,9 +9,9 @@ from orion.services.log_manager.log_controller import log
 
 
 class CategoryAlertProcessor:
-    def __init__(self, alert_buffer: AlertScanBuffer, search_model: Any):
+    def __init__(self, alert_buffer: AlertScanBuffer, search_manager: Any):
         self._alert_buffer = alert_buffer
-        self._search_model = search_model
+        self._search_model = search_manager
 
     @staticmethod
     def _value(data: Any, field: str, default: Any = None) -> Any:

@@ -23,7 +23,7 @@ from orion.services.mongo_manager.shared_model.db_graph_sessions_model import db
 
 
 
-class social_model:
+class social_manager:
     __instance = None
     SOCIAL_IMAGE_MAX_BYTES = 10 * 1024 * 1024
     SOCIAL_IMAGE_MAX_BASE64_LENGTH = ((SOCIAL_IMAGE_MAX_BYTES + 2) // 3) * 4
@@ -32,14 +32,14 @@ class social_model:
 
     @staticmethod
     def _is_unstorable_int(value):
-        return isinstance(value, int) and not isinstance(value, bool) and not (social_model.INT64_MIN <= value <= social_model.INT64_MAX)
+        return isinstance(value, int) and not isinstance(value, bool) and not (social_manager.INT64_MIN <= value <= social_manager.INT64_MAX)
 
     @staticmethod
     def _drop_unstorable_ints(value):
         if isinstance(value, dict):
-            return {key: social_model._drop_unstorable_ints(item) for key, item in value.items() if not social_model._is_unstorable_int(item)}
+            return {key: social_manager._drop_unstorable_ints(item) for key, item in value.items() if not social_manager._is_unstorable_int(item)}
         if isinstance(value, list):
-            return [social_model._drop_unstorable_ints(item) for item in value if not social_model._is_unstorable_int(item)]
+            return [social_manager._drop_unstorable_ints(item) for item in value if not social_manager._is_unstorable_int(item)]
         return value
 
     @staticmethod
@@ -48,9 +48,9 @@ class social_model:
 
     @staticmethod
     def getInstance():
-        if social_model.__instance is None:
-            social_model.__instance = social_model()
-        return social_model.__instance
+        if social_manager.__instance is None:
+            social_manager.__instance = social_manager()
+        return social_manager.__instance
 
     def __init__(self):
         self._engine = mongo_controller.get_instance().get_engine()
@@ -107,12 +107,12 @@ class social_model:
             raw_ids = data.get("ids")
             ids = raw_ids if isinstance(raw_ids, dict) else {}
 
-        built = {"meta": social_model._recon_meta(item, metadata, ids, profile_username)}
+        built = {"meta": social_manager._recon_meta(item, metadata, ids, profile_username)}
         details = item.get("profile_details") if isinstance(item.get("profile_details"), dict) else None
         if not details:
             details = item.get("profileDetails") if isinstance(item.get("profileDetails"), dict) else None
         if not details:
-            details = social_model._recon_profile_details({**ids, **item})
+            details = social_manager._recon_profile_details({**ids, **item})
         if details:
             built["profile_details"] = details
         for key in ("resources", "online_presence", "stealer_logs", "wanted", "wanted_query", "exposure_signals", "phone_lookup"):
@@ -132,7 +132,7 @@ class social_model:
             if isinstance(legacy_profile, dict):
                 profiles = [legacy_profile]
         profile_username = record.get("profile_username") or record.get("root_username") or ""
-        profiles = [social_model.flatten_recon_profile(item, profile_username) for item in profiles if isinstance(item, dict)]
+        profiles = [social_manager.flatten_recon_profile(item, profile_username) for item in profiles if isinstance(item, dict)]
         raw_config = dict(record.get("config")) if isinstance(record.get("config"), dict) else {}
         raw_config.pop("allowed", None)
         try:
@@ -449,8 +449,8 @@ class social_model:
             for profile in profiles:
                 if not isinstance(profile, dict):
                     continue
-                shaped = social_model.flatten_recon_profile(profile, normalized_username)
-                normalized_profiles.append(social_model._drop_unstorable_ints(shaped))
+                shaped = social_manager.flatten_recon_profile(profile, normalized_username)
+                normalized_profiles.append(social_manager._drop_unstorable_ints(shaped))
 
             update_doc = {
                 "$setOnInsert": {
@@ -467,7 +467,7 @@ class social_model:
                 if config_payload is None:
                     profile_ids = [profile["id"] for profile in normalized_profiles if isinstance(profile.get("id"), str) and profile["id"]]
                     if replace:
-                        default_config = social_model.default_profile_config(normalized_profiles)
+                        default_config = social_manager.default_profile_config(normalized_profiles)
                         update_doc["$set"]["config.disallowed"] = default_config["disallowed"]
                         update_doc["$unset"] = {"config.allowed": ""}
                     elif profile_ids:

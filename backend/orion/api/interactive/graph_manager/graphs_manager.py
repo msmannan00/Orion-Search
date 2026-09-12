@@ -4,14 +4,14 @@ from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_graph_sessions_model import db_graph_sessions_model
 
 
-class graphs_model:
+class graphs_manager:
     __instance = None
 
     @staticmethod
     def getInstance():
-        if graphs_model.__instance is None:
-            graphs_model.__instance = graphs_model()
-        return graphs_model.__instance
+        if graphs_manager.__instance is None:
+            graphs_manager.__instance = graphs_manager()
+        return graphs_manager.__instance
 
     def __init__(self):
         self._engine = mongo_controller.get_instance().get_engine()

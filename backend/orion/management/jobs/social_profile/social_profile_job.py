@@ -8,7 +8,7 @@ import urllib.request
 from datetime import datetime
 from typing import Any
 from orion.api.interactive.profile_manager.profile_manager import ProfileManager
-from orion.api.interactive.social_manager.social_model import social_model
+from orion.api.interactive.social_manager.social_manager import social_manager
 from orion.services.log_manager.log_controller import log
 from orion.services.redis_manager.redis_controller import redis_controller
 from orion.services.redis_manager.redis_enums import REDIS_COMMANDS, REDIS_KEYS
@@ -179,7 +179,7 @@ class social_profile_job:
         caption = post_data.get("caption")
         
         try:
-            headers = social_model._social_headers(None, None)
+            headers = social_manager._social_headers(None, None)
             payload = {
                 "session_state": session_state,
                 "platform": profile.platform,
@@ -192,7 +192,7 @@ class social_profile_job:
                 "user_id": user_id,
                 "profile_id": profile.profile_id
             }
-            status_code, resp_body = await social_model.getInstance().social_request(
+            status_code, resp_body = await social_manager.getInstance().social_request(
                 payload,
                 "automation/post",
                 headers
@@ -207,7 +207,7 @@ class social_profile_job:
         log.g().i(f"Running ad monitoring for profile {profile.profile_id} on {profile.platform}")
         
         try:
-            headers = social_model._social_headers(None, None)
+            headers = social_manager._social_headers(None, None)
             payload = {
                 "session_state": session_state, 
                 "platform": profile.platform,
@@ -218,7 +218,7 @@ class social_profile_job:
                 "user_id": user_id,
                 "profile_id": profile.profile_id
             }
-            status_code, resp_body = await social_model.getInstance().social_request(
+            status_code, resp_body = await social_manager.getInstance().social_request(
                 payload,
                 "automation/ad-monitor",
                 headers

@@ -32,7 +32,7 @@ from orion.api.server.nexus_manager.model.nexus_chat_model import ReportChatRequ
 from orion.api.server.crawl_manager.class_model.social_model import social_data_model, social_model
 from orion.api.server.crawl_manager.class_model.social_scrape_request_model import SocialScrapeRequest
 from orion.api.server.crawl_manager.crawl_index_generator import crawl_index_generator
-from orion.api.server.crawl_manager.crawl_model import crawl_model
+from orion.api.server.crawl_manager.crawl_manager import crawl_manager
 from orion.constants.constant import CONSTANTS
 from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX, ELASTIC_KEYS
 from tests.cases.fake_model.fakes import FakeAsyncClient, FakeBloom, FakeDoc, FakeElastic, FakeMongoEngine, FakeResponse
@@ -90,27 +90,27 @@ def _json_request(payload: dict) -> Request:
 
 
 def test_swarm_url_helpers_and_proxy_resolution(monkeypatch):
-    assert crawl_model._normalize_swarm_route_url(None) is None
-    assert crawl_model._normalize_swarm_route_url("   ") is None
-    assert crawl_model._normalize_swarm_route_url("ftp://example.com") is None
-    assert crawl_model._normalize_swarm_route_url("HTTPS://Example.COM/path/?a=1#frag") == "https://example.com/path"
-    assert crawl_model._extract_swarm_route_url({"m_url": "", "m_base_url": "https://base.example"}) == "https://base.example"
-    assert crawl_model._extract_swarm_route_url({"url": "https://fallback.example"}) == "https://fallback.example"
+    assert crawl_manager._normalize_swarm_route_url(None) is None
+    assert crawl_manager._normalize_swarm_route_url("   ") is None
+    assert crawl_manager._normalize_swarm_route_url("ftp://example.com") is None
+    assert crawl_manager._normalize_swarm_route_url("HTTPS://Example.COM/path/?a=1#frag") == "https://example.com/path"
+    assert crawl_manager._extract_swarm_route_url({"m_url": "", "m_base_url": "https://base.example"}) == "https://base.example"
+    assert crawl_manager._extract_swarm_route_url({"url": "https://fallback.example"}) == "https://fallback.example"
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.env_handler.get_instance",
+        "orion.api.server.crawl_manager.crawl_manager.env_handler.get_instance",
         staticmethod(lambda: SimpleNamespace(env=lambda *_args: '["https://one.example/", "https://two.example"]')),
     )
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.secrets.choice", lambda seq: seq[-1])
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.secrets.choice", lambda seq: seq[-1])
 
-    assert crawl_model._get_swarm_proxy_url(_request()) == "https://two.example/user-dumps"
+    assert crawl_manager._get_swarm_proxy_url(_request()) == "https://two.example/user-dumps"
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.env_handler.get_instance",
+        "orion.api.server.crawl_manager.crawl_manager.env_handler.get_instance",
         staticmethod(lambda: SimpleNamespace(env=lambda *_args: "")),
     )
     with pytest.raises(ValueError):
-        crawl_model._get_swarm_proxy_url(_request())
+        crawl_manager._get_swarm_proxy_url(_request())
 
 
 def test_update_or_create_model_updates_existing_and_creates_new_records(monkeypatch):
@@ -123,11 +123,11 @@ def test_update_or_create_model_updates_existing_and_creates_new_records(monkeyp
         geneic_model_last_update=None,
     )
     engine = FakeMongoEngine(records=[existing])
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     manager._engine = engine
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.helper_controller.get_base_url",
+        "orion.api.server.crawl_manager.crawl_manager.helper_controller.get_base_url",
         staticmethod(lambda _url: "https://example.com/"),
     )
 
@@ -149,7 +149,7 @@ def test_update_or_create_model_updates_existing_and_creates_new_records(monkeyp
     assert existing.geneic_model_last_update is not None
 
     new_engine = FakeMongoEngine()
-    new_manager = object.__new__(crawl_model)
+    new_manager = object.__new__(crawl_manager)
     new_manager._engine = new_engine
 
     _run(
@@ -173,15 +173,15 @@ def test_update_or_create_model_updates_existing_and_creates_new_records(monkeyp
 def test_http_wrappers_post_expected_payloads_and_handle_errors(monkeypatch):
     calls = []
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.httpx.AsyncClient",
+        "orion.api.server.crawl_manager.crawl_manager.httpx.AsyncClient",
         lambda *args, **kwargs: FakeAsyncClient(response=FakeResponse(json_data={"ok": True}), calls=calls),
     )
 
     model = nlp_data_model(data=["hello"])
-    assert _run(crawl_model.make_cti_request("ioc")) == {"ok": True}
-    assert _run(crawl_model.parse_chat(model)) == {"ok": True}
-    assert _run(crawl_model.parse_summarize_ai(model)) == {"ok": True}
-    assert _run(crawl_model.parse_chat_ai(ReportChatRequest(session_id="s1", message="msg", report="rep"), "842")) == {"ok": True}
+    assert _run(crawl_manager.make_cti_request("ioc")) == {"ok": True}
+    assert _run(crawl_manager.parse_chat(model)) == {"ok": True}
+    assert _run(crawl_manager.parse_summarize_ai(model)) == {"ok": True}
+    assert _run(crawl_manager.parse_chat_ai(ReportChatRequest(session_id="s1", message="msg", report="rep"), "842")) == {"ok": True}
 
     assert calls[0] == {
         "url": "http://localhost:8000/cti_classifier/classify",
@@ -192,17 +192,17 @@ def test_http_wrappers_post_expected_payloads_and_handle_errors(monkeypatch):
     assert calls[3]["url"].endswith("/nlp/chat/report/842")
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.httpx.AsyncClient",
+        "orion.api.server.crawl_manager.crawl_manager.httpx.AsyncClient",
         lambda *args, **kwargs: FakeAsyncClient(exc=RuntimeError("down")),
     )
 
-    assert _run(crawl_model.parse_chat(model)) == {"error": "Failed to parse chat"}
-    failed = _run(crawl_model.parse_summarize_ai(model))
+    assert _run(crawl_manager.parse_chat(model)) == {"error": "Failed to parse chat"}
+    failed = _run(crawl_manager.parse_summarize_ai(model))
     assert failed.status_code == 500
     assert json.loads(failed.body) == {
         "detail": "Something happened while calling nlp/summarize/ai"
     }
-    assert _run(crawl_model.parse_chat_ai(ReportChatRequest(session_id="s1", message="msg", report="rep"))) == {"error": "Failed to generate chat report"}
+    assert _run(crawl_manager.parse_chat_ai(ReportChatRequest(session_id="s1", message="msg", report="rep"))) == {"error": "Failed to generate chat report"}
 
 
 @pytest.mark.parametrize(
@@ -217,10 +217,10 @@ def test_http_wrappers_post_expected_payloads_and_handle_errors(monkeypatch):
 def test_scan_wrappers_cover_success_non_200_and_exception(monkeypatch, method_name, path, detail):
     calls = []
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.httpx.AsyncClient",
+        "orion.api.server.crawl_manager.crawl_manager.httpx.AsyncClient",
         lambda *args, **kwargs: FakeAsyncClient(response=FakeResponse(status_code=200, json_data={"value": 1}), calls=calls),
     )
-    method = getattr(crawl_model, method_name)
+    method = getattr(crawl_manager, method_name)
     payload = (
         DomainScanRequest(domain="example.com", scanType="basic")
         if method_name == "scan_domain"
@@ -236,7 +236,7 @@ def test_scan_wrappers_cover_success_non_200_and_exception(monkeypatch, method_n
     assert calls[0]["timeout"] == 120
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.httpx.AsyncClient",
+        "orion.api.server.crawl_manager.crawl_manager.httpx.AsyncClient",
         lambda *args, **kwargs: FakeAsyncClient(response=FakeResponse(status_code=418)),
     )
     non_200 = _run(method(payload, user_id="user-1"))
@@ -244,7 +244,7 @@ def test_scan_wrappers_cover_success_non_200_and_exception(monkeypatch, method_n
     assert json.loads(non_200.body) == {"detail": detail}
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.httpx.AsyncClient",
+        "orion.api.server.crawl_manager.crawl_manager.httpx.AsyncClient",
         lambda *args, **kwargs: FakeAsyncClient(exc=RuntimeError("down")),
     )
     failed = _run(method(payload, user_id="user-1"))
@@ -255,12 +255,12 @@ def test_scan_wrappers_cover_success_non_200_and_exception(monkeypatch, method_n
 def test_index_wrappers_cover_generator_and_elastic_paths(monkeypatch):
     fake_elastic = FakeElastic()
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.elastic_controller.get_instance",
+        "orion.api.server.crawl_manager.crawl_manager.elastic_controller.get_instance",
         staticmethod(lambda: fake_elastic),
     )
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.crawl_index_generator",
+        "orion.api.server.crawl_manager.crawl_manager.crawl_index_generator",
         SimpleNamespace(
             index_query_stealerlog=lambda payload: [] if payload.get("empty") else [{"type": "stealer"}],
             index_query_sanctions=lambda payload: payload.get("records", []),
@@ -274,13 +274,13 @@ def test_index_wrappers_cover_generator_and_elastic_paths(monkeypatch):
     )
 
     empty = _run(
-        crawl_model.invoke_stealerlog_index(cast(Any, SimpleNamespace(model_dump=lambda: {"empty": True})))
+        crawl_manager.invoke_stealerlog_index(cast(Any, SimpleNamespace(model_dump=lambda: {"empty": True})))
     )
     success = _run(
-        crawl_model.invoke_stealerlog_index(cast(Any, SimpleNamespace(model_dump=lambda: {"empty": False})))
+        crawl_manager.invoke_stealerlog_index(cast(Any, SimpleNamespace(model_dump=lambda: {"empty": False})))
     )
 
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     updates = []
 
     async def _fake_update(**kwargs):
@@ -418,11 +418,11 @@ def test_build_feeder_file_content_handles_shared_and_direct_rules(monkeypatch):
         }
     )
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.mongo_controller.get_instance",
+        "orion.api.server.crawl_manager.crawl_manager.mongo_controller.get_instance",
         staticmethod(lambda: SimpleNamespace(get_engine=lambda: engine)),
     )
 
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     shared = _run(manager._build_feeder_file_content("shared-rule", "shared")).decode()
     direct = _run(manager._build_feeder_file_content("direct-rule", "tenant")).decode()
 
@@ -439,7 +439,7 @@ def test_build_parser_payload_decrypts_files_and_embeds_feeders(monkeypatch, tmp
     (parser_root / "secret.py").write_bytes(encrypted)
     (parser_root / "disabled.py").write_text("skip", encoding="utf-8")
 
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     manager._engine = SimpleNamespace(find=lambda *_args, **_kwargs: asyncio.sleep(0, result=[FakeDoc(name="disabled.py")]))
     monkeypatch.setattr(
         manager,
@@ -447,7 +447,7 @@ def test_build_parser_payload_decrypts_files_and_embeds_feeders(monkeypatch, tmp
         lambda rule_key, _rule_type: asyncio.sleep(0, result=f"{rule_key}\n".encode()),
     )
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.constant.url_rules",
+        "orion.api.server.crawl_manager.crawl_manager.constant.url_rules",
         {"alpha": {"rule_type": "shared"}, "beta": {"rule_type": "tenant"}},
     )
 
@@ -487,15 +487,15 @@ def test_index_query_stealerlog_encrypts_password(monkeypatch):
 def test_fetch_file_helpers_and_decrypt_error_paths(monkeypatch, tmp_path: Path):
     screenshot_dir = tmp_path / "shots"
     screenshot_dir.mkdir()
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.CRAWL_PATHS.M_SCREENSHOT", str(screenshot_dir))
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.CRAWL_PATHS.M_SCREENSHOT", str(screenshot_dir))
 
     saved = _run(
-        crawl_model.invoke_file_upload(
+        crawl_manager.invoke_file_upload(
             ScreenshotPayload(filename="shot.webp", data=base64.b64encode(b"img").decode())
         )
     )
-    fetched = _run(crawl_model.get_screenshot_file("shot.webp"))
-    missing = _run(crawl_model.get_screenshot_file("missing.webp"))
+    fetched = _run(crawl_manager.get_screenshot_file("shot.webp"))
+    missing = _run(crawl_manager.get_screenshot_file("missing.webp"))
 
     assert saved["filename"] == "shot.webp"
     assert fetched.filename == "shot.webp"
@@ -505,7 +505,7 @@ def test_fetch_file_helpers_and_decrypt_error_paths(monkeypatch, tmp_path: Path)
     parser_root.mkdir()
     source_path = parser_root / "secret.py"
     source_path.write_bytes(b"gAAAAAbad")
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
 
     with pytest.raises(HTTPException) as exc_info:
         manager._decrypt_parser_file(parser_root, source_path, b"gAAAAAbad")
@@ -520,7 +520,7 @@ def test_fetch_parser_and_feeder_responses_cover_missing_and_success(monkeypatch
     parser_root = tmp_path / "parser_files"
     parser_root.mkdir()
 
-    instance = object.__new__(crawl_model)
+    instance = object.__new__(crawl_manager)
     monkeypatch.setattr(
         instance,
         "_build_parser_payload",
@@ -531,13 +531,13 @@ def test_fetch_parser_and_feeder_responses_cover_missing_and_success(monkeypatch
         "_build_feeder_file_content",
         lambda key, rule_type: asyncio.sleep(0, result=f"{key}:{rule_type}".encode()),
     )
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.crawl_model.getInstance", staticmethod(lambda: instance))
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.CRAWL_PATHS.M_PARSER_FILE_PATH", str(parser_zip))
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.constant.url_rules", {"alpha": {"rule_type": "shared"}})
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.crawl_manager.getInstance", staticmethod(lambda: instance))
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.CRAWL_PATHS.M_PARSER_FILE_PATH", str(parser_zip))
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.constant.url_rules", {"alpha": {"rule_type": "shared"}})
 
-    parser_response = _run(crawl_model.invoke_fetch_parser())
-    feeder_response = _run(crawl_model.invoke_fetch_feeder("alpha"))
-    missing_feeder = _run(crawl_model.invoke_fetch_feeder("missing"))
+    parser_response = _run(crawl_manager.invoke_fetch_parser())
+    feeder_response = _run(crawl_manager.invoke_fetch_feeder("alpha"))
+    missing_feeder = _run(crawl_manager.invoke_fetch_feeder("missing"))
 
     assert parser_response.status_code == 200
     assert parser_response.body == b"parser-zip"
@@ -545,13 +545,13 @@ def test_fetch_parser_and_feeder_responses_cover_missing_and_success(monkeypatch
     assert missing_feeder.status_code == 404
 
     parser_root.rmdir()
-    missing_parser = _run(crawl_model.invoke_fetch_parser())
+    missing_parser = _run(crawl_manager.invoke_fetch_parser())
     assert missing_parser.status_code == 404
 
 
 def test_index_log_record_cover_success():
     engine = FakeMongoEngine()
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     manager._engine = engine
 
     response = _run(manager.index_log_record(cast(Any, SimpleNamespace(logs=["alpha", "beta"]))))
@@ -573,17 +573,17 @@ def test_fetch_cti_label_and_proxy_swarm_index_cover_forwarding_and_dedup(monkey
             return {"result": "malware"}
 
     monkeypatch.setattr(
-        "orion.api.server.crawl_manager.crawl_model.requests.post",
+        "orion.api.server.crawl_manager.crawl_manager.requests.post",
         lambda url, **kwargs: posted.update({"url": url, "json": kwargs.get("json")}) or _ReqResponse(),
     )
 
-    assert _run(crawl_model.fetch_cti_label(CTITextRequest(data="indicator"))) == "malware"
+    assert _run(crawl_manager.fetch_cti_label(CTITextRequest(data="indicator"))) == "malware"
     assert posted == {
         "url": "http://trusted-micros-api:8010/cti_classifier/classify",
         "json": {"data": "indicator"},
     }
 
-    manager = object.__new__(crawl_model)
+    manager = object.__new__(crawl_manager)
     bloom = FakeBloom()
     scheduled = []
 
@@ -595,10 +595,10 @@ def test_fetch_cti_label_and_proxy_swarm_index_cover_forwarding_and_dedup(monkey
         coro.close()
         return None
 
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.crawl_model._crawl_model__swarm_bloom", bloom)
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.crawl_manager._crawl_model__swarm_bloom", bloom)
     monkeypatch.setattr(manager, "_post_swarm_payload", _fake_post)
     monkeypatch.setattr(manager, "_get_swarm_proxy_url", lambda _request: "https://swarm.example/user-dumps")
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_model.asyncio.create_task", _fake_create_task)
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.asyncio.create_task", _fake_create_task)
 
     accepted = _run(manager.proxy_swarm_index(_json_request({"m_url": "HTTPS://Example.COM/path/"})))
     duplicate = _run(manager.proxy_swarm_index(_json_request({"m_url": "https://example.com/path"})))

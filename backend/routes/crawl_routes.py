@@ -9,7 +9,7 @@ from orion.api.interactive.feeder_manager.models.feeder_models import FeederOwne
 from orion.api.interactive.siemlog_manager.siem_log_manager import SiemLogManager
 from orion.api.server.crawl_manager.class_model.__init__ import *
 from orion.api.server.crawl_manager.class_model.entity_model import entity_model
-from orion.api.server.crawl_manager.crawl_model import crawl_model
+from orion.api.server.crawl_manager.crawl_manager import crawl_manager
 from orion.api.server.entity_manager.entity_manager import entity_manager
 from orion.services.mongo_manager.shared_model.db_auth_models import UserStatus, user_role
 
@@ -34,14 +34,14 @@ async def index_injection(payload: InjectionBatchRequestModel = Body(...), curre
     "/api/feeder/{index_type}",
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER]))])
 async def feeder(index_type: str):
-    return await crawl_model.getInstance().invoke_fetch_feeder(index_type)
+    return await crawl_manager.getInstance().invoke_fetch_feeder(index_type)
 
 
 @crawl_routes.get(
     "/api/parser",
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER]))])
 async def parser():
-    return await crawl_model.getInstance().invoke_fetch_parser()
+    return await crawl_manager.getInstance().invoke_fetch_parser()
 
 
 @crawl_routes.get(
@@ -154,37 +154,37 @@ async def _index(request: Request, model_cls, invoke_fn):
 
 @crawl_routes.post("/api/index/leak", dependencies=_leak_deps)
 async def index_leak_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, LeakDataModel, instance.invoke_leak_index)
 
 
 @crawl_routes.post("/api/index/news", dependencies=_leak_deps)
 async def index_news_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, LeakDataModel, instance.invoke_news_index)
 
 
 @crawl_routes.post("/api/index/tracking", dependencies=_leak_deps)
 async def index_tracking_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, LeakDataModel, instance.invoke_tracking_index)
 
 
 @crawl_routes.post("/api/index/exploit", dependencies=_leak_deps)
 async def index_exploit_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, ExploitDataModel, instance.invoke_exploit_index)
 
 
 @crawl_routes.post("/api/index/apt", dependencies=_leak_deps)
 async def index_apt_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, AptDataModel, instance.invoke_apt_index)
 
 
 @crawl_routes.post("/api/index/malware", dependencies=_leak_deps)
 async def index_malware_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     return await _index(request, MalwareDataModel, instance.invoke_malware_index)
 
 
@@ -193,14 +193,14 @@ async def index_malware_data(request: Request):
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def index_defacement_data(request: Request):
     body = await request.json()
-    return await crawl_model.getInstance().invoke_defacement_index(DefacementDataModel(**body))
+    return await crawl_manager.getInstance().invoke_defacement_index(DefacementDataModel(**body))
 
 
 @crawl_routes.post(
     "/api/screenshot",
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def screenshot(payload: ScreenshotPayload, _=Depends(role_required([user_role.ADMIN, user_role.CRAWLER]))):
-    return await crawl_model.getInstance().invoke_file_upload(payload)
+    return await crawl_manager.getInstance().invoke_file_upload(payload)
 
 
 @crawl_routes.post(
@@ -208,14 +208,14 @@ async def screenshot(payload: ScreenshotPayload, _=Depends(role_required([user_r
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def index_generic(request: Request):
     body = await request.json()
-    return await crawl_model.getInstance().invoke_generic_index(GeneralDataModel(**body))
+    return await crawl_manager.getInstance().invoke_generic_index(GeneralDataModel(**body))
 
 
 @crawl_routes.post(
     "/api/nlp/parse",
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def parse_text(payload: nlp_data_model):
-    return await crawl_model.getInstance().parse_chat(payload)
+    return await crawl_manager.getInstance().parse_chat(payload)
 
 
 @crawl_routes.post(
@@ -223,23 +223,23 @@ async def parse_text(payload: nlp_data_model):
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def index_chat_data(request: Request):
     body = await request.json()
-    return await crawl_model.getInstance().invoke_chat_index(chat_data_model(**body))
+    return await crawl_manager.getInstance().invoke_chat_index(chat_data_model(**body))
 
 
 @crawl_routes.post("/api/index/social", dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER]))])
 async def index_social_data(request: Request):
     body = await request.json()
-    return await crawl_model.getInstance().invoke_social_index(social_data_model(**body))
+    return await crawl_manager.getInstance().invoke_social_index(social_data_model(**body))
 
 
 @crawl_routes.post("/api/index/swarm", dependencies=[Depends(limiter_dependency)])
 async def index_swarm_data(request: Request):
-    return await crawl_model.getInstance().proxy_swarm_index(request)
+    return await crawl_manager.getInstance().proxy_swarm_index(request)
 
 
 @crawl_routes.post("/api/index/sanctions", dependencies=_leak_deps)
 async def index_sanctions_data(request: Request):
-    instance = crawl_model.getInstance()
+    instance = crawl_manager.getInstance()
     body = await request.json()
 
     if isinstance(body, dict) and isinstance(body.get("m_data"), list):
@@ -281,4 +281,4 @@ async def index_entities(_: Request, entities: List[entity_model] = Body(...)):
     "/api/index/stealerlog",
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.CRAWLER])), Depends(limiter_dependency)])
 async def index_stealerlog(model: LogBatchModel):
-    return await crawl_model.getInstance().invoke_stealerlog_index(model)
+    return await crawl_manager.getInstance().invoke_stealerlog_index(model)

@@ -25,9 +25,9 @@ from orion.api.interactive.feedback_manager.models.feedback_param_model import f
 from orion.api.interactive.scan_job_manager.scan_job_manager import ScanJobManager
 from orion.helper_manager.env_handler import env_handler
 from orion.api.interactive.takedown_manager.takedown_manager import TakedownManager
-from orion.api.interactive.directory_manager.directory_model import directory_model
+from orion.api.interactive.directory_manager.directory_manager import directory_manager
 from orion.api.interactive.directory_manager.directory_shared_model.directory_param_model import directory_param_model
-from orion.api.interactive.hompage_manager.homepage_model import homepage_model
+from orion.api.interactive.hompage_manager.homepage_manager import homepage_manager
 from orion.api.interactive.search_manager.search_data_model.consolidated.search_consolidated_param_model import search_consolidated_param_model
 from orion.api.interactive.search_manager.search_data_model.dump.search_credential_param_model import search_credential_param_model
 from orion.api.interactive.search_manager.search_data_model.dynamic.search_dynamic_param_model import search_dynamic_crack_model, search_dynamic_crypto_model, search_dynamic_onion_search, search_dynamic_param_model, search_dynamic_social_model
@@ -35,7 +35,7 @@ from orion.api.interactive.search_manager.internal.search_apt_controller import 
 from orion.api.interactive.search_manager.internal.search_defacement_controller import search_defacement_controller
 from orion.api.interactive.search_manager.internal.search_exploit_controller import search_exploit_controller
 from orion.api.interactive.search_manager.internal.search_generic_controller import search_generic_controller
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.api.interactive.siemlog_manager.siem_log_manager import SiemLogManager
 from orion.api.server.crawl_manager.class_model.domain_scan_request_model import DomainScanRequest, UrlVulnerabilityScanRequest
 from orion.api.server.crawl_manager.class_model.ip_scan_request_model import IPScanRequest, NetIntelDeepScanRequest, ResolveIPRequest
@@ -45,7 +45,7 @@ from orion.services.mongo_manager.shared_model.db_scan_job_model import ScanJobC
 from orion.services.mongo_manager.shared_model.db_tenant_model import ResultDismissRequest, DismissedIocType
 from orion.api.interactive.tenant_manager.tenant_manager import TenantManager
 from orion.services.mongo_manager.shared_model.db_takedown_request_model import TakedownCreateRequest, TakedownDecisionRequest, TakedownListResponse
-from orion.api.server.crawl_manager.crawl_model import crawl_model
+from orion.api.server.crawl_manager.crawl_manager import crawl_manager
 from orion.api.server.entity_manager.entity_manager import entity_manager
 from orion.api.server.entity_manager.modal.EntityQueryModel import EntityGraphBatchQueryModel, EntityQueryModel
 from orion.api.server.config_manager.config_controller import config_controller
@@ -105,7 +105,7 @@ async def search_siem_logs(payload: SiemSearchRequestModel = Body(...), current_
     include_in_schema=False,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.DEMO, user_role.ANALYST]))])
 async def get_country_insight(category: str = Query(...), country: str = Query(...), page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=200)):
-    return await homepage_model.getInstance().get_country_specific_insights_paginated(
+    return await homepage_manager.getInstance().get_country_specific_insights_paginated(
         category=category,
         country=country,
         page=page,
@@ -157,10 +157,10 @@ async def search_leak(param: search_consolidated_param_model = Body(...), curren
     base_index = [ELASTIC_INDEX.S_LEAK_INDEX]
     if category in {"all", "databases", "leak", "leaks"}:
         param.category = "leaks"
-        return await search_model.getInstance().search_consolidated_ranked_result(
+        return await search_manager.getInstance().search_consolidated_ranked_result(
             param, base_index, ["news", "tracking"], ["leaks"])
 
-    return await search_model.getInstance().search_consolidated_ranked_result(param, base_index, [], [category])
+    return await search_manager.getInstance().search_consolidated_ranked_result(param, base_index, [], [category])
 
 
 @api_routes.post(
@@ -178,24 +178,24 @@ async def search_social(param: search_consolidated_param_model = Body(...), curr
     category = (param.category or "all").strip().lower()
     if category == "all":
         base_index = [ELASTIC_INDEX.S_CHATS_INDEX, ELASTIC_INDEX.S_SOCIAL_INDEX]
-        return await search_model.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
+        return await search_manager.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
     else:
         if category == "telegram":
             param.category = "all"
             base_index = [ELASTIC_INDEX.S_CHATS_INDEX]
-            return await search_model.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
+            return await search_manager.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
         if category in ("forum", "forums"):
             param.category = "all"
             param.content = "all"
             param.m_content_type = "all"
             param.platform = "forum"
             base_index = [ELASTIC_INDEX.S_SOCIAL_INDEX]
-            return await search_model.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
+            return await search_manager.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
         else:
             param.platform = category
             param.category = "all"
             base_index = [ELASTIC_INDEX.S_SOCIAL_INDEX]
-            return await search_model.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
+            return await search_manager.getInstance().search_consolidated_ranked_result(param, base_index, [], [])
 
 
 @api_routes.post(
@@ -241,12 +241,12 @@ async def search_apt_intel(param: search_consolidated_param_model = Body(...), c
 
 @api_routes.get("/api/search/apt/families", status_code=200, include_in_schema=False, dependencies=APT_INTEL_DEPS)
 async def get_apt_families():
-    return await search_model.getInstance().get_apt_filter_options()
+    return await search_manager.getInstance().get_apt_filter_options()
 
 
 @api_routes.get("/api/search/malware/filter-options", status_code=200, include_in_schema=False, dependencies=APT_INTEL_DEPS)
 async def get_malware_filter_options():
-    return await search_model.getInstance().get_malware_filter_options()
+    return await search_manager.getInstance().get_malware_filter_options()
 
 
 @api_routes.post(
@@ -354,7 +354,7 @@ async def get_public_user_activity(user_id: str, current_user=Depends(get_curren
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST]))])
 async def get_directory(param: directory_param_model = Depends()):
-    return await directory_model.getInstance().invoke_directory(param)
+    return await directory_manager.getInstance().invoke_directory(param)
 
 
 @api_routes.get(
@@ -367,9 +367,9 @@ async def get_directory(param: directory_param_model = Depends()):
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.DEMO, user_role.ANALYST]))])
 async def get_insight():
-    insights_task = homepage_model.getInstance().invoke_analytics()
-    latestDocument_task = homepage_model.getInstance().insight_consolidated_result()
-    countryInsightsTask = homepage_model.getInstance().get_country_specific_insights()
+    insights_task = homepage_manager.getInstance().invoke_analytics()
+    latestDocument_task = homepage_manager.getInstance().insight_consolidated_result()
+    countryInsightsTask = homepage_manager.getInstance().get_country_specific_insights()
 
     insights, latestDocument, country_insight = await asyncio.gather(insights_task, latestDocument_task, countryInsightsTask)
     return {"insights": insights, "latestDocument": latestDocument, "country_insight": country_insight}
@@ -387,7 +387,7 @@ async def get_insight():
     dependencies=STEALER_LOG_DEPS)
 async def search_stealer_iocs(param: search_credential_param_model = Body(...), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().register(str(current_user.tenant_uuid), str(current_user.id), param.model_dump_json())
-    return await search_model.getInstance().search_stealer_iocs(param, current_user)
+    return await search_manager.getInstance().search_stealer_iocs(param, current_user)
 
 
 @api_routes.post(
@@ -426,7 +426,7 @@ async def restore_result(payload: ResultDismissRequest = Body(...), current_user
 async def search_consolidated(param: search_consolidated_param_model = Body(...), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().register(str(current_user.tenant_uuid), str(current_user.id), param.model_dump_json())
     _enforce_demo_safe_search(param, current_user)
-    return await search_model.getInstance().search_consolidated_result(param)
+    return await search_manager.getInstance().search_consolidated_result(param)
 
 @api_routes.post(
     "/api/search/consolidated/ioc",
@@ -446,7 +446,7 @@ async def search_consolidated_iocs(param: search_consolidated_param_model = Body
         ELASTIC_INDEX.S_SOCIAL_INDEX,
         ELASTIC_INDEX.S_DEFACEMENT_INDEX,
     ]
-    return await search_model.getInstance().search_consolidated_iocs(param, base_index)
+    return await search_manager.getInstance().search_consolidated_iocs(param, base_index)
 
 @api_routes.get(
     "/api/search/defacement/{doc_id}",
@@ -458,7 +458,7 @@ async def search_consolidated_iocs(param: search_consolidated_param_model = Body
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:defacement", bypass_licenses=["maintainer"]))], )
 async def get_defacement_document(doc_id: str):
-    report = await search_model.getInstance().request_defacement_doc(doc_id)
+    report = await search_manager.getInstance().request_defacement_doc(doc_id)
     takedown_manager = TakedownManager.get_instance()
     return await takedown_manager.enrich_report(report)
 
@@ -473,7 +473,7 @@ async def get_defacement_document(doc_id: str):
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:breach", bypass_licenses=["maintainer"]))], )
 async def get_leak_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_leak_doc(doc_id, lang)
+    return await search_manager.getInstance().request_leak_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -486,7 +486,7 @@ async def get_leak_document(doc_id: str, lang: Optional[str] = Query(None, alias
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:feed", bypass_licenses=["maintainer"]))], )
 async def get_news_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_leak_doc(doc_id, lang)
+    return await search_manager.getInstance().request_leak_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -499,7 +499,7 @@ async def get_news_document(doc_id: str, lang: Optional[str] = Query(None, alias
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:exploit", bypass_licenses=["maintainer"]))], )
 async def get_exploit_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_exploit_doc(doc_id, lang)
+    return await search_manager.getInstance().request_exploit_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -512,7 +512,7 @@ async def get_exploit_document(doc_id: str, lang: Optional[str] = Query(None, al
     status_code=200,
     dependencies=APT_INTEL_DEPS, )
 async def get_apt_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_apt_doc(doc_id, lang)
+    return await search_manager.getInstance().request_apt_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -525,7 +525,7 @@ async def get_apt_document(doc_id: str, lang: Optional[str] = Query(None, alias=
     status_code=200,
     dependencies=APT_INTEL_DEPS, )
 async def get_malware_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_malware_doc(doc_id, lang)
+    return await search_manager.getInstance().request_malware_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -538,7 +538,7 @@ async def get_malware_document(doc_id: str, lang: Optional[str] = Query(None, al
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:general", bypass_licenses=["maintainer"]))], )
 async def get_general_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_general_doc(doc_id, lang)
+    return await search_manager.getInstance().request_general_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -551,7 +551,7 @@ async def get_general_document(doc_id: str, lang: Optional[str] = Query(None, al
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:chat", bypass_licenses=["maintainer"]))], )
 async def get_chat_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_chat_doc(doc_id, lang)
+    return await search_manager.getInstance().request_chat_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -564,7 +564,7 @@ async def get_chat_document(doc_id: str, lang: Optional[str] = Query(None, alias
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:social", bypass_licenses=["maintainer"]))], )
 async def get_social_document(doc_id: str, lang: Optional[str] = Query(None, alias="lang", description="Optional language code for localized report content.")):
-    return await search_model.getInstance().request_social_doc(doc_id, lang)
+    return await search_manager.getInstance().request_social_doc(doc_id, lang)
 
 
 @api_routes.get(
@@ -577,7 +577,7 @@ async def get_social_document(doc_id: str, lang: Optional[str] = Query(None, ali
     status_code=200,
     dependencies=[Depends(role_required([user_role.ADMIN, user_role.DEMO, user_role.MEMBER, user_role.ANALYST])), Depends(license_required("module:breach", bypass_licenses=["maintainer"])), ], )
 async def get_screenshot(filename: str):
-    return await crawl_model.getInstance().get_screenshot_file(f"{filename}.webp")
+    return await crawl_manager.getInstance().get_screenshot_file(f"{filename}.webp")
 
 
 @api_routes.post(
@@ -592,7 +592,7 @@ async def get_screenshot(filename: str):
 async def search_dynamic_email(param: search_dynamic_param_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_user", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/user", payload=param.model_dump(), metadata={"title": "User Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "user", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/user", payload=param.model_dump(), metadata={"title": "User Exposure Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "user", user_id=str(current_user.id)), force_new=force_new)
 
 
 @api_routes.post(
@@ -607,7 +607,7 @@ async def search_dynamic_email(param: search_dynamic_param_model = Body(...), fo
 async def search_dynamic_cracked(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_cracked", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/cracked", payload=param.model_dump(), metadata={"title": "Cracked Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "cracked", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/cracked", payload=param.model_dump(), metadata={"title": "Cracked Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "cracked", user_id=str(current_user.id)), force_new=force_new)
 
 
 @api_routes.post(
@@ -622,7 +622,7 @@ async def search_dynamic_cracked(param: search_dynamic_crack_model = Body(...), 
 async def search_dynamic_software(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_software", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/software", payload=param.model_dump(), metadata={"title": "Software Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "software", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/software", payload=param.model_dump(), metadata={"title": "Software Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "software", user_id=str(current_user.id)), force_new=force_new)
 
 
 @api_routes.post(
@@ -667,7 +667,7 @@ async def parse_dns_scan(payload: DomainScanRequest, force_new: bool = Query(Fal
     await _validate_public_scan_target(payload.domain)
     ip_payload = IPScanRequest(ip=payload.domain)
     await AuditLogManager.get_instance().search_audit(current_user, "dns_scan", payload.domain)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="urlscan/dns", payload=ip_payload.model_dump(), metadata={"title": "DNS Scan", "target": payload.domain}, runner=lambda: crawl_model.getInstance().scan_ip(ip_payload, user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="urlscan/dns", payload=ip_payload.model_dump(), metadata={"title": "DNS Scan", "target": payload.domain}, runner=lambda: crawl_manager.getInstance().scan_ip(ip_payload, user_id=str(current_user.id)), force_new=force_new)
 
 
 @api_routes.post(
@@ -692,7 +692,7 @@ async def parse_wayback_scan(payload: DomainScanRequest, force_new: bool = Query
 async def parse_ip(payload: IPScanRequest, current_user=Depends(get_current_user)):
     await _validate_public_scan_target(payload.ip)
     await AuditLogManager.get_instance().search_audit(current_user, "ip_scan", payload.ip)
-    return await crawl_model.getInstance().scan_ip(payload, user_id=str(current_user.id))
+    return await crawl_manager.getInstance().scan_ip(payload, user_id=str(current_user.id))
 
 
 @api_routes.post(
@@ -701,7 +701,7 @@ async def parse_ip(payload: IPScanRequest, current_user=Depends(get_current_user
     dependencies=SCAN_WITH_LIMITER_DEPS, )
 async def scrape_social(payload: SocialScrapeRequest, current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().search_audit(current_user, "social_scrape", ",".join(payload.usernames or []))
-    return await crawl_model.getInstance().scrape_social(payload, user_id=str(current_user.id))
+    return await crawl_manager.getInstance().scrape_social(payload, user_id=str(current_user.id))
 
 
 @api_routes.post(
@@ -716,7 +716,7 @@ async def scrape_social(payload: SocialScrapeRequest, current_user=Depends(get_c
 async def search_dynamic_social(param: search_dynamic_social_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_social", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/social", payload=param.model_dump(), metadata={"title": "Social Exposure Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "social", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/social", payload=param.model_dump(), metadata={"title": "Social Exposure Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "social", user_id=str(current_user.id)), force_new=force_new)
 
 @api_routes.post(
     "/api/dynamic/wanted",
@@ -730,7 +730,7 @@ async def search_dynamic_social(param: search_dynamic_social_model = Body(...), 
 async def search_dynamic_wanted(param: search_dynamic_social_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_wanted", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/wanted", payload=param.model_dump(), metadata={"title": "Wanted People Scan", "target": target}, runner=lambda: search_model.getInstance().search_wanted_list(param), force_new=True)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/wanted", payload=param.model_dump(), metadata={"title": "Wanted People Scan", "target": target}, runner=lambda: search_manager.getInstance().search_wanted_list(param), force_new=True)
 
 @api_routes.post(
     "/api/dynamic/national-identity",
@@ -744,7 +744,7 @@ async def search_dynamic_wanted(param: search_dynamic_social_model = Body(...), 
 async def search_dynamic_national_identity(param: search_dynamic_crack_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "dynamic_national_identity", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/national-identity", payload=param.model_dump(), metadata={"title": "National Identity Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "pak_database", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="dynamic/national-identity", payload=param.model_dump(), metadata={"title": "National Identity Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "pak_database", user_id=str(current_user.id)), force_new=force_new)
 
 @api_routes.get(
     "/api/search/breach/stix/{doc_id}",
@@ -887,7 +887,7 @@ async def get_news_stix_document(request: Request, doc_id: str, lang: Optional[s
 )
 async def extract_ioc(file: UploadFile = File(...), current_user=Depends(get_current_user)):
     file_content = await _read_scan_upload(file)
-    result = await search_model.getInstance().extract_ioc_from_file(file_content, file.filename, user_id=str(current_user.id))
+    result = await search_manager.getInstance().extract_ioc_from_file(file_content, file.filename, user_id=str(current_user.id))
     return result
 
 
@@ -904,7 +904,7 @@ async def extract_ioc(file: UploadFile = File(...), current_user=Depends(get_cur
 )
 async def scan_apk(file: UploadFile = File(...), current_user=Depends(get_current_user)):
     file_content = await _read_scan_upload(file)
-    result = await search_model.getInstance().scan_apk(file_content, file.filename, user_id=str(current_user.id))
+    result = await search_manager.getInstance().scan_apk(file_content, file.filename, user_id=str(current_user.id))
 
     return result
 
@@ -925,7 +925,7 @@ async def scan_apk(file: UploadFile = File(...), current_user=Depends(get_curren
 async def crypto_scan(param: search_dynamic_crypto_model = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     target = next((str(v) for v in (param.text or {}).values() if v), "")
     await AuditLogManager.get_instance().search_audit(current_user, "crypto_scan", target)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="crypto/scan", payload=param.model_dump(), metadata={"title": "Crypto Scan", "target": target}, runner=lambda: search_model.getInstance().dynamic_search(param, "crypto", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="crypto/scan", payload=param.model_dump(), metadata={"title": "Crypto Scan", "target": target}, runner=lambda: search_manager.getInstance().dynamic_search(param, "crypto", user_id=str(current_user.id)), force_new=force_new)
 
 @api_routes.post(
     "/api/cross/search",
@@ -942,7 +942,7 @@ async def crypto_scan(param: search_dynamic_crypto_model = Body(...), force_new:
 )
 async def cross_search(param: search_dynamic_onion_search = Body(...), current_user=Depends(get_current_user)):
     await AuditLogManager.get_instance().search_audit(current_user, "cross_search", next((str(v) for v in (param.text or {}).values() if v), ""))
-    return await search_model.getInstance().onion_search(param, user_id=str(current_user.id))
+    return await search_manager.getInstance().onion_search(param, user_id=str(current_user.id))
 
 @api_routes.post(
     "/api/netintel/resolve_ip",
@@ -957,7 +957,7 @@ async def cross_search(param: search_dynamic_onion_search = Body(...), current_u
 async def resolve_ip(param: ResolveIPRequest = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     await _validate_public_scan_target(param.domain)
     await AuditLogManager.get_instance().search_audit(current_user, "resolve_ip", param.domain)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/resolve_ip", payload=param.model_dump(), metadata={"title": "Host Recon", "target": param.domain}, runner=lambda: search_model.getInstance().network_intel(param, "resolve_ip", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/resolve_ip", payload=param.model_dump(), metadata={"title": "Host Recon", "target": param.domain}, runner=lambda: search_manager.getInstance().network_intel(param, "resolve_ip", user_id=str(current_user.id)), force_new=force_new)
 
 @api_routes.post(
     "/api/netintel/ipscanner",
@@ -972,7 +972,7 @@ async def resolve_ip(param: ResolveIPRequest = Body(...), force_new: bool = Quer
 async def ipscanner(param: NetIntelDeepScanRequest = Body(...), force_new: bool = Query(False), current_user=Depends(get_current_user)):
     await _validate_public_scan_target(param.ip)
     await AuditLogManager.get_instance().search_audit(current_user, "ipscanner", param.ip)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/ipscanner", payload=param.model_dump(), metadata={"title": "Deep IP Scan", "target": param.ip}, runner=lambda: search_model.getInstance().network_intel(param, "netintel_scanner", user_id=str(current_user.id)), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/ipscanner", payload=param.model_dump(), metadata={"title": "Deep IP Scan", "target": param.ip}, runner=lambda: search_manager.getInstance().network_intel(param, "netintel_scanner", user_id=str(current_user.id)), force_new=force_new)
 
 @api_routes.post(
     "/api/netintel/url_vulnerability_scan",
@@ -991,7 +991,7 @@ async def url_vulnerability_scan(request: Request, param: UrlVulnerabilityScanRe
         if current_user.role != user_role.ADMIN or not getattr(tenant, "is_default", False):
             raise HTTPException(status_code=403, detail="Full scan is restricted to root tenant administrators")
     await AuditLogManager.get_instance().search_audit(current_user, "url_vulnerability_scan", param.domain+", depth: "+param.depth)
-    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/url_vulnerability_scan", payload=param.model_dump(), metadata={"title": "URL Vulnerability Scan", "target": param.domain}, runner=lambda: search_model.getInstance().network_intel(param, "url_vulnerability_scan", user_id=str(current_user.id), force_new=True), force_new=force_new)
+    return await ScanJobManager.get_instance().run_tracked_scan(current_user=current_user, api_reference="netintel/url_vulnerability_scan", payload=param.model_dump(), metadata={"title": "URL Vulnerability Scan", "target": param.domain}, runner=lambda: search_manager.getInstance().network_intel(param, "url_vulnerability_scan", user_id=str(current_user.id), force_new=True), force_new=force_new)
 
 @api_routes.post(
     "/api/stix/convert/{kind}",

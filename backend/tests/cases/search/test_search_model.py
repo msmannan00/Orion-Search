@@ -16,7 +16,7 @@ from orion.api.interactive.search_manager.search_data_model.dump.search_credenti
     PasswordFilterModel,
     search_credential_param_model,
 )
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.constants.constant import CONSTANTS
 from orion.helper_manager.env_handler import env_handler
 from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
@@ -70,7 +70,7 @@ def test_search_wanted_list_builds_query_and_returns_cards(fake_elastic):
     )
     payload = SimpleNamespace(text={"query": "John Doe"})
 
-    result = _run(search_model.search_wanted_list(payload))
+    result = _run(search_manager.search_wanted_list(payload))
 
     assert result == {
         "cards_data": [{"name": "John Doe", "caption": "listed target"}],
@@ -106,11 +106,11 @@ def test_request_general_doc_fetches_document_and_translates_selected_fields(fak
         return {"status": "active", "last_checked_at": None}
 
     monkeypatch.setattr(
-        "orion.api.interactive.search_manager.search_model.FeederManager.get_instance",
+        "orion.api.interactive.search_manager.search_manager.FeederManager.get_instance",
         staticmethod(lambda: SimpleNamespace(get_value_crawl_status=fake_get_value_crawl_status)),
     )
 
-    result = _run(search_model().request_general_doc("doc-1", "ur"))
+    result = _run(search_manager().request_general_doc("doc-1", "ur"))
 
     assert fake_elastic.get_doc_calls == [(ELASTIC_INDEX.S_GENERIC_INDEX, "doc-1")]
     assert result["m_content"] == "ur:content"
@@ -137,7 +137,7 @@ def test_search_consolidated_ranked_result_uses_real_generator_and_passes_built_
     )
 
     result = _run(
-        search_model.search_consolidated_ranked_result(
+        search_manager.search_consolidated_ranked_result(
             param,
             [ELASTIC_INDEX.S_LEAK_INDEX],
             blocked_categories=["news"],
@@ -173,7 +173,7 @@ def test_search_consolidated_iocs_builds_ioc_logic_and_returns_ranked_results(fa
         page=1,
     )
 
-    result = _run(search_model.search_consolidated_iocs(param, [ELASTIC_INDEX.S_LEAK_INDEX]))
+    result = _run(search_manager.search_consolidated_iocs(param, [ELASTIC_INDEX.S_LEAK_INDEX]))
 
     assert result["Total_Hits"] == 3
     indices, query, _indices_boost = fake_elastic.search_consolidated_calls[0]
@@ -199,7 +199,7 @@ def test_search_consolidated_iocs_builds_ioc_logic_and_returns_ranked_results(fa
 #             total=1,
 #         ),
 #     )
-#     model = search_model()
+#     model = search_manager()
 #     param = search_credential_param_model(q="alice@example.com", category="all", page=2)
 
 #     result = _run(model.search_stealerlogs_result(param))
@@ -221,7 +221,7 @@ def test_search_stealer_iocs_applies_password_schema_after_real_query_build(fake
             total=2,
         ),
     )
-    model = search_model()
+    model = search_manager()
     param = search_credential_param_model(
         ioc="m_email:test@example.com",
         page=1,
@@ -253,7 +253,7 @@ def test_search_stealer_iocs_decrypts_password_before_return(fake_elastic, monke
         ),
     )
 
-    result = _run(search_model().search_stealer_iocs(search_credential_param_model(ioc="m_email:test@example.com")))
+    result = _run(search_manager().search_stealer_iocs(search_credential_param_model(ioc="m_email:test@example.com")))
 
     assert result.Result[0].model_dump()["password"] == "Secret123!"
 
@@ -281,7 +281,7 @@ def test_dynamic_search_returns_json_payload(monkeypatch):
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda: _Client())
 
-    result = _run(search_model.dynamic_search(SimpleNamespace(model_dump=lambda: {"hello": "world"}), "example", "user-1"))
+    result = _run(search_manager.dynamic_search(SimpleNamespace(model_dump=lambda: {"hello": "world"}), "example", "user-1"))
 
     assert result == {"ok": True}
 
@@ -299,7 +299,7 @@ def test_social_search_handles_transport_failure(monkeypatch):
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda: _Client())
 
-    result = _run(search_model.social_search({"query": "x"}, "lookup"))
+    result = _run(search_manager.social_search({"query": "x"}, "lookup"))
 
     assert result.status_code == 500
     assert result.body == b'{"detail":"Failed to process social search"}'
@@ -312,7 +312,7 @@ def test_search_consolidated_result_groups_platform_results(fake_elastic):
     )
     param = search_consolidated_param_model(q="alpha", platform="leak_model")
 
-    result = _run(search_model.search_consolidated_result(param))
+    result = _run(search_manager.search_consolidated_result(param))
 
     assert len(result.leak_model.Result) == 1
     assert result.leak_model.Result[0].m_title == "Leak"
@@ -324,7 +324,7 @@ def test_search_consolidated_result_does_not_filter_apt_malware_by_page_category
     fake_elastic.search_consolidated_result = _search_response()
     param = search_consolidated_param_model(q="malware", category="credential")
 
-    _run(search_model.search_consolidated_result(param))
+    _run(search_manager.search_consolidated_result(param))
 
     apt_queries = [query for indices, query, _boost in fake_elastic.search_consolidated_calls if indices == [ELASTIC_INDEX.S_APT_INDEX]]
     malware_queries = [query for indices, query, _boost in fake_elastic.search_consolidated_calls if indices == [ELASTIC_INDEX.S_MALWARE_INDEX]]
@@ -345,7 +345,7 @@ def test_search_stealerlogs_persona_breach_summarizes_aggregations(fake_elastic)
         },
     )
 
-    result = _run(search_model().search_stealerlogs_persona_breach(search_credential_param_model(q="alice@example.com")))
+    result = _run(search_manager().search_stealerlogs_persona_breach(search_credential_param_model(q="alice@example.com")))
 
     assert result["breach_found"] is True
     assert result["primary_channel"] == "telegram"
@@ -375,6 +375,6 @@ def test_extract_ioc_from_file_raises_http_exception_on_failed_service(monkeypat
     monkeypatch.setattr(httpx, "AsyncClient", _Client)
 
     with pytest.raises(HTTPException) as exc:
-        _run(search_model().extract_ioc_from_file(b"ioc-data", "ioc.txt", "user-1"))
+        _run(search_manager().extract_ioc_from_file(b"ioc-data", "ioc.txt", "user-1"))
 
     assert "bad upstream" in str(exc.value.detail)

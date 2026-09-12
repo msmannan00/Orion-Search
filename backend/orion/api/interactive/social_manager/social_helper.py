@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from orion.api.interactive.social_manager.social_model import social_model
+from orion.api.interactive.social_manager.social_manager import social_manager
 
 
 class social_helper:
@@ -13,7 +13,7 @@ class social_helper:
     def normalize_profiles(result: Any, profile_username: str) -> list[dict]:
         if not isinstance(result, list):
             return []
-        return [social_model.flatten_recon_profile(item, profile_username) for item in result if isinstance(item, dict)]
+        return [social_manager.flatten_recon_profile(item, profile_username) for item in result if isinstance(item, dict)]
 
     @staticmethod
     def as_progress(value: Any) -> int | None:

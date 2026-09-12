@@ -4,7 +4,7 @@ from orion.api.interactive.account_manager.chat_share_manager import ChatShareMa
 from orion.api.interactive.case_manager.case_share_manager import CaseShareManager
 from orion.api.interactive.resource_manager.resource_manager import ResourceManager
 from orion.api.interactive.search_manager.search_data_model.dump.search_credential_param_model import search_credential_param_model
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.api.server.config_manager.config_controller import config_controller
 from configs.app_dependency import _enum_value
 from configs.auth_cookie import token_from_request
@@ -152,7 +152,7 @@ async def search_stealerlog(request: Request, q: str = Query(...)):
 
     param = search_credential_param_model(q=q)
     try:
-        return await search_model.getInstance().search_stealerlogs_persona_breach(param)
+        return await search_manager.getInstance().search_stealerlogs_persona_breach(param)
     except HTTPException:
         raise
     except Exception as exc:

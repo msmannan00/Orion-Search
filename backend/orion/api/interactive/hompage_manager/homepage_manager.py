@@ -14,14 +14,14 @@ from orion.services.elastic_manager.elastic_controller import elastic_controller
 HOMEPAGE_DISPLAY_DATE_FORMAT = "%B %d, %Y"
 
 
-class homepage_model:
+class homepage_manager:
     __instance = None
 
     @staticmethod
     def getInstance():
-        if homepage_model.__instance is None:
-            homepage_model.__instance = homepage_model()
-        return homepage_model.__instance
+        if homepage_manager.__instance is None:
+            homepage_manager.__instance = homepage_manager()
+        return homepage_manager.__instance
 
     @staticmethod
     async def invoke_analytics():
@@ -73,15 +73,15 @@ class homepage_model:
             elif index == "defacement_model":
                 defacement_hits = hits
 
-        display_data = {"leak_model": [homepage_model.transform_for_display("leak_model", hit["_source"]) for hit in
+        display_data = {"leak_model": [homepage_manager.transform_for_display("leak_model", hit["_source"]) for hit in
             leak_hits if "m_hash" in hit.get("_source", {})], "exploit_model": [
-            homepage_model.transform_for_display("exploit_model", hit["_source"]) for hit in exploit_hits if
+            homepage_manager.transform_for_display("exploit_model", hit["_source"]) for hit in exploit_hits if
             "m_hash" in hit.get("_source", {})], "chat_model": [
-            homepage_model.transform_for_display("chat_model", hit["_source"]) for hit in chat_hits if
+            homepage_manager.transform_for_display("chat_model", hit["_source"]) for hit in chat_hits if
             "m_hash" in hit.get("_source", {})], "generic_model": [
-            homepage_model.transform_for_display("generic_model", hit["_source"]) for hit in general_hits if
+            homepage_manager.transform_for_display("generic_model", hit["_source"]) for hit in general_hits if
             "m_hash" in hit.get("_source", {})], "defacement_model": [
-            homepage_model.transform_for_display("defacement_model", hit["_source"]) for hit in defacement_hits if
+            homepage_manager.transform_for_display("defacement_model", hit["_source"]) for hit in defacement_hits if
             "m_hash" in hit.get("_source", {})], }
 
         await redis_instance.invoke_trigger(REDIS_COMMANDS.S_SET_STRING, [redis_key, json.dumps(display_data), 300])
@@ -114,7 +114,7 @@ class homepage_model:
 
         for index_name, response in zip(indices, responses):
             hits = response.get("hits", {}).get("hits", []) if response else []
-            sources = [homepage_model._country_only_payload(hit.get("_source", {}))
+            sources = [homepage_manager._country_only_payload(hit.get("_source", {}))
                 for hit in hits if hit.get("_source", {}).get("m_country")]
 
             if index_name == ELASTIC_INDEX.S_LEAK_INDEX:
@@ -135,7 +135,7 @@ class homepage_model:
 
     @staticmethod
     async def get_country_specific_insights_paginated(category: str, country: str, page: int = 1, limit: int = 20):
-        all_country_insights = await homepage_model.get_country_specific_insights()
+        all_country_insights = await homepage_manager.get_country_specific_insights()
         category_key = (category or "").strip().lower()
         country_key = (country or "").strip().lower()
 
@@ -145,14 +145,14 @@ class homepage_model:
         category_items = all_country_insights.get(category_key, []) if isinstance(all_country_insights, dict) else []
         filtered_items = [
             item for item in category_items
-            if homepage_model._country_matches(item.get("m_country", []), country_key)
+            if homepage_manager._country_matches(item.get("m_country", []), country_key)
         ]
 
         start_index = (page - 1) * limit
         end_index = start_index + limit
         paginated_items = filtered_items[start_index:end_index]
         page_hashes = [item.get("m_hash") for item in paginated_items if item.get("m_hash")]
-        items = await homepage_model._resolve_country_items(category_key, page_hashes, paginated_items)
+        items = await homepage_manager._resolve_country_items(category_key, page_hashes, paginated_items)
         total = len(filtered_items)
 
         return {
@@ -165,7 +165,7 @@ class homepage_model:
 
     @staticmethod
     async def _resolve_country_items(category_key: str, page_hashes: list[str], fallback_items: list[dict]) -> list[dict]:
-        index_name = homepage_model._country_category_to_index(category_key)
+        index_name = homepage_manager._country_category_to_index(category_key)
         if not index_name or not page_hashes:
             return fallback_items
 
@@ -237,7 +237,7 @@ class homepage_model:
         date_fields = ["m_update_date", "m_date"]
         raw_date = next((item.get(f) for f in date_fields if item.get(f)), None)
 
-        display_date = homepage_model.parse_date_fallback(raw_date)
+        display_date = homepage_manager.parse_date_fallback(raw_date)
 
         locations = []
         phoneNumbers = []

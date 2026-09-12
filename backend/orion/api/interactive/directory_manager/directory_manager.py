@@ -12,14 +12,14 @@ from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_url_data_model import db_url_data_model
 
 
-class directory_model:
+class directory_manager:
     __instance = None
 
     @staticmethod
     def getInstance():
-        if directory_model.__instance is None:
-            directory_model.__instance = directory_model()
-        return directory_model.__instance
+        if directory_manager.__instance is None:
+            directory_manager.__instance = directory_manager()
+        return directory_manager.__instance
 
     def __init__(self):
         self._engine = mongo_controller.get_instance().get_engine()

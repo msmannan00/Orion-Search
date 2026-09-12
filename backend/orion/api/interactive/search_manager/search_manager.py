@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from starlette import status
 from starlette.responses import JSONResponse
 from smartbindb import SmartBinDB
-from orion.api.interactive.search_manager.search_callback_model import search_callback
+from orion.api.interactive.search_manager.search_callback import search_callback
 from orion.api.interactive.feeder_manager.feeder_manager import FeederManager
 from orion.api.interactive.search_manager.search_data_model.consolidated.search_consolidated_callback_model import grouped_consolidated_search_callback_model
 from orion.api.interactive.search_manager.search_data_model.consolidated.search_consolidated_param_model import search_consolidated_param_model
@@ -24,22 +24,22 @@ from orion.services.mongo_manager.mongo_controller import mongo_controller
 from orion.services.mongo_manager.shared_model.db_tenant_model import db_tenant_model, DismissedIocType
 
 
-class search_model:
+class search_manager:
     __instance = None
     __search_callback = search_callback()
     __bin_db = None
 
     @staticmethod
     def getInstance():
-        if search_model.__instance is None:
-            search_model.__instance = search_model()
-        return search_model.__instance
+        if search_manager.__instance is None:
+            search_manager.__instance = search_manager()
+        return search_manager.__instance
 
     def __init__(self):
-        if search_model.__instance is not None:
+        if search_manager.__instance is not None:
             pass
         else:
-            search_model.__instance = self
+            search_manager.__instance = self
 
     @staticmethod
     async def dynamic_search(model, api, user_id: str = "system"):
@@ -223,10 +223,10 @@ class search_model:
             digits = "".join(filter(str.isdigit, str(getattr(item, "bin", ""))))
             if len(digits) < 6:
                 continue
-            search_model.__bin_db = search_model.__bin_db or SmartBinDB()
-            lookup = search_model.__bin_db.get_bin_info(digits[:8])
+            search_manager.__bin_db = search_manager.__bin_db or SmartBinDB()
+            lookup = search_manager.__bin_db.get_bin_info(digits[:8])
             if lookup.get("status") != "SUCCESS" and len(digits) > 6:
-                lookup = search_model.__bin_db.get_bin_info(digits[:6])
+                lookup = search_manager.__bin_db.get_bin_info(digits[:6])
             if lookup.get("status") != "SUCCESS" or not lookup.get("data"):
                 continue
             data = lookup["data"][0]
@@ -255,7 +255,7 @@ class search_model:
         response = await elastic_controller.get_instance().search_consolidated_ranked_query(
             indices, query, indices_boost)
 
-        return search_model._build_ranked_response(response, query, 10)
+        return search_manager._build_ranked_response(response, query, 10)
 
     @staticmethod
     async def search_consolidated_iocs(param: search_consolidated_param_model, base_index):
@@ -272,7 +272,7 @@ class search_model:
             indices, query, indices_boost
         )
 
-        return search_model._build_ranked_response(response, query, 15, approximate_page_count=True)
+        return search_manager._build_ranked_response(response, query, 15, approximate_page_count=True)
 
     @staticmethod
     async def get_apt_filter_options():
@@ -416,7 +416,7 @@ class search_model:
                     config["allowed_categories"]
                 )
             response = await elastic_controller.get_instance().search_consolidated_ranked_query(indices,query,indices_boost)
-            ranked_response = search_model._build_ranked_response(response, query, 10)
+            ranked_response = search_manager._build_ranked_response(response, query, 10)
             if getattr(param, "sort_latest", False):
                 ranked_response = helper_controller.threat_lens_sort_latest_and_limit_response(ranked_response, 100)
             results[label] = ranked_response

@@ -23,7 +23,7 @@ from orion.services.mongo_manager.shared_model.db_case_model import db_case_mode
 from orion.services.mongo_manager.shared_model.db_case_model import utc_now
 from orion.api.interactive.case_manager.case_artifact_helper import CaseArtifactHelper
 from orion.api.interactive.case_manager.status_board_config import StatusBoardConfigManager
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.api.interactive.search_manager.search_data_model.consolidated.search_consolidated_param_model import search_consolidated_param_model
 from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
 from orion.services.permission_manager.permission_models import UserPermission
@@ -895,7 +895,7 @@ class CaseManager:
         )
 
         if source == "strategic":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_GENERIC_INDEX],
                 [],
@@ -903,7 +903,7 @@ class CaseManager:
             )
 
         elif source == "breach":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_LEAK_INDEX],
                 ["news"],
@@ -912,7 +912,7 @@ class CaseManager:
 
         elif source == "defacement":
             param.content = "all"
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_DEFACEMENT_INDEX],
                 [],
@@ -921,7 +921,7 @@ class CaseManager:
             )
 
         elif source == "social":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_CHATS_INDEX, ELASTIC_INDEX.S_SOCIAL_INDEX],
                 [],
@@ -929,7 +929,7 @@ class CaseManager:
             )
 
         elif source == "exploit":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_EXPLOIT_INDEX],
                 [],
@@ -937,7 +937,7 @@ class CaseManager:
             )
 
         elif source == "feed":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_LEAK_INDEX],
                 [],
@@ -945,7 +945,7 @@ class CaseManager:
             )
 
         elif source == "stealerlogs":
-            result = await search_model.getInstance().search_consolidated_ranked_result(
+            result = await search_manager.getInstance().search_consolidated_ranked_result(
                 param,
                 [ELASTIC_INDEX.S_LEAK_INDEX],
                 [],

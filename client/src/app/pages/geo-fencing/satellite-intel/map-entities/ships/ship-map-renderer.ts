@@ -5,7 +5,8 @@ import { ShipMarkerIconComponent } from './components/ship-marker-icon/ship-mark
 import { getBearingDegrees, getMarkerBaseSize, normalizeEntityId } from '../../map-utils/renderer-utils';
 import { TrackingEntityType } from '../../../models/geo-fencing.models';
 import { asUnknownRecord, isFiniteNumber } from '../../../../../shared/utils/type-guards.util';
-import { BaseEntityMapRenderer, EntityMarker, EntityRendererBaseConfig, RenderedMarkerIcon } from '../base-entity-map-renderer';
+import { EntityMarker, EntityRendererBaseConfig, RenderedMarkerIcon } from '../../model/satellite-intel.model';
+import { BaseEntityMapRenderer } from '../base-entity-map-renderer';
 
 export class ShipMapRenderer extends BaseEntityMapRenderer<SatelliteLiveShip> {
   private readonly service: SatelliteShipTrackingService;
@@ -30,7 +31,7 @@ export class ShipMapRenderer extends BaseEntityMapRenderer<SatelliteLiveShip> {
   }
 
   protected afterMarkerMotion(): void {
-    // ships do not draw a selected track
+    void 0;
   }
 
   protected getViewportLimit(zoom: number): number {

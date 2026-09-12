@@ -20,11 +20,11 @@ SCAN_TYPE_ALERT_CATEGORIES = {
 
 
 class ScanningAlertProcessor:
-    def __init__(self, crawl_model: Any, cancellation_service: CancellationService, alert_buffer: AlertScanBuffer, search_model: Any | None = None):
-        self._crawl_model = crawl_model
+    def __init__(self, crawl_manager: Any, cancellation_service: CancellationService, alert_buffer: AlertScanBuffer, search_manager: Any | None = None):
+        self._crawl_model = crawl_manager
         self._cancellation_service = cancellation_service
         self._alert_buffer = alert_buffer
-        self._search_model = search_model
+        self._search_model = search_manager
 
     @staticmethod
     def scan_types_for_ioc(ioc_type: str, ioc_value: str) -> list[str]:
@@ -105,8 +105,8 @@ class ScanningAlertProcessor:
         if ioc_type != "m_domain":
             return summary
 
-        search_model = self._search_model
-        if search_model is None:
+        search_manager = self._search_model
+        if search_manager is None:
             return summary
 
         try:
@@ -119,7 +119,7 @@ class ScanningAlertProcessor:
                 if self._cancellation_service.is_cancelled(tenant_id):
                     return summary
 
-                response = await search_model.network_intel(payload, "url_vulnerability_scan")
+                response = await search_manager.network_intel(payload, "url_vulnerability_scan")
                 scan_result = ResponseParser.to_dict(response, allow_dict_method=False)
                 if scan_result is None:
                     return summary

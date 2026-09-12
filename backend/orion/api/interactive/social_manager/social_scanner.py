@@ -9,7 +9,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from orion.api.interactive.social_manager.social_helper import social_helper
-from orion.api.interactive.social_manager.social_model import social_model
+from orion.api.interactive.social_manager.social_manager import social_manager
 from orion.api.interactive.social_manager.social_models.social_scan_model import SocialScan
 from orion.services.log_manager.log_controller import log
 from orion.services.mongo_manager.mongo_controller import mongo_controller
@@ -42,12 +42,12 @@ class social_scanner:
         profile_username = social_helper.normalize_username(query)
         if not profile_username:
             raise HTTPException(status_code=400, detail="query is required")
-        headers = social_model._social_headers(current_user, request)
+        headers = social_manager._social_headers(current_user, request)
         return await self._start(str(current_user.id), headers, "recon", {"query": profile_username}, profile_username)
 
     async def start_image_recon(self, current_user, request, image_base64: Any, profile_username: str | None = None) -> dict[str, Any]:
-        file_bytes = social_model.getInstance().decode_image_payload(image_base64)
-        headers = social_model._social_headers(current_user, request)
+        file_bytes = social_manager.getInstance().decode_image_payload(image_base64)
+        headers = social_manager._social_headers(current_user, request)
         name = social_helper.normalize_username(profile_username or "") or f"image scan #{hashlib.sha256(file_bytes).hexdigest()[:8]}"
         return await self._start(str(current_user.id), headers, "recon/image", {"file_bytes": file_bytes, "filename": "upload.png"}, name)
 
@@ -59,7 +59,7 @@ class social_scanner:
             if row.get("scan_kind", "recon") != "recon":
                 await self._set_status(user_id, profile_username, "failed", "Scan interrupted")
                 return social_helper.build_status_response(profile_username, {**row, "status": "failed", "scan_step": "Scan interrupted"})
-            headers = social_model._social_headers(current_user, request)
+            headers = social_manager._social_headers(current_user, request)
             return await self._start(user_id, headers, "recon", {"query": profile_username}, profile_username)
         return social_helper.build_status_response(profile_username, row)
 
@@ -86,7 +86,7 @@ class social_scanner:
             if user is None:
                 await self._set_status(user_id, profile_username, "failed", "Scan interrupted")
                 continue
-            headers = social_model._social_headers(user, None)
+            headers = social_manager._social_headers(user, None)
             await self._start(user_id, headers, "recon", {"query": profile_username}, profile_username)
 
 
@@ -154,7 +154,7 @@ class social_scanner:
         loop = asyncio.get_running_loop()
         deadline = loop.time() + self.SCAN_TIMEOUT_SECONDS
         failures = 0
-        model = social_model.getInstance()
+        model = social_manager.getInstance()
         try:
             while True:
                 if not await self._still_owned(scan):
@@ -200,10 +200,10 @@ class social_scanner:
         await self._collection().update_one(self._owned_filter(scan), {"$set": update})
 
     async def _complete(self, scan: SocialScan, profiles: list[dict]) -> None:
-        config = social_model.default_profile_config(profiles)
+        config = social_manager.default_profile_config(profiles)
         await self._collection().update_one(
             self._owned_filter(scan),
-            {"$set": {"profiles": social_model._drop_unstorable_ints(profiles), "config.disallowed": config["disallowed"], "status": "complete", "scan_progress": 100, "scan_step": "Completed", "updated_at": datetime.now(UTC)},
+            {"$set": {"profiles": social_manager._drop_unstorable_ints(profiles), "config.disallowed": config["disallowed"], "status": "complete", "scan_progress": 100, "scan_step": "Completed", "updated_at": datetime.now(UTC)},
              "$unset": {"config.allowed": "", "scan_owner": "", "scan_heartbeat": "", "scan_cancel_requested": ""}},
         )
 

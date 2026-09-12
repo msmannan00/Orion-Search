@@ -6,7 +6,8 @@ import { AircraftMarkerIconComponent } from './components/aircraft-marker-icon/a
 import { getBearingDegrees, getMarkerBaseSize, normalizeEntityId } from '../../map-utils/renderer-utils';
 import { TrackingEntityType } from '../../../models/geo-fencing.models';
 import { asUnknownRecord, isFiniteNumber, isUnknownRecord, Nullable } from '../../../../../shared/utils/type-guards.util';
-import { BaseEntityMapRenderer, EntityMarker, EntityRendererBaseConfig, RenderedMarkerIcon } from '../base-entity-map-renderer';
+import { EntityMarker, EntityRendererBaseConfig, RenderedMarkerIcon } from '../../model/satellite-intel.model';
+import { BaseEntityMapRenderer } from '../base-entity-map-renderer';
 
 export class AircraftMapRenderer extends BaseEntityMapRenderer<SatelliteLiveAircraft> {
   private readonly service: SatelliteAircraftTrackingService;

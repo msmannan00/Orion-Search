@@ -1,5 +1,5 @@
 from orion.api.interactive.search_manager.search_data_model.consolidated.search_consolidated_param_model import search_consolidated_param_model
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.services.elastic_manager.elastic_enums import ELASTIC_INDEX
 
 
@@ -139,7 +139,7 @@ class search_apt_controller:
         search_param.category = "all"
         threat_response = {"Result": [], "Page_Count": 1, "Total_Hits": 0}
         if base_index:
-            threat_response = await search_model.getInstance().search_consolidated_ranked_result(search_param, base_index, [], [])
+            threat_response = await search_manager.getInstance().search_consolidated_ranked_result(search_param, base_index, [], [])
         include_defacement = category in ("all", "apt", "defacement") if not content_filter_category else category == "defacement"
         if not include_defacement:
             results = sorted(threat_response.get("Result") or [], key=self._date_value, reverse=True)
@@ -157,7 +157,7 @@ class search_apt_controller:
 
         defacement_param = search_param.model_copy(deep=True)
         defacement_param.content = "hacked"
-        defacement_response = await search_model.getInstance().search_consolidated_ranked_result(
+        defacement_response = await search_manager.getInstance().search_consolidated_ranked_result(
             defacement_param, [ELASTIC_INDEX.S_DEFACEMENT_INDEX], [], [], "defacement")
         results = [
             *(threat_response.get("Result") or []),

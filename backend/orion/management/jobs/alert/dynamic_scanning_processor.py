@@ -10,8 +10,8 @@ from orion.management.jobs.alert.result_mappers import DynamicResultMapper
 
 
 class DynamicScanningProcessor:
-    def __init__(self, search_model: Any, cancellation_service: CancellationService, alert_buffer: AlertScanBuffer):
-        self._search_model = search_model
+    def __init__(self, search_manager: Any, cancellation_service: CancellationService, alert_buffer: AlertScanBuffer):
+        self._search_model = search_manager
         self._cancellation_service = cancellation_service
         self._alert_buffer = alert_buffer
 

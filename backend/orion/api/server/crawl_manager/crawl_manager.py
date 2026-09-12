@@ -49,7 +49,7 @@ SCREENSHOT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 SCREENSHOT_UPLOAD_MAX_BASE64_LENGTH = ((SCREENSHOT_UPLOAD_MAX_BYTES + 2) // 3) * 4
 
 
-class crawl_model:
+class crawl_manager:
     __instance = None
     __swarm_bloom = None
     CTI_GRAPH_INDEX_CLUSTER_MAP = {
@@ -66,17 +66,17 @@ class crawl_model:
 
     @staticmethod
     def getInstance():
-        instance = crawl_model.__instance
+        instance = crawl_manager.__instance
         if instance is None:
-            instance = crawl_model()
+            instance = crawl_manager()
         return instance
 
     def __init__(self):
         self._engine = mongo_controller.get_instance().get_engine()
-        if crawl_model.__instance is not None:
+        if crawl_manager.__instance is not None:
             pass
         else:
-            crawl_model.__instance = self
+            crawl_manager.__instance = self
 
     async def _index_cti_data(self, m_data, bypass_empty_embedding=False):
         result = await elastic_controller.get_instance().index_data(m_data, bypass_empty_embedding)
@@ -509,7 +509,7 @@ class crawl_model:
         parser_root = Path(CRAWL_PATHS.M_PARSER_FILE_PATH).with_name("parser_files")
         if not parser_root.exists():
             return JSONResponse(content={"detail": "File not found"}, status_code=404)
-        payload = await crawl_model.getInstance()._build_parser_payload(parser_root)
+        payload = await crawl_manager.getInstance()._build_parser_payload(parser_root)
         return Response(
             content=payload,
             media_type="application/zip",
@@ -521,7 +521,7 @@ class crawl_model:
         rule = constant.url_rules.get(index_type)
         if not rule:
             return JSONResponse(content={"detail": "File not found"}, status_code=404)
-        payload = await crawl_model.getInstance()._build_feeder_file_content(index_type, str(rule.get("rule_type") or ""))
+        payload = await crawl_manager.getInstance()._build_feeder_file_content(index_type, str(rule.get("rule_type") or ""))
         return Response(
             content=payload,
             media_type="text/plain",
@@ -542,7 +542,7 @@ class crawl_model:
     @staticmethod
     async def get_screenshot_file(filename: str):
         try:
-            if not crawl_model._is_valid_screenshot_filename(filename):
+            if not crawl_manager._is_valid_screenshot_filename(filename):
                 return {"error": "File not found"}
             screenshot_root = Path(CRAWL_PATHS.M_SCREENSHOT)
             requested_path = next((path for path in screenshot_root.iterdir() if path.name == filename and path.is_file()), None)
@@ -557,7 +557,7 @@ class crawl_model:
     async def invoke_file_upload(payload: ScreenshotPayload):
         try:
             filename = os.path.basename(payload.filename)
-            if filename != payload.filename or not crawl_model._is_valid_screenshot_filename(filename):
+            if filename != payload.filename or not crawl_manager._is_valid_screenshot_filename(filename):
                 return {"error": "Failed to save screenshot"}
             screenshot_root = os.path.realpath(CRAWL_PATHS.M_SCREENSHOT)
             os.makedirs(screenshot_root, exist_ok=True)

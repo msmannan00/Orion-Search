@@ -211,12 +211,12 @@ async def _validate_public_scan_target(target: str) -> None:
 
 
 async def _scan_domain_with_type(payload, user_id: str, scan_type: Optional[str] = None):
-    from orion.api.server.crawl_manager.crawl_model import crawl_model
+    from orion.api.server.crawl_manager.crawl_manager import crawl_manager
 
     await _validate_public_scan_target(payload.domain)
     if scan_type:
         payload.scanType = scan_type
-    return await crawl_model.getInstance().scan_domain(payload, user_id=user_id)
+    return await crawl_manager.getInstance().scan_domain(payload, user_id=user_id)
 
 
 async def _read_scan_upload(file: UploadFile) -> bytes:

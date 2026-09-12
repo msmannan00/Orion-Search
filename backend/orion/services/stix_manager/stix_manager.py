@@ -7,7 +7,7 @@ from orion.api.interactive.search_manager.search_data_model.leak.search_leak_cal
 from orion.api.interactive.social_manager.social_models.search_social_callback_model import result_item as SocialResultItem
 from orion.api.interactive.search_manager.search_data_model.general.search_general_callback_model import result_item as GeneralResultItem
 from orion.api.interactive.search_manager.search_data_model.chat.search_chat_callback_model import result_item as ChatResultItem
-from orion.api.interactive.search_manager.search_model import search_model
+from orion.api.interactive.search_manager.search_manager import search_manager
 from orion.services.stix_manager.converters.chat_converter import chat_converter
 from orion.services.stix_manager.converters.defacement_converter import defacement_converter
 from orion.services.stix_manager.converters.exploit_converter import exploit_converter
@@ -70,7 +70,7 @@ class stix_manager:
     def __init__(self) -> None:
         if stix_manager.__instance is not None:
             raise Exception("This class is a singleton!")
-        self._search_model = search_model.getInstance()
+        self._search_model = search_manager.getInstance()
         stix_manager.__instance = self
 
     @staticmethod
