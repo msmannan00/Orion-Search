@@ -181,7 +181,9 @@ export class AppService {
   }
 
   public updateFavicon(url = '/api/s/static/system/logo.png'): void {
-    document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach((el) => { el.remove(); });
+    document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach((el) => {
+      el.remove();
+    });
     const link = document.createElement('link');
     link.rel = 'icon';
     link.type = 'image/png';
