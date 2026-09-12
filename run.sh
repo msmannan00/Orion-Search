@@ -468,7 +468,6 @@ if [ "$COMMAND" = "build" ] && [ "$FLAG" = "-p" ]; then
     compose exec -T nginx nginx -t
     compose exec -T nginx nginx -s reload
     wait_for_application_services
-    sudo systemctl restart tor@default
     disable_maintenance_mode
     trap - EXIT
 fi
