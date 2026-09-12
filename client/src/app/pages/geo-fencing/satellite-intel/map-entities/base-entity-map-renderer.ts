@@ -72,7 +72,7 @@ export abstract class BaseEntityMapRenderer<T extends { latitude?: number | null
   protected abstract afterMarkerMotion(entity: T, entityId: string | null): void;
 
   clearTrack(): void {
-    // hook: overridden by renderers that draw a selected track
+    return;
   }
 
   init(): void {
