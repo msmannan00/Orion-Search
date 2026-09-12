@@ -595,7 +595,7 @@ def test_fetch_cti_label_and_proxy_swarm_index_cover_forwarding_and_dedup(monkey
         coro.close()
         return None
 
-    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.crawl_manager._crawl_model__swarm_bloom", bloom)
+    monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.crawl_manager._crawl_manager__swarm_bloom", bloom)
     monkeypatch.setattr(manager, "_post_swarm_payload", _fake_post)
     monkeypatch.setattr(manager, "_get_swarm_proxy_url", lambda _request: "https://swarm.example/user-dumps")
     monkeypatch.setattr("orion.api.server.crawl_manager.crawl_manager.asyncio.create_task", _fake_create_task)
