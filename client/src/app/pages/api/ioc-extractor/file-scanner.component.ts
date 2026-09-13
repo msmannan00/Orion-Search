@@ -215,7 +215,7 @@ export class FileScannerComponent {
   }
 
   openExportChoice(): void {
-    this.exportReport();
+    this.isExportChoiceOpen = true;
   }
 
   closeExportChoice(): void {
